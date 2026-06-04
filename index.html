@@ -2,23 +2,26 @@
 <html lang="hu">
 <head>
     <meta charset="UTF-8">
-    <title>CineMaster Stream - Arányos Logó Lejátszó</title>
+    <title>CineMaster Stream - Fix Arányú Lejátszó</title>
     <style>
         :root { --bg-color: #0f1115; --panel-color: #181d26; --accent-color: #536dfe; --text-color: #e3e8f0; --border-color: #262f3d; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; transition: background 0.3s; }
         
+        /* CSATORNA GOMBOK */
         .channel-selector { display: flex; gap: 10px; margin-bottom: 20px; width: 100%; max-width: 1000px; justify-content: flex-start; overflow-x: auto; padding-bottom: 5px; transition: all 0.3s ease; z-index: 100; }
         .channel-btn { background: #2c323f; color: #a4b3c6; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; white-space: nowrap; }
         .channel-btn:hover { background: #3d4556; color: #fff; }
         .channel-btn.active { background: var(--accent-color); color: white; }
 
+        /* LEJÁTSZÓ KONTÉNER */
         .tv-container { position: relative; width: 100%; max-width: 1000px; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 12px 36px rgba(0,0,0,0.5); border: 1px solid var(--border-color); display: flex; justify-content: center; align-items: center; }
         
         iframe, video { width: 100%; height: 100%; border: none; background: #000; }
         
-        /* DINAMIKUSAN MÉRETEZETT LOGÓ */
+        /* FIX MATEMATIKAI ALAPÚ LOGÓ */
         .tv-watermark { position: absolute; opacity: 0.85; pointer-events: none; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.9)); z-index: 99; display: none; }
         
+        /* INFO SÁV */
         .info-bar { width: 100%; max-width: 1000px; background: var(--panel-color); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-top: 20px; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; transition: all 0.3s ease; z-index: 100; }
         .info-left { display: flex; flex-direction: column; }
         .badge-live { background: #ff1744; color: white; font-size: 10px; font-weight: bold; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; width: max-content; margin-bottom: 8px; }
@@ -31,6 +34,7 @@
         .btn-fs { background: #2e7d32; color: white; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
         .btn-fs:hover { background: #1b5e20; }
 
+        /* MŰSORÚJSÁG PANEL */
         .epg-panel { width: 100%; max-width: 1000px; background: #11141a; border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-top: 15px; box-sizing: border-box; transition: all 0.3s ease; }
         .epg-title { font-size: 16px; font-weight: bold; color: #fff; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
         .epg-row { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #1f2633; font-size: 14px; }
@@ -38,14 +42,17 @@
         .epg-track-title { color: #fff; font-weight: 600; }
         .no-stream-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; color: #8a99ad; font-size: 18px; font-weight: bold; background: #0f1115; z-index: 5; }
 
+        /* TELJES KÉPERNYŐS EGÉR-ÉRZÉKELŐ SÁVOK */
         .fs-trigger-top { position: absolute; top: 0; left: 0; width: 100%; height: 60px; z-index: 101; display: none; }
         .fs-trigger-bottom { position: absolute; bottom: 0; left: 0; width: 100%; height: 60px; z-index: 101; display: none; }
 
+        /* NATIVE FULLSCREEN STÍLUSOK KIHELYEZÉSKOR */
         .tv-container:fullscreen { width: 100vw !important; height: 100vh !important; max-width: none !important; max-height: none !important; border-radius: 0 !important; border: none !important; }
         .tv-container:fullscreen .channel-selector { position: absolute; top: -100px; left: 5%; width: 90%; background: rgba(24,29,38,0.95); padding: 15px; border-radius: 0 0 12px 12px; border: 1px solid var(--border-color); border-top: none; }
         .tv-container:fullscreen .info-bar { position: absolute; bottom: -150px; left: 5%; width: 90%; background: rgba(24,29,38,0.95); border-radius: 12px 12px 0 0; }
         .tv-container:fullscreen .epg-panel { position: absolute; bottom: 100px; left: 5%; width: 90%; background: rgba(17,20,26,0.95); max-height: 40vh; overflow-y: auto; display: none !important; }
 
+        /* INTERAKTÍV CSÚSZKA EFFEKTEK EGÉRRE */
         .tv-container:fullscreen .fs-trigger-top:hover ~ .channel-selector,
         .tv-container:fullscreen .channel-selector:hover { top: 0px; }
         
@@ -136,28 +143,28 @@ document.addEventListener('fullscreenchange', () => {
     setTimeout(updateLogoScale, 100);
 });
 
-// ARÁNYOS LOGÓ MÉRETEZŐ ÉS POZICIONÁLÓ FÜGGVÉNY
+// ARÁNYOS LOGÓ MÉRETEZŐ ÉS POZICIONÁLÓ (TISZTA SZÁZALÉK ALAPON)
 function updateLogoScale() {
     if (!currentLogoConfig || !currentLogoConfig.url) return;
     
-    // Az admin monitorablak alapértelmezett szélessége (ahol a méretet beállítottad) 440px volt
-    const adminBaseWidth = 440; 
+    // Lekérjük a videó konténer jelenlegi valós szélességét
     const currentContainerWidth = container.clientWidth;
     
-    // Kiszámoljuk a nagyítási szorzót az admin ablakhoz képest
-    const scaleFactor = currentContainerWidth / adminBaseWidth;
+    // Kiszámoljuk, hogy az admin felületen (ami 440px széles) a megadott pixelméret mekkora százalékot jelentett
+    const sizePercent = (currentLogoConfig.size / 440) * 100;
     
-    // Beállítjuk a skálázott pixelméretet
-    const finalSize = currentLogoConfig.size * scaleFactor;
-    watermark.style.width = finalSize + 'px';
+    // Kivetítjük ezt a százalékos arányt a mostani aktuális méretre
+    const finalSizePx = (currentContainerWidth * sizePercent) / 100;
     
-    // Pozicionálás százalékosan a konténer aktuális méretében
+    // Élesítjük a méreteket és a fix pozíciókat
+    watermark.style.width = finalSizePx + 'px';
+    watermark.style.height = 'auto';
     watermark.style.top = currentLogoConfig.topPercent + '%';
     watermark.style.left = currentLogoConfig.leftPercent + '%';
 }
 
-// Ha átméretezik a böngészőt, igazodjon a logó is
-window.addEventListener('resize', updateLogoScale);
+// Ha a felhasználó átméretezi az ablakot, a logó azonnal igazodik hozzá
+window.addEventListener('resize', () => setTimeout(updateLogoScale, 50));
 
 function switchChannel(channelId) {
     activeChannel = channelId;
