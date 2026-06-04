@@ -13,26 +13,12 @@
         .channel-btn:hover { background: #3d4556; color: #fff; }
         .channel-btn.active { background: var(--accent-color); color: white; }
 
-        /* LEJÁTSZÓ KONTÉNER - KONTÉNER METRIKÁVAL ELLÁTVA */
-        .tv-container { 
-            position: relative; 
-            width: 100%; 
-            max-width: 1000px; 
-            aspect-ratio: 16/9; 
-            background: #000; 
-            border-radius: 12px; 
-            overflow: hidden; 
-            box-shadow: 0 12px 36px rgba(0,0,0,0.5); 
-            border: 1px solid var(--border-color); 
-            display: flex; 
-            justify-content: center; 
-            align-items: center;
-            container-type: inline-size; /* Ez teszi lehetővé, hogy a logó a konténer arányait figyelje */
-        }
+        /* LEJÁTSZÓ KONTÉNER */
+        .tv-container { position: relative; width: 100%; max-width: 1000px; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 12px 36px rgba(0,0,0,0.5); border: 1px solid var(--border-color); display: flex; justify-content: center; align-items: center; }
         
         iframe, video { width: 100%; height: 100%; border: none; background: #000; position: absolute; top: 0; left: 0; z-index: 1 !important; }
         
-        /* LOGÓ - DINAMIKUS KONTÉNERARÁNYOS BEÁLLÍTÁSSAL */
+        /* A LOGÓ FIXÁLT ALAPSTÍLUSA */
         .tv-watermark { 
             position: absolute; 
             opacity: 0.9; 
@@ -127,6 +113,7 @@ const mediaPlaceholder = document.getElementById('mediaPlaceholder');
 
 let activeChannel = 'cinemaster';
 let lastRenderedUrl = '';
+let currentLogoConfig = null;
 
 function parseLocalISO(isoStr) {
     let clean = isoStr.replace('Z', '');
@@ -143,7 +130,7 @@ function toggleNativeFullscreen() {
         container.appendChild(document.getElementById('channelButtonsContainer'));
         container.appendChild(document.getElementById('mainInfoBar'));
         container.appendChild(epgPanel);
-        container.requestFullscreen().catch(err => console.log(err));
+        container.requestFullscreen().then(() => setTimeout(updateLogoScale, 100)).catch(err => console.log(err));
         document.querySelectorAll('.fs-trigger-top, .fs-trigger-bottom').forEach(el => el.style.display = 'block');
     } else {
         document.exitFullscreen();
@@ -158,7 +145,32 @@ document.addEventListener('fullscreenchange', () => {
         document.querySelectorAll('.fs-trigger-top, .fs-trigger-bottom').forEach(el => el.style.display = 'none');
         epgPanel.style.display = 'none';
     }
+    setTimeout(updateLogoScale, 100);
 });
+
+// MATEMATIKAILAG TŰPONTOS SKÁLÁZÁS AZ ADMIN FELÜLET ARÁNYAI ALAPJÁN
+function updateLogoScale() {
+    if (!currentLogoConfig || !currentLogoConfig.url) return;
+    
+    // Lekérjük a videóablak aktuális pixel szélességét
+    const currentContainerWidth = container.clientWidth;
+    
+    // Az admin felületeden az ellenőrző ablak (fekete box) pontosan 440px széles
+    const adminControlWidth = 440;
+    
+    // Kiszámoljuk, hogy az admin felületen beállított méret (pl. 60px) hány százaléka a 440-nek
+    const exactRatio = currentLogoConfig.size / adminControlWidth;
+    
+    // Ezt a fix arányt vetítjük ki a mostani valós méretre
+    const finalSizePx = currentContainerWidth * exactRatio;
+    
+    // Alkalmazzuk a kiszámolt pixelértéket
+    watermark.style.width = finalSizePx + 'px';
+    watermark.style.top = currentLogoConfig.topPercent + '%';
+    watermark.style.left = currentLogoConfig.leftPercent + '%';
+}
+
+window.addEventListener('resize', () => setTimeout(updateLogoScale, 50));
 
 function switchChannel(channelId) {
     activeChannel = channelId;
@@ -177,21 +189,13 @@ async function runTvEngine() {
         const config = await response.json();
         
         if (config.logo && config.logo.url) {
+            currentLogoConfig = config.logo;
             watermark.src = config.logo.url;
             watermark.style.display = 'block';
-            
-            // AZ IGAZI KONTROLLABLAK ARÁNYOSÍTÁS:
-            // Ha az admin felületeden (ami 320px széles kontroll-box volt) pl. 60-as a méret, 
-            // akkor az a kontrollablak szélességének pontosan a 18.75%-a.
-            // Ezt a tiszta százalékos arányt kényszerítjük rá a lejátszó konténerére (cqw).
-            const adminPanelWidth = 320;
-            const sizeInPercent = (config.logo.size / adminPanelWidth) * 100;
-            
-            watermark.style.width = sizeInPercent + 'cqw'; 
-            watermark.style.top = config.logo.topPercent + '%';
-            watermark.style.left = config.logo.leftPercent + '%';
+            updateLogoScale();
         } else {
             watermark.style.display = 'none';
+            currentLogoConfig = null;
         }
 
         const now = new Date();
