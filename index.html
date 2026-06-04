@@ -70,8 +70,8 @@
         .channel-btn.active { background: var(--accent-color); color: white; border-color: var(--accent-color); box-shadow: 0 0 15px rgba(83, 109, 254, 0.4); }
 
         /* KÖZÉPSŐ POPUP MŰSORÚJSÁG (MODAL) */
-        .epg-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); display: fixed; justify-content: center; align-items: center; z-index: 200000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
-        .epg-modal-overlay.active { opacity: 1; pointer-events: auto; display: flex; }
+        .epg-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 200000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .epg-modal-overlay.active { opacity: 1; pointer-events: auto; }
         
         .epg-modal { width: 90%; max-width: 650px; background: #12161f; border: 1px solid var(--border-color); border-radius: 16px; padding: 25px; box-sizing: border-box; box-shadow: 0 20px 50px rgba(0,0,0,0.8); max-height: 80vh; display: flex; flex-direction: column; }
         .epg-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 15px; }
@@ -160,6 +160,7 @@ function toggleEpg(show) {
     }
 }
 
+// BÖNGÉSZŐ NATÍV FULLSCREEN FUNKCIÓ
 function toggleNativeFullscreen() {
     if (!document.fullscreenElement) {
         container.requestFullscreen().then(() => setTimeout(updateLogoScale, 100)).catch(err => console.log(err));
@@ -168,10 +169,12 @@ function toggleNativeFullscreen() {
     }
 }
 
+// Ha a natív fullscreen változik, a logót újraszámoljuk
 document.addEventListener('fullscreenchange', () => {
     setTimeout(updateLogoScale, 100);
 });
 
+// ARÁNYOS LOGÓMÉRETEZÉS AZ ADMIN ARÁNYOK ALAPJÁN
 function updateLogoScale() {
     if (!currentLogoConfig || !currentLogoConfig.url) return;
     const currentContainerWidth = container.clientWidth;
@@ -282,11 +285,8 @@ async function runTvEngine() {
     }
 }
 
-// Biztonságos betöltés a háttérben
-window.addEventListener('DOMContentLoaded', () => {
-    runTvEngine();
-    setInterval(runTvEngine, 15000);
-});
+runTvEngine();
+setInterval(runTvEngine, 15000);
 </script>
 </body>
 </html>
