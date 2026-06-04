@@ -18,7 +18,7 @@
         
         iframe, video { width: 100%; height: 100%; border: none; background: #000; position: absolute; top: 0; left: 0; z-index: 1 !important; }
         
-        /* FIXÁLT REÁLIS MÉRETŰ LOGÓ */
+        /* FIXÁLT REÁLIS MÉRETŰ LOGÓ - MAXIMUM RÉTEGRENDDEL */
         .tv-watermark { position: absolute; opacity: 0.9; pointer-events: none; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.9)); z-index: 999999999 !important; display: none; }
         
         /* INFO SÁV */
@@ -140,18 +140,24 @@ document.addEventListener('fullscreenchange', () => {
     setTimeout(updateLogoScale, 150);
 });
 
-// TISZTA SZÁZALÉK ALAPÚ ARÁNYOSÍTÁS (KÖZVETLENÜL A CSS SZÉLESSÉGHEZ)
+// A LOGÓ MÉRETEZŐ LOGIKA JAVÍTÁSA
 function updateLogoScale() {
     if (!currentLogoConfig || !currentLogoConfig.url) return;
     
-    // Vesszük a lejátszó mindenkori szélességét
     const currentContainerWidth = container.clientWidth;
+    const baseNormalWidth = 1000; 
     
-    // Ha a beállított érték pl. 60, az a lejátszó szélességének a 6%-a lesz (osztva 10-zel a finomabb skáláért)
-    const sizePercent = currentLogoConfig.size / 10;
-    const finalSizePx = (currentContainerWidth * sizePercent) / 100;
+    if (!document.fullscreenElement) {
+        // Normál módban hajszálpontosan akkora pixelméret, mint az adminban
+        watermark.style.width = currentLogoConfig.size + 'px';
+    } else {
+        // Teljes képernyőn arányosan felnagyítja magát a kijelző szélességéhez képest
+        const scaleFactor = currentContainerWidth / baseNormalWidth;
+        const finalSizePx = currentLogoConfig.size * scaleFactor;
+        
+        watermark.style.width = finalSizePx + 'px';
+    }
     
-    watermark.style.width = finalSizePx + 'px';
     watermark.style.height = 'auto';
     watermark.style.top = currentLogoConfig.topPercent + '%';
     watermark.style.left = currentLogoConfig.leftPercent + '%';
