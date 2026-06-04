@@ -1,22 +1,22 @@
 {
   "logo": {
-    "url": "https://img.catcast.tv/uploads/12102025/logos/41057-68eadc77d5224.png",
+    "url": "https://upload.wikimedia.org/wikipedia/commons/a/ab/Logo_TV_2015.png",
     "size": 60,
-    "topPercent": 8.978328173374612,
-    "leftPercent": 83.59511343804537
+    "topPercent": 5,
+    "leftPercent": 5
   },
   "schedule": [
     {
       "title": "300",
       "url": "https://f003.backblazeb2.com/file/cinemastertv-tarhely/300.mp4",
-      "duration": 6999,
-      "start": "2026-06-04T13:00:00.000Z"
+      "duration": 7000,
+      "start": "2026-06-04T19:59:00.000Z"
     },
     {
       "title": "300",
       "url": "https://f003.backblazeb2.com/file/cinemastertv-tarhely/300.mp4",
-      "duration": 6999,
-      "start": "2026-06-04T14:56:39.000Z"
+      "duration": 7000,
+      "start": "2026-06-04T21:55:40.000Z"
     }
   ]
 }
