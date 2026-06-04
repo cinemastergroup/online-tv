@@ -2,11 +2,11 @@
 <html lang="hu">
 <head>
     <meta charset="UTF-8">
-    <title>CineMaster Player</title>
+    <title>CineMaster Smart TV Player with EPG</title>
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; overflow: hidden; }
+        body { margin: 0; background: #000; color: #fff; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
         
-        /* A VIDEÓT ÉS LOGÓT ÖSSZEFOGÓ DOBOZ */
+        /* A TELJES KÉPERNYŐS KONTÉNER */
         .video-container { 
             position: relative; 
             width: 100vw; 
@@ -23,31 +23,121 @@
             object-fit: contain; 
         }
 
-        /* A LOGÓ: MOSTANTÓL DINAMIKUS MÉRETTEL */
+        /* DINAMIKUS TÉVÉ LOGÓ */
         .tv-logo { 
             position: absolute; 
             z-index: 9999; 
-            pointer-events: none; /* Nem zavar bele a kattintásba */
+            pointer-events: none; 
             filter: drop-shadow(0 2px 5px rgba(0,0,0,0.7));
             transition: width 0.2s;
         }
 
-        /* EGYEDI TELJES KÉPERNYŐS GOMB STÍLUS */
-        .custom-fullscreen-btn {
+        /* OKOS CSATORNAVÁLTÓ SÁV (TELJES KÉPERNYŐN IS LÁTSZIK) */
+        .tv-control-bar {
             position: absolute;
-            bottom: 15px;
-            right: 50px;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: linear-gradient(to top, rgba(0,0,0,0.95) 80%, rgba(0,0,0,0));
+            padding: 25px;
+            box-sizing: border-box;
+            display: flex;
+            gap: 12px;
+            align-items: center;
             z-index: 10000;
-            background: rgba(0,0,0,0.6);
-            border: 1px solid #444;
-            color: white;
-            padding: 8px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 12px;
-            font-weight: bold;
+            opacity: 0; 
+            transition: opacity 0.3s;
         }
-        .custom-fullscreen-btn:hover { background: #536dfe; }
+
+        /* Ha az egeret leviszik a képernyő aljára, felúszik a menü */
+        .video-container:hover .tv-control-bar {
+            opacity: 1;
+        }
+
+        .channel-btn, .action-btn {
+            background: #1f2633;
+            color: #fff;
+            border: 1px solid #3d495e;
+            padding: 10px 18px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            transition: 0.2s;
+        }
+        .channel-btn:hover, .channel-btn.active {
+            background: #536dfe;
+            border-color: #536dfe;
+            box-shadow: 0 0 10px rgba(83,109,254,0.5);
+        }
+
+        .action-btn { background: #2c323f; border-color: #444; }
+        .action-btn:hover { background: #00b0ff; border-color: #00b0ff; }
+        .epg-active-btn { background: #ffb300 !important; color: #000 !important; border-color: #ffb300 !important; font-weight: bold; }
+
+        /* MODERN TÉVÉS EPG PANEL (ÁTTETSZŐ MODAL) */
+        .epg-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 500px;
+            max-height: 400px;
+            background: rgba(15, 17, 21, 0.92);
+            border: 1px solid #262f3d;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+            z-index: 10005;
+            display: none; /* Alapból rejtve van */
+            overflow-y: auto;
+        }
+        .epg-header {
+            font-size: 18px;
+            font-weight: bold;
+            border-bottom: 1px solid #262f3d;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            color: #ffb300;
+            display: flex;
+            justify-content: space-between;
+        }
+        .epg-row {
+            display: flex;
+            padding: 10px;
+            border-bottom: 1px solid #181d26;
+            align-items: center;
+            font-size: 14px;
+        }
+        .epg-row.live {
+            background: rgba(83, 109, 254, 0.15);
+            border-left: 3px solid #536dfe;
+            border-radius: 0 4px 4px 0;
+        }
+        .epg-time {
+            font-family: monospace;
+            font-weight: bold;
+            color: #00e676;
+            min-width: 80px;
+        }
+        .epg-title {
+            font-weight: 500;
+            color: #fff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex-grow: 1;
+            margin-right: 10px;
+        }
+        .epg-live-tag {
+            font-size: 10px;
+            background: #ff3d00;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
     </style>
 </head>
 <body>
@@ -55,50 +145,102 @@
 <div class="video-container" id="mainVisualContainer">
     <img id="tvLogoElement" class="tv-logo" src="" style="display: none;" alt="Logo">
     
-    <video id="tvEngine" autoplay muted controls></video>
+    <video id="tvEngine" autoplay muted playsinline></video>
     
-    <button class="custom-fullscreen-btn" onclick="toggleSmartFullscreen()">📺 Valódi Teljes Képernyő</button>
+    <div id="epgModalWindow" class="epg-overlay">
+        <div class="epg-header">
+            <span id="epgChannelNameTitle">Műsorújság</span>
+            <span style="font-size: 12px; color: #627288; cursor:pointer;" onclick="toggleEPG()">[Bezárás]</span>
+        </div>
+        <div id="epgRowsContainer">
+            </div>
+    </div>
+    
+    <div class="tv-control-bar">
+        <div style="font-size: 11px; color: #8a99ad; font-weight: bold; text-transform: uppercase; margin-right: 10px;">Csatornák:</div>
+        <div id="channelButtonsContainer" style="display: flex; gap: 8px;">
+            </div>
+        
+        <button id="epgToggleBtn" class="action-btn" onclick="toggleEPG()" style="margin-left: auto;">📅 Műsorújság (EPG)</button>
+        
+        <button class="action-btn" onclick="toggleSmartFullscreen()">📺 Teljes Képernyő</button>
+    </div>
 </div>
 
 <script>
-const channelId = "cinemaster"; // A te csatornád azonosítója
+let currentChannelId = ""; 
+let currentChannelName = "";
 let playlist = [];
 let logoData = {};
+let masterChannels = [];
 
-// 1. Betöltjük a műsort és a logó beállításokat
-fetch(`${channelId}.json?v=${Date.now()}`)
+// 1. Csatornalista betöltése
+fetch(`channels.json?v=${Date.now()}`)
     .then(r => r.json())
-    .then(data => {
-        logoData = data.logo;
-        playlist = data.schedule;
-        setupLogo();
-        startTvEngine();
-        setInterval(startTvEngine, 1000); // Folyamatos szinkron
+    .then(channels => {
+        masterChannels = channels;
+        buildChannelButtons();
+        if(masterChannels.length > 0) {
+            switchChannel(masterChannels[0].id, masterChannels[0].name);
+        }
     });
 
-// 2. Beállítjuk a logót arányos méretezéssel
+function buildChannelButtons() {
+    const container = document.getElementById('channelButtonsContainer');
+    container.innerHTML = '';
+    masterChannels.forEach(ch => {
+        const btn = document.createElement('button');
+        btn.className = `channel-btn ch-btn-${ch.id}`;
+        btn.innerText = ch.name;
+        btn.onclick = () => switchChannel(ch.id, ch.name);
+        container.appendChild(btn);
+    });
+}
+
+// 2. Csatornaváltás
+function switchChannel(id, name) {
+    currentChannelId = id;
+    currentChannelName = name;
+    
+    document.querySelectorAll('.channel-btn').forEach(b => b.classList.remove('active'));
+    const activeBtn = document.querySelector(`.ch-btn-${id}`);
+    if(activeBtn) activeBtn.classList.add('active');
+
+    fetch(`${id}.json?v=${Date.now()}`)
+        .then(r => r.json())
+        .then(data => {
+            logoData = data.logo;
+            playlist = data.schedule;
+            setupLogo();
+            syncExecution();
+            if(document.getElementById('epgModalWindow').style.display === "block") {
+                renderEPGData(); // Ha nyitva az EPG, frissítse a listát az új adatokkal
+            }
+        }).catch(() => {
+            document.getElementById('tvEngine').src = "";
+            document.getElementById('tvLogoElement').style.display = "none";
+            playlist = [];
+        });
+}
+
 function setupLogo() {
     const logoImg = document.getElementById('tvLogoElement');
-    if (!logoData || !logoData.url) return;
-    
+    if (!logoData || !logoData.url) { logoImg.style.display = "none"; return; }
     logoImg.src = logoData.url;
     logoImg.style.top = logoData.topPercent + "%";
     logoImg.style.left = logoData.leftPercent + "%";
-    
-    // TRÜKK: Az adminban lévő méret (pl. 60px) alapján kiszámolunk egy szép, arányos képernyőszélességet (vw)
-    // Így tévén és monitoron is hajszálpontosan ugyanakkorának fog tűnni!
-    let baseWidthVw = (logoData.size / 600) * 100; 
-    if(baseWidthVw < 3) baseWidthVw = 4; // Minimális biztonsági méret
+    let baseWidthVw = (logoData.size / 600) * 100;
+    if(baseWidthVw < 3) baseWidthVw = 4;
     logoImg.style.width = baseWidthVw + "vw";
-    
     logoImg.style.display = "block";
 }
 
-// 3. Valós idejű lejátszó motor
-function startTvEngine() {
+// 3. Időzítő motor
+function syncExecution() {
     const video = document.getElementById('tvEngine');
-    const now = new Date();
+    if(playlist.length === 0) return;
     
+    const now = new Date();
     const currentVideo = playlist.find(track => {
         const start = new Date(track.start);
         const end = new Date(start.getTime() + track.duration * 1000);
@@ -112,20 +254,68 @@ function startTvEngine() {
             video.currentTime = offset;
             video.play().catch(() => {});
         } else if (Math.abs(video.currentTime - offset) > 3) {
-            video.currentTime = offset; // Ha elcsúszna, visszarántja
+            video.currentTime = offset;
         }
     } else {
-        video.src = ""; // Adásszünet
+        video.src = "";
+        video.removeAttribute("src");
     }
 }
 
-// 4. ATOMBIZTOS TELJES KÉPERNYŐ (A dobozt nagyítja, így a logó megmarad)
+setInterval(() => {
+    if(currentChannelId) syncExecution();
+}, 1000);
+
+// 4. MŰSORÚJSÁG (EPG) LOGIKA
+function toggleEPG() {
+    const modal = document.getElementById('epgModalWindow');
+    const btn = document.getElementById('epgToggleBtn');
+    
+    if (modal.style.display === "none" || modal.style.display === "") {
+        modal.style.display = "block";
+        btn.classList.add('epg-active-btn');
+        renderEPGData();
+    } else {
+        modal.style.display = "none";
+        btn.classList.remove('epg-active-btn');
+    }
+}
+
+function renderEPGData() {
+    document.getElementById('epgChannelNameTitle').innerText = `📅 ${currentChannelName} - Műsor`;
+    const container = document.getElementById('epgRowsContainer');
+    container.innerHTML = '';
+    
+    if(playlist.length === 0) {
+        container.innerHTML = '<div style="padding:20px; text-align:center; color:#627288;">Nincs elérhető műsorterv.</div>';
+        return;
+    }
+    
+    const now = new Date();
+    
+    playlist.forEach(track => {
+        const startTime = new Date(track.start);
+        const endTime = new Date(startTime.getTime() + track.duration * 1000);
+        const timeString = startTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        
+        let isLive = (now >= startTime && now < endTime);
+        let rowClass = isLive ? "epg-row live" : "epg-row";
+        let liveTag = isLive ? '<span class="epg-live-tag">ÉLŐ</span>' : '';
+        
+        container.innerHTML += `
+            <div class="${rowClass}">
+                <div class="epg-time">${timeString}</div>
+                <div class="epg-title">${track.title}</div>
+                ${liveTag}
+            </div>
+        `;
+    });
+}
+
 function toggleSmartFullscreen() {
     const container = document.getElementById('mainVisualContainer');
     if (!document.fullscreenElement) {
-        container.requestFullscreen().catch(err => {
-            alert(`Hiba a teljes képernyőre váltáskor: ${err.message}`);
-        });
+        container.requestFullscreen().catch(() => {});
     } else {
         document.exitFullscreen();
     }
