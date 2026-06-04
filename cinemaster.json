@@ -8,15 +8,9 @@
   "schedule": [
     {
       "title": "300",
-      "url": "https://f003.backblazeb2.com/file/cinemastertv-tarhely/300.mp4",
+      "url": "https://archive.org/download/300_20260604/300.mp4",
       "duration": 7000,
-      "start": "2026-06-04T19:59:00.000Z"
-    },
-    {
-      "title": "300",
-      "url": "https://f003.backblazeb2.com/file/cinemastertv-tarhely/300.mp4",
-      "duration": 7000,
-      "start": "2026-06-04T21:55:40.000Z"
+      "start": "2026-06-04T21:00:00"
     }
   ]
 }
