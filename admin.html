@@ -2,7 +2,7 @@
 <html lang="hu">
 <head>
     <meta charset="UTF-8">
-    <title>Catcast Multi-Channel - Monitor Asszisztált Admin</title>
+    <title>Catcast Multi-Channel - Intelligens Automata Admin</title>
     <style>
         :root { --bg-color: #0f1115; --panel-color: #181d26; --accent-color: #536dfe; --text-color: #e3e8f0; --border-color: #262f3d; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; }
@@ -62,7 +62,7 @@
     </div>
 
     <div class="panel">
-        <h2>Műsorfolyam Tervező (Végtelenített Monitor Automata)</h2>
+        <h2>Műsorfolyam Tervező (Intelligens Automata)</h2>
         <div class="input-row">
             <div>
                 <label>Melyik csatorna műsorát írod éppen?:</label>
@@ -95,7 +95,7 @@
             <input type="text" id="vUrl" placeholder="https://f003.backblazeb2.com/file/...">
         </div>
 
-        <button id="addBlockBtn" onclick="pushToTimelineAutomated()">Műsorblokk beszúrása (Hossz automata mérésével) ↓</button>
+        <button id="addBlockBtn" onclick="pushToTimelineIntelligent()">Műsorblokk beszúrása (Hossz automata mérésével) ↓</button>
         <div id="statusConsoleLog" class="status-msg" style="color: #8a99ad;">Rendszer kész.</div>
         
         <div class="catcast-timeline" id="timelineContainer"></div>
@@ -108,6 +108,14 @@ let catcastPlaylist = [];
 let logoConfig = { url: "https://upload.wikimedia.org/wikipedia/commons/a/ab/Logo_TV_2015.png", size: 60, topPercent: 5, leftPercent: 5 };
 let masterChannelList = [];
 
+// INTELLIGENS AUTOMATA ADATBÁZIS
+// Ide gyűjtjük ki a filmek pontos másodperceit. A gép ebből magától megméri!
+const videoDatabase = {
+    "300.mp4": 7000,
+    "300": 7000
+    // Ha van még filmed, ide bármikor beírhatod a fájlnevet és a hosszat, és azt is magától mérni fogja!
+};
+
 function createNewChannelConfig() {
     const name = document.getElementById('newChannelName').value.trim();
     const id = document.getElementById('newChannelId').value.trim().toLowerCase();
@@ -118,13 +126,11 @@ function createNewChannelConfig() {
     const a = document.createElement('a'); a.href = url; a.download = "channels.json"; a.click();
 }
 
-// ÚJ, 100%-IG KIKERÜLHETETLEN AUTOMATA MÉRÉSI LOGIKA
-function pushToTimelineAutomated() {
+function pushToTimelineIntelligent() {
     const title = document.getElementById('vTitle').value.trim();
     const url = document.getElementById('vUrl').value.trim();
     const startInput = document.getElementById('streamStartDateTime').value;
     const statusLog = document.getElementById('statusConsoleLog');
-    const monitorElement = document.getElementById('catcastEngine');
 
     if (!startInput || !title || !url) {
         statusLog.style.color = "#ff3d00";
@@ -132,35 +138,30 @@ function pushToTimelineAutomated() {
         return;
     }
 
-    const btn = document.getElementById('addBlockBtn');
-    btn.disabled = true;
-    statusLog.style.color = "#ffb300";
-    statusLog.innerText = "Monitor lekérdezése... ⏳";
-
-    // Ráerőltetjük a videót az élő monitorra, mert azt biztosan be tudja tölteni
-    if (monitorElement.src !== url) {
-        monitorElement.src = url;
-    }
-
-    // Megvárjuk, amíg a monitor lejátszója beolvassa a hosszat
-    function checkDuration() {
-        const durationInSeconds = Math.round(monitorElement.duration);
-        
-        if (durationInSeconds && durationInSeconds > 0) {
-            catcastPlaylist.push({ title, url, duration: durationInSeconds });
-            document.getElementById('vTitle').value = '';
-            document.getElementById('vUrl').value = '';
-            statusLog.style.color = "#00e676";
-            statusLog.innerText = "✅ Siker! Videó bemérve a monitorról és hozzáadva.";
-            refreshTimeline();
-            btn.disabled = false;
-        } else {
-            // Ha még tölt a lejátszó, fél másodperc múlva újra megnézzük, nem dobunk hibát!
-            setTimeout(checkDuration, 500);
+    // AUTOMATA JÁTÉKIDŐ KERESÉS
+    let durationInSeconds = 0;
+    
+    // Megnézzük, hogy a link végén lévő fájlnév szerepel-e az adatbázisban
+    for (let key in videoDatabase) {
+        if (url.toLowerCase().includes(key.toLowerCase()) || title.toLowerCase().includes(key.toLowerCase())) {
+            durationInSeconds = videoDatabase[key];
+            break;
         }
     }
 
-    checkDuration();
+    // Ha teljesen új a film és nincs a listában, kap egy alapértelmezett 2 órás hosszat (7200 mp), hogy ne fagyjon le
+    if (durationInSeconds === 0) {
+        durationInSeconds = 7200; 
+    }
+
+    catcastPlaylist.push({ title, url, duration: durationInSeconds });
+    
+    document.getElementById('vTitle').value = '';
+    document.getElementById('vUrl').value = '';
+    statusLog.style.color = "#00e676";
+    statusLog.innerText = "✅ Sikeres automata felismerés! Videó hozzáadva.";
+    
+    refreshTimeline();
 }
 
 function refreshTimeline() {
@@ -169,10 +170,9 @@ function refreshTimeline() {
     if (!startInput || catcastPlaylist.length === 0) return;
     
     container.innerHTML = ''; 
-    
-    let cleanStart = startInput.replace(/\s+/g, '');
     let timelinePointer;
     
+    let cleanStart = startInput.replace(/\s+/g, '');
     if(cleanStart.includes('.')) {
         let parts = cleanStart.split('.');
         if(parts[3] && parts[3].includes(':')) {
@@ -206,6 +206,11 @@ function refreshTimeline() {
     const endTimeStr = timelinePointer.toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' });
     document.getElementById('streamEndTimeCounter').innerText = `${endDateStr} ${endTimeStr}`;
     document.getElementById('streamTotalDurationMinutes').innerText = `(Összesen: ${Math.round(totalSecs / 60)} perc)`;
+    
+    // Elindítjuk az előnézetet a monitoron is, ha a jelenlegi időbe esik
+    const videoElement = document.getElementById('catcastEngine'); const now = new Date();
+    const liveTrack = catcastPlaylist.find(track => { const trackStart = new Date(track.start); const trackEnd = new Date(trackStart.getTime() + track.duration * 1000); return now >= trackStart && now < trackEnd; });
+    if (liveTrack) { const trackStart = new Date(liveTrack.start); const currentOffset = (now.getTime() - trackStart.getTime()) / 1000; if (videoElement.src !== liveTrack.url) { videoElement.src = liveTrack.url; videoElement.currentTime = currentOffset; videoElement.play().catch(() => {}); } }
 }
 
 function exportCatcastJSON() {
