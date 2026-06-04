@@ -179,6 +179,10 @@ window.addEventListener('keydown', showControls);
 // ---------------------------------------------
 
 function parseLocalISO(isoStr) {
+    // Ha nincs a végén Z betű, manuálisan hozzáadjuk a szabványos feldolgozáshoz
+    if (!isoStr.endsWith('Z')) {
+        isoStr += 'Z';
+    }
     let clean = isoStr.replace('Z', '');
     let parts = clean.split(/[-T:]/);
     return new Date(parts[0], parts[1] - 1, parts[2], parts[3], parts[4], parts[5] || 0);
