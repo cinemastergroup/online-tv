@@ -6,37 +6,25 @@
     <style>
         :root { --bg-color: #0f1115; --panel-color: #181d26; --accent-color: #536dfe; --text-color: #e3e8f0; --border-color: #262f3d; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        
-        /* CSATORNA GOMBOK */
         .channel-selector { display: flex; gap: 10px; margin-bottom: 20px; width: 100%; max-width: 1000px; justify-content: flex-start; overflow-x: auto; padding-bottom: 5px; }
         .channel-btn { background: #2c323f; color: #a4b3c6; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; white-space: nowrap; }
         .channel-btn:hover { background: #3d4556; color: #fff; }
         .channel-btn.active { background: var(--accent-color); color: white; }
-
-        /* LEJÁTSZÓ DOBOZ */
         .tv-container { position: relative; width: 100%; max-width: 1000px; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 12px 36px rgba(0,0,0,0.5); border: 1px solid var(--border-color); }
         video { width: 100%; height: 100%; object-fit: contain; }
-        
-        /* ÉLES ONLINE WATERMARK LOGÓ */
         .tv-watermark { position: absolute; top: 5%; left: 5%; width: 60px; opacity: 0.7; pointer-events: none; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8)); z-index: 10; display: none; }
-        
-        /* INFO SÁV */
         .info-bar { width: 100%; max-width: 1000px; background: var(--panel-color); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-top: 20px; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; }
         .info-left { display: flex; flex-direction: column; }
         .badge-live { background: #ff1744; color: white; font-size: 10px; font-weight: bold; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; width: max-content; margin-bottom: 8px; }
         .show-title { font-size: 20px; font-weight: bold; color: #fff; margin-bottom: 4px; }
         .time-info { font-family: monospace; font-size: 13px; color: #8a99ad; }
-        
-        /* EPG MŰSORÚJSÁG GOMB ÉS PANEL */
         .btn-epg { background: #304ffe; color: white; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
         .btn-epg:hover { background: #1a237e; }
         .epg-panel { width: 100%; max-width: 1000px; background: #11141a; border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-top: 15px; box-sizing: border-box; }
         .epg-title { font-size: 16px; font-weight: bold; color: #fff; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
         .epg-row { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #1f2633; font-size: 14px; }
-        .epg-row:last-child { border-bottom: none; }
         .epg-time { color: #ffb300; font-family: monospace; font-weight: bold; min-width: 80px; }
         .epg-track-title { color: #fff; font-weight: 600; }
-        
         .no-stream-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; color: #8a99ad; font-size: 18px; font-weight: bold; background: #0f1115; z-index: 5; }
     </style>
 </head>
@@ -80,6 +68,7 @@ const epgPanel = document.getElementById('epgPanel');
 const epgRowsContainer = document.getElementById('epgRowsContainer');
 
 let activeChannel = 'cinemaster';
+let targetOffset = 0;
 
 function parseLocalISO(isoStr) {
     let clean = isoStr.replace('Z', '');
@@ -94,13 +83,18 @@ function toggleEpg() {
 function switchChannel(channelId) {
     activeChannel = channelId;
     document.querySelectorAll('.channel-btn').forEach(btn => btn.classList.remove('active'));
-    
-    // Aktív gomb beszínezése
     const clickedBtn = Array.from(document.querySelectorAll('.channel-btn')).find(btn => btn.getAttribute('onclick').includes(channelId));
     if(clickedBtn) clickedBtn.classList.add('active');
-    
     runTvEngine();
 }
+
+// BIZTONSÁGI IDŐUGRÁS, AMINT A VIDEÓ BETÖLTÖTT A MEMÓRIÁBA
+videoElement.addEventListener('loadedmetadata', () => {
+    if (targetOffset > 0) {
+        videoElement.currentTime = targetOffset;
+        targetOffset = 0; // Alaphelyzetbe állítjuk az ugrót
+    }
+});
 
 async function runTvEngine() {
     try {
@@ -109,7 +103,6 @@ async function runTvEngine() {
         
         const config = await response.json();
         
-        // Vizuális Logó beállítások élesítése
         if (config.logo && config.logo.url) {
             watermark.src = config.logo.url;
             watermark.style.width = config.logo.size + 'px';
@@ -124,19 +117,16 @@ async function runTvEngine() {
         let currentTrack = null;
         let currentOffset = 0;
 
-        // EPG kirajzolása
         epgRowsContainer.innerHTML = '';
 
         config.schedule.forEach(track => {
             const trackStart = parseLocalISO(track.start);
             const trackEnd = new Date(trackStart.getTime() + track.duration * 1000);
 
-            // Időformázás az EPG-hez
             const hr = String(trackStart.getHours()).padStart(2, '0');
             const min = String(trackStart.getMinutes()).padStart(2, '0');
             epgRowsContainer.innerHTML += `<div class="epg-row"><div class="epg-time">${hr}:${min}</div><div class="epg-track-title">${track.title}</div></div>`;
 
-            // Futó műsor ellenőrzése
             if (now >= trackStart && now < trackEnd) {
                 currentTrack = track;
                 currentOffset = (now.getTime() - trackStart.getTime()) / 1000;
@@ -151,16 +141,16 @@ async function runTvEngine() {
             lblTime.innerText = `Kezdés: ${String(startTimestamp.getHours()).padStart(2,'0')}:${String(startTimestamp.getMinutes()).padStart(2,'0')}`;
 
             if (videoElement.src !== currentTrack.url) {
+                targetOffset = currentOffset; // Eltároljuk a metaadatok betöltődéséig
                 videoElement.src = currentTrack.url;
-                videoElement.currentTime = currentOffset;
                 
-                // Automata indítás némítással, ha a Chrome tiltaná
                 videoElement.play().catch(() => {
                     videoElement.muted = true;
                     videoElement.play().catch(err => console.log(err));
                 });
             } else {
-                if (Math.abs(videoElement.currentTime - currentOffset) > 3) {
+                // Futó lejátszás finomhangolása Archive.org-barát módon
+                if (Math.abs(videoElement.currentTime - currentOffset) > 10 && videoElement.readyState >= 2) {
                     videoElement.currentTime = currentOffset;
                 }
             }
