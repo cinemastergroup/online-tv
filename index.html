@@ -32,7 +32,7 @@
             transition: width 0.2s;
         }
 
-        /* OKOS CSATORNAVÁLTÓ SÁV (TELJES KÉPERNYŐN IS LÁTSZIK) */
+        /* OKOS CSATORNAVÁLTÓ SÁV (EGÉRHÚZÁSRA JELENIK MEG) */
         .tv-control-bar {
             position: absolute;
             bottom: 0;
@@ -49,7 +49,7 @@
             transition: opacity 0.3s;
         }
 
-        /* Ha az egeret leviszik a képernyő aljára, felúszik a menü */
+        /* Amikor az egeret leviszed az ablak aljára, megjelenik a menü */
         .video-container:hover .tv-control-bar {
             opacity: 1;
         }
@@ -75,7 +75,7 @@
         .action-btn:hover { background: #00b0ff; border-color: #00b0ff; }
         .epg-active-btn { background: #ffb300 !important; color: #000 !important; border-color: #ffb300 !important; font-weight: bold; }
 
-        /* MODERN TÉVÉS EPG PANEL (ÁTTETSZŐ MODAL) */
+        /* MODERN TÉVÉS EPG PANEL */
         .epg-overlay {
             position: absolute;
             top: 50%;
@@ -89,7 +89,7 @@
             padding: 20px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.7);
             z-index: 10005;
-            display: none; /* Alapból rejtve van */
+            display: none; 
             overflow-y: auto;
         }
         .epg-header {
@@ -163,7 +163,7 @@
         
         <button id="epgToggleBtn" class="action-btn" onclick="toggleEPG()" style="margin-left: auto;">📅 Műsorújság (EPG)</button>
         
-        <button class="action-btn" onclick="toggleSmartFullscreen()">📺 Teljes Képernyő</button>
+        <button class="action-btn" onclick="toggleSmartFullscreen()">📺 Valódi Teljes Képernyő</button>
     </div>
 </div>
 
@@ -214,7 +214,7 @@ function switchChannel(id, name) {
             setupLogo();
             syncExecution();
             if(document.getElementById('epgModalWindow').style.display === "block") {
-                renderEPGData(); // Ha nyitva az EPG, frissítse a listát az új adatokkal
+                renderEPGData();
             }
         }).catch(() => {
             document.getElementById('tvEngine').src = "";
