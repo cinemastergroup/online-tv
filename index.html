@@ -2,7 +2,7 @@
 <html lang="hu">
 <head>
     <meta charset="UTF-8">
-    <title>CineMaster Stream - Fix Arányú Lejátszó</title>
+    <title>CineMaster Stream - Élő Adás</title>
     <style>
         :root { --bg-color: #0f1115; --panel-color: #181d26; --accent-color: #536dfe; --text-color: #e3e8f0; --border-color: #262f3d; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; transition: background 0.3s; }
@@ -16,10 +16,10 @@
         /* LEJÁTSZÓ KONTÉNER */
         .tv-container { position: relative; width: 100%; max-width: 1000px; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 12px 36px rgba(0,0,0,0.5); border: 1px solid var(--border-color); display: flex; justify-content: center; align-items: center; }
         
-        iframe, video { width: 100%; height: 100%; border: none; background: #000; z-index: 1; }
+        iframe, video { width: 100%; height: 100%; border: none; background: #000; position: absolute; top: 0; left: 0; z-index: 1 !important; }
         
-        /* GOLYÓÁLLÓ FIX LOGÓ RÉTEGREND */
-        .tv-watermark { position: absolute; opacity: 0.85; pointer-events: none; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.9)); z-index: 999999 !important; display: none; }
+        /* FIXÁLT REÁLIS MÉRETŰ LOGÓ */
+        .tv-watermark { position: absolute; opacity: 0.9; pointer-events: none; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.9)); z-index: 999999999 !important; display: none; }
         
         /* INFO SÁV */
         .info-bar { width: 100%; max-width: 1000px; background: var(--panel-color); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-top: 20px; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; transition: all 0.3s ease; z-index: 100; }
@@ -34,7 +34,6 @@
         .btn-fs { background: #2e7d32; color: white; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
         .btn-fs:hover { background: #1b5e20; }
 
-        /* MŰSORÚJSÁG PANEL */
         .epg-panel { width: 100%; max-width: 1000px; background: #11141a; border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-top: 15px; box-sizing: border-box; transition: all 0.3s ease; }
         .epg-title { font-size: 16px; font-weight: bold; color: #fff; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
         .epg-row { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #1f2633; font-size: 14px; }
@@ -42,17 +41,15 @@
         .epg-track-title { color: #fff; font-weight: 600; }
         .no-stream-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; color: #8a99ad; font-size: 18px; font-weight: bold; background: #0f1115; z-index: 5; }
 
-        /* TELJES KÉPERNYŐS EGÉR-ÉRZÉKELŐ SÁVOK */
         .fs-trigger-top { position: absolute; top: 0; left: 0; width: 100%; height: 60px; z-index: 101; display: none; }
         .fs-trigger-bottom { position: absolute; bottom: 0; left: 0; width: 100%; height: 60px; z-index: 101; display: none; }
 
-        /* NATIVE FULLSCREEN STÍLUSOK KIHELYEZÉSKOR */
+        /* TELJES KÉPERNYŐS ELRENDEZÉS */
         .tv-container:fullscreen { width: 100vw !important; height: 100vh !important; max-width: none !important; max-height: none !important; border-radius: 0 !important; border: none !important; }
         .tv-container:fullscreen .channel-selector { position: absolute; top: -100px; left: 5%; width: 90%; background: rgba(24,29,38,0.95); padding: 15px; border-radius: 0 0 12px 12px; border: 1px solid var(--border-color); border-top: none; }
         .tv-container:fullscreen .info-bar { position: absolute; bottom: -150px; left: 5%; width: 90%; background: rgba(24,29,38,0.95); border-radius: 12px 12px 0 0; }
         .tv-container:fullscreen .epg-panel { position: absolute; bottom: 100px; left: 5%; width: 90%; background: rgba(17,20,26,0.95); max-height: 40vh; overflow-y: auto; display: none !important; }
 
-        /* INTERAKTÍV CSÚSZKA EFFEKTEK EGÉRRE */
         .tv-container:fullscreen .fs-trigger-top:hover ~ .channel-selector,
         .tv-container:fullscreen .channel-selector:hover { top: 0px; }
         
@@ -76,7 +73,7 @@
 
     <div id="noStreamOverlay" class="no-stream-overlay">📡 Csatorna betöltése...</div>
     <img id="tvWatermark" class="tv-watermark" alt="Logo">
-    <div id="mediaPlaceholder" style="width:100%; height:100%; z-index: 1;"></div>
+    <div id="mediaPlaceholder" style="width:100%; height:100%; position: absolute; top:0; left:0; z-index: 1;"></div>
 </div>
 
 <div class="info-bar" id="mainInfoBar">
@@ -143,14 +140,15 @@ document.addEventListener('fullscreenchange', () => {
     setTimeout(updateLogoScale, 150);
 });
 
-// ARÁNYOS LOGÓ MÉRETEZŐ ÉS POZICIONÁLÓ (TISZTA SZÁZALÉK ALAPON)
+// TISZTA SZÁZALÉK ALAPÚ ARÁNYOSÍTÁS (KÖZVETLENÜL A CSS SZÉLESSÉGHEZ)
 function updateLogoScale() {
     if (!currentLogoConfig || !currentLogoConfig.url) return;
     
+    // Vesszük a lejátszó mindenkori szélességét
     const currentContainerWidth = container.clientWidth;
     
-    // Az admin monitor 440px-es szélességéhez viszonyított arány kiszámítása
-    const sizePercent = (currentLogoConfig.size / 440) * 100;
+    // Ha a beállított érték pl. 60, az a lejátszó szélességének a 6%-a lesz (osztva 10-zel a finomabb skáláért)
+    const sizePercent = currentLogoConfig.size / 10;
     const finalSizePx = (currentContainerWidth * sizePercent) / 100;
     
     watermark.style.width = finalSizePx + 'px';
