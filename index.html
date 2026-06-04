@@ -18,8 +18,17 @@
         
         iframe, video { width: 100%; height: 100%; border: none; background: #000; position: absolute; top: 0; left: 0; z-index: 1 !important; }
         
-        /* FIXÁLT REÁLIS MÉRETŰ LOGÓ - MAXIMUM RÉTEGRENDDEL */
-        .tv-watermark { position: absolute; opacity: 0.9; pointer-events: none; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.9)); z-index: 999999999 !important; display: none; }
+        /* FIX, AUTOMATIKUSAN ARÁNYOS CSS LOGÓ */
+        .tv-watermark { 
+            position: absolute; 
+            width: 18% !important; /* A VIDEÓABLAK SZÉLESSÉGÉNEK PONTOSAN A 18%-A LESZ MINDIG */
+            height: auto !important;
+            opacity: 0.9; 
+            pointer-events: none; 
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.9)); 
+            z-index: 999999999 !important; 
+            display: none; 
+        }
         
         /* INFO SÁV */
         .info-bar { width: 100%; max-width: 1000px; background: var(--panel-color); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-top: 20px; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; transition: all 0.3s ease; z-index: 100; }
@@ -122,7 +131,7 @@ function toggleNativeFullscreen() {
         container.appendChild(document.getElementById('channelButtonsContainer'));
         container.appendChild(document.getElementById('mainInfoBar'));
         container.appendChild(epgPanel);
-        container.requestFullscreen().then(() => setTimeout(updateLogoScale, 150)).catch(err => console.log(err));
+        container.requestFullscreen().catch(err => console.log(err));
         document.querySelectorAll('.fs-trigger-top, .fs-trigger-bottom').forEach(el => el.style.display = 'block');
     } else {
         document.exitFullscreen();
@@ -137,33 +146,7 @@ document.addEventListener('fullscreenchange', () => {
         document.querySelectorAll('.fs-trigger-top, .fs-trigger-bottom').forEach(el => el.style.display = 'none');
         epgPanel.style.display = 'none';
     }
-    setTimeout(updateLogoScale, 150);
 });
-
-// A LOGÓ MÉRETEZŐ LOGIKA JAVÍTÁSA
-function updateLogoScale() {
-    if (!currentLogoConfig || !currentLogoConfig.url) return;
-    
-    const currentContainerWidth = container.clientWidth;
-    const baseNormalWidth = 1000; 
-    
-    if (!document.fullscreenElement) {
-        // Normál módban hajszálpontosan akkora pixelméret, mint az adminban
-        watermark.style.width = currentLogoConfig.size + 'px';
-    } else {
-        // Teljes képernyőn arányosan felnagyítja magát a kijelző szélességéhez képest
-        const scaleFactor = currentContainerWidth / baseNormalWidth;
-        const finalSizePx = currentLogoConfig.size * scaleFactor;
-        
-        watermark.style.width = finalSizePx + 'px';
-    }
-    
-    watermark.style.height = 'auto';
-    watermark.style.top = currentLogoConfig.topPercent + '%';
-    watermark.style.left = currentLogoConfig.leftPercent + '%';
-}
-
-window.addEventListener('resize', () => setTimeout(updateLogoScale, 50));
 
 function switchChannel(channelId) {
     activeChannel = channelId;
@@ -185,7 +168,10 @@ async function runTvEngine() {
             currentLogoConfig = config.logo;
             watermark.src = config.logo.url;
             watermark.style.display = 'block';
-            updateLogoScale();
+            
+            // CSAK A POZÍCIÓT HÚZZUK BE A JSON-BŐL, A MÉRETET A CSS KORLÁTOZZA FIX 18%-RA
+            watermark.style.top = config.logo.topPercent + '%';
+            watermark.style.left = config.logo.leftPercent + '%';
         } else {
             watermark.style.display = 'none';
             currentLogoConfig = null;
