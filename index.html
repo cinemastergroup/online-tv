@@ -2,33 +2,29 @@
 <html lang="hu">
 <head>
     <meta charset="UTF-8">
-    <title>CineMaster Stream - Intelligens Lejátszó</title>
+    <title>CineMaster Stream - Arányos Logó Lejátszó</title>
     <style>
         :root { --bg-color: #0f1115; --panel-color: #181d26; --accent-color: #536dfe; --text-color: #e3e8f0; --border-color: #262f3d; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; transition: background 0.3s; }
         
-        /* CSATORNA GOMBOK KONTÉNERE */
         .channel-selector { display: flex; gap: 10px; margin-bottom: 20px; width: 100%; max-width: 1000px; justify-content: flex-start; overflow-x: auto; padding-bottom: 5px; transition: all 0.3s ease; z-index: 100; }
         .channel-btn { background: #2c323f; color: #a4b3c6; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; white-space: nowrap; }
         .channel-btn:hover { background: #3d4556; color: #fff; }
         .channel-btn.active { background: var(--accent-color); color: white; }
 
-        /* A LEJÁTSZÓ KÖZPONTI DOBOZA */
         .tv-container { position: relative; width: 100%; max-width: 1000px; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 12px 36px rgba(0,0,0,0.5); border: 1px solid var(--border-color); display: flex; justify-content: center; align-items: center; }
         
         iframe, video { width: 100%; height: 100%; border: none; background: #000; }
         
-        /* FIX LOGÓ - EZ MOST MÁR MINDIG LÁTSZANI FOG */
-        .tv-watermark { position: absolute; top: 5%; left: 5%; width: 60px; opacity: 0.85; pointer-events: none; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.9)); z-index: 99; display: none; }
+        /* DINAMIKUSAN MÉRETEZETT LOGÓ */
+        .tv-watermark { position: absolute; opacity: 0.85; pointer-events: none; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.9)); z-index: 99; display: none; }
         
-        /* INFÓ SÁV */
         .info-bar { width: 100%; max-width: 1000px; background: var(--panel-color); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-top: 20px; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; transition: all 0.3s ease; z-index: 100; }
         .info-left { display: flex; flex-direction: column; }
         .badge-live { background: #ff1744; color: white; font-size: 10px; font-weight: bold; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; width: max-content; margin-bottom: 8px; }
         .show-title { font-size: 20px; font-weight: bold; color: #fff; margin-bottom: 4px; }
         .time-info { font-family: monospace; font-size: 13px; color: #8a99ad; }
         
-        /* EPG / FULLSCREEN GOMBOK */
         .controls-right { display: flex; gap: 10px; }
         .btn-epg { background: #304ffe; color: white; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
         .btn-epg:hover { background: #1a237e; }
@@ -42,17 +38,14 @@
         .epg-track-title { color: #fff; font-weight: 600; }
         .no-stream-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; color: #8a99ad; font-size: 18px; font-weight: bold; background: #0f1115; z-index: 5; }
 
-        /* INTERAKTÍV ÉRZÉKELŐK TELJES KÉPERNYŐHÖZ (EGÉR MOZGATÁSRA) */
         .fs-trigger-top { position: absolute; top: 0; left: 0; width: 100%; height: 60px; z-index: 101; display: none; }
         .fs-trigger-bottom { position: absolute; bottom: 0; left: 0; width: 100%; height: 60px; z-index: 101; display: none; }
 
-        /* TISZTA TELJES KÉPERNYŐS STÍLUSOK (HA AKTÍV) */
         .tv-container:fullscreen { width: 100vw !important; height: 100vh !important; max-width: none !important; max-height: none !important; border-radius: 0 !important; border: none !important; }
         .tv-container:fullscreen .channel-selector { position: absolute; top: -100px; left: 5%; width: 90%; background: rgba(24,29,38,0.95); padding: 15px; border-radius: 0 0 12px 12px; border: 1px solid var(--border-color); border-top: none; }
         .tv-container:fullscreen .info-bar { position: absolute; bottom: -150px; left: 5%; width: 90%; background: rgba(24,29,38,0.95); border-radius: 12px 12px 0 0; }
         .tv-container:fullscreen .epg-panel { position: absolute; bottom: 100px; left: 5%; width: 90%; background: rgba(17,20,26,0.95); max-height: 40vh; overflow-y: auto; display: none !important; }
 
-        /* REJTETT ELEMEK MEGJELENÍTÉSE EGÉRRE TELJES KÉPERNYŐN */
         .tv-container:fullscreen .fs-trigger-top:hover ~ .channel-selector,
         .tv-container:fullscreen .channel-selector:hover { top: 0px; }
         
@@ -108,6 +101,7 @@ const mediaPlaceholder = document.getElementById('mediaPlaceholder');
 
 let activeChannel = 'cinemaster';
 let lastRenderedUrl = '';
+let currentLogoConfig = null;
 
 function parseLocalISO(isoStr) {
     let clean = isoStr.replace('Z', '');
@@ -119,21 +113,18 @@ function toggleEpg() {
     epgPanel.style.display = (epgPanel.style.display === 'none') ? 'block' : 'none';
 }
 
-// INTELLIGENS TELJES KÉPERNYŐ KAPCSOLÓ (A KÓD MOZGATJA ÁT A GOMBOKAT)
 function toggleNativeFullscreen() {
     if (!document.fullscreenElement) {
         container.appendChild(document.getElementById('channelButtonsContainer'));
         container.appendChild(document.getElementById('mainInfoBar'));
         container.appendChild(epgPanel);
-        
-        container.requestFullscreen().catch(err => console.log(err));
+        container.requestFullscreen().then(() => setTimeout(updateLogoScale, 100)).catch(err => console.log(err));
         document.querySelectorAll('.fs-trigger-top, .fs-trigger-bottom').forEach(el => el.style.display = 'block');
     } else {
         document.exitFullscreen();
     }
 }
 
-// HA KILÉPÜNK A TELJES KÉPERNYŐBŐL, MINDENT VISSZAPAKOLUNK AZ EREDETI HELYÉRE
 document.addEventListener('fullscreenchange', () => {
     if (!document.fullscreenElement) {
         document.body.insertBefore(document.getElementById('channelButtonsContainer'), container);
@@ -142,7 +133,31 @@ document.addEventListener('fullscreenchange', () => {
         document.querySelectorAll('.fs-trigger-top, .fs-trigger-bottom').forEach(el => el.style.display = 'none');
         epgPanel.style.display = 'none';
     }
+    setTimeout(updateLogoScale, 100);
 });
+
+// ARÁNYOS LOGÓ MÉRETEZŐ ÉS POZICIONÁLÓ FÜGGVÉNY
+function updateLogoScale() {
+    if (!currentLogoConfig || !currentLogoConfig.url) return;
+    
+    // Az admin monitorablak alapértelmezett szélessége (ahol a méretet beállítottad) 440px volt
+    const adminBaseWidth = 440; 
+    const currentContainerWidth = container.clientWidth;
+    
+    // Kiszámoljuk a nagyítási szorzót az admin ablakhoz képest
+    const scaleFactor = currentContainerWidth / adminBaseWidth;
+    
+    // Beállítjuk a skálázott pixelméretet
+    const finalSize = currentLogoConfig.size * scaleFactor;
+    watermark.style.width = finalSize + 'px';
+    
+    // Pozicionálás százalékosan a konténer aktuális méretében
+    watermark.style.top = currentLogoConfig.topPercent + '%';
+    watermark.style.left = currentLogoConfig.leftPercent + '%';
+}
+
+// Ha átméretezik a böngészőt, igazodjon a logó is
+window.addEventListener('resize', updateLogoScale);
 
 function switchChannel(channelId) {
     activeChannel = channelId;
@@ -161,13 +176,13 @@ async function runTvEngine() {
         const config = await response.json();
         
         if (config.logo && config.logo.url) {
+            currentLogoConfig = config.logo;
             watermark.src = config.logo.url;
-            watermark.style.width = config.logo.size + 'px';
-            watermark.style.top = config.logo.topPercent + '%';
-            watermark.style.left = config.logo.leftPercent + '%';
             watermark.style.display = 'block';
+            updateLogoScale();
         } else {
             watermark.style.display = 'none';
+            currentLogoConfig = null;
         }
 
         const now = new Date();
