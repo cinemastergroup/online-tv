@@ -2,16 +2,22 @@
 <html lang="hu">
 <head>
     <meta charset="UTF-8">
-    <title>CineMaster Stream - Élő Adás</title>
+    <title>CineMaster Stream - Beágyazott Élő Adás</title>
     <style>
         :root { --bg-color: #0f1115; --panel-color: #181d26; --accent-color: #536dfe; --text-color: #e3e8f0; --border-color: #262f3d; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        
         .channel-selector { display: flex; gap: 10px; margin-bottom: 20px; width: 100%; max-width: 1000px; justify-content: flex-start; overflow-x: auto; padding-bottom: 5px; }
         .channel-btn { background: #2c323f; color: #a4b3c6; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; white-space: nowrap; }
         .channel-btn:hover { background: #3d4556; color: #fff; }
         .channel-btn.active { background: var(--accent-color); color: white; }
+
+        /* LEJÁTSZÓ KONTÉNER */
         .tv-container { position: relative; width: 100%; max-width: 1000px; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 12px 36px rgba(0,0,0,0.5); border: 1px solid var(--border-color); }
-        video { width: 100%; height: 100%; object-fit: contain; }
+        
+        /* IFRAME ÉS VIDEO STÍLUSOK */
+        iframe, video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; background: #000; }
+        
         .tv-watermark { position: absolute; top: 5%; left: 5%; width: 60px; opacity: 0.7; pointer-events: none; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8)); z-index: 10; display: none; }
         .info-bar { width: 100%; max-width: 1000px; background: var(--panel-color); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-top: 20px; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; }
         .info-left { display: flex; flex-direction: column; }
@@ -38,10 +44,10 @@
     <button class="channel-btn" onclick="switchChannel('besthitstv')">Best Hits TV</button>
 </div>
 
-<div class="tv-container">
+<div class="tv-container" id="playerWrapper">
     <div id="noStreamOverlay" class="no-stream-overlay">📡 Csatorna betöltése...</div>
     <img id="tvWatermark" class="tv-watermark" alt="Logo">
-    <video id="tvEngine" controls autoplay muted crossorigin="anonymous"></video>
+    <div id="mediaPlaceholder"></div>
 </div>
 
 <div class="info-bar">
@@ -59,16 +65,16 @@
 </div>
 
 <script>
-const videoElement = document.getElementById('tvEngine');
 const overlay = document.getElementById('noStreamOverlay');
 const watermark = document.getElementById('tvWatermark');
 const lblShow = document.getElementById('lblShow');
 const lblTime = document.getElementById('lblTime');
 const epgPanel = document.getElementById('epgPanel');
 const epgRowsContainer = document.getElementById('epgRowsContainer');
+const mediaPlaceholder = document.getElementById('mediaPlaceholder');
 
 let activeChannel = 'cinemaster';
-let targetOffset = 0;
+let lastRenderedUrl = '';
 
 function parseLocalISO(isoStr) {
     let clean = isoStr.replace('Z', '');
@@ -82,19 +88,12 @@ function toggleEpg() {
 
 function switchChannel(channelId) {
     activeChannel = channelId;
+    lastRenderedUrl = '';
     document.querySelectorAll('.channel-btn').forEach(btn => btn.classList.remove('active'));
     const clickedBtn = Array.from(document.querySelectorAll('.channel-btn')).find(btn => btn.getAttribute('onclick').includes(channelId));
     if(clickedBtn) clickedBtn.classList.add('active');
     runTvEngine();
 }
-
-// BIZTONSÁGI IDŐUGRÁS, AMINT A VIDEÓ BETÖLTÖTT A MEMÓRIÁBA
-videoElement.addEventListener('loadedmetadata', () => {
-    if (targetOffset > 0) {
-        videoElement.currentTime = targetOffset;
-        targetOffset = 0; // Alaphelyzetbe állítjuk az ugrót
-    }
-});
 
 async function runTvEngine() {
     try {
@@ -140,42 +139,57 @@ async function runTvEngine() {
             const startTimestamp = parseLocalISO(currentTrack.start);
             lblTime.innerText = `Kezdés: ${String(startTimestamp.getHours()).padStart(2,'0')}:${String(startTimestamp.getMinutes()).padStart(2,'0')}`;
 
-            if (videoElement.src !== currentTrack.url) {
-                targetOffset = currentOffset; // Eltároljuk a metaadatok betöltődéséig
-                videoElement.src = currentTrack.url;
+            // HA ARCHIVE.ORG LINK JÖN, GENERÁLUNK EGY BEÁGYAZOTT LEJÁTSZÓT (IFRAME)
+            if (currentTrack.url !== lastRenderedUrl) {
+                lastRenderedUrl = currentTrack.url;
                 
-                videoElement.play().catch(() => {
-                    videoElement.muted = true;
-                    videoElement.play().catch(err => console.log(err));
-                });
-            } else {
-                // Futó lejátszás finomhangolása Archive.org-barát módon
-                if (Math.abs(videoElement.currentTime - currentOffset) > 10 && videoElement.readyState >= 2) {
-                    videoElement.currentTime = currentOffset;
+                if (currentTrack.url.includes('archive.org')) {
+                    // Kinyerjük az azonosítót az Archive.org linkből (pl: cinemaster-300)
+                    let archiveId = '';
+                    if (currentTrack.url.includes('/download/')) {
+                        archiveId = currentTrack.url.split('/download/')[1].split('/')[0];
+                    } else if (currentTrack.url.includes('/details/')) {
+                        archiveId = currentTrack.url.split('/details/')[1].split('/')[0];
+                    }
+                    
+                    if (archiveId) {
+                        // Kiszámoljuk a kezdő másodpercet az Archive.org paraméteréhez (?start=másodperc)
+                        const startSeconds = Math.round(currentOffset);
+                        mediaPlaceholder.innerHTML = `<iframe src="https://archive.org/embed/${archiveId}?start=${startSeconds}&autoplay=1" allowfullscreen></iframe>`;
+                    } else {
+                        // Biztonsági mentés ha nem tudtuk vágni a linket
+                        mediaPlaceholder.innerHTML = `<video src="${currentTrack.url}" controls autoplay muted></video>`;
+                    }
+                } else {
+                    // Ha nem archive.org link (pl. Backblaze vagy egyéb nyers mp4), marad a sima video elem
+                    mediaPlaceholder.innerHTML = `<video id="tvEngine" controls autoplay muted src="${currentTrack.url}"></video>`;
+                    const vid = document.getElementById('tvEngine');
+                    vid.currentTime = currentOffset;
+                    vid.play().catch(() => { vid.muted = true; vid.play().catch(()=>{}); });
                 }
             }
         } else {
-            videoElement.pause();
-            videoElement.removeAttribute('src');
+            mediaPlaceholder.innerHTML = '';
             overlay.style.display = 'flex';
             overlay.innerText = "📡 Jelenleg nincs adás ezen a csatornán.";
             lblShow.innerText = "Adásszünet";
             lblTime.innerText = "Kezdés: --:--";
+            watermark.style.display = 'none';
         }
 
     } catch (error) {
+        mediaPlaceholder.innerHTML = '';
         overlay.style.display = 'flex';
         overlay.innerText = "📡 Jelenleg nincs aktív adásfájl.";
         lblShow.innerText = "Adásszünet";
         lblTime.innerText = "Kezdés: --:--";
         watermark.style.display = 'none';
-        videoElement.pause();
-        videoElement.removeAttribute('src');
     }
 }
 
 runTvEngine();
-setInterval(runTvEngine, 5000);
+// Ritkítjuk a frissítést 15 másodpercre, hogy ne rángassa az iframe-et feleslegesen
+setInterval(runTvEngine, 15000);
 </script>
 </body>
 </html>
