@@ -55,7 +55,7 @@
         .badge-live { background: #ff1744; color: white; font-size: 10px; font-weight: bold; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; width: max-content; margin-bottom: 4px; }
         .show-title { font-size: 22px; font-weight: bold; color: #fff; }
         
-        /* ALAP IDŐINFÓ STÍLUS - NAGYOBB, OLVASHATÓBB BETŰSTÍLUS */
+        /* ALAP IDŐINFÓ STÍLUS */
         .time-info { font-size: 18px; font-weight: bold; color: #8a99ad; margin-left: 15px; }
         
         /* KONTROLL GOMBOK CSOPORTJA */
@@ -71,8 +71,8 @@
         .channel-btn:hover { background: #323a4b; color: #fff; border-color: #536dfe; }
         .channel-btn.active { background: var(--accent-color); color: white; border-color: var(--accent-color); box-shadow: 0 0 15px rgba(83, 109, 254, 0.4); }
 
-        /* KÖZÉPSŐ POPUP MŰSORÚJSÁG - MAXIMUMRA EMELT RÉTEGREND TELJES KÉPERNYŐHÖZ */
-        .epg-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 2000000000 !important; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        /* KÖZÉPSŐ POPUP MŰSORÚJSÁG - EXTRÉM REÁLIS RÉTEGRENDELÉS */
+        .epg-modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 2000000000 !important; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
         .epg-modal-overlay.active { opacity: 1; pointer-events: auto; display: flex; justify-content: center; align-items: center; }
         
         .epg-modal { width: 90%; max-width: 650px; background: #12161f; border: 1px solid var(--border-color); border-radius: 16px; padding: 25px; box-sizing: border-box; box-shadow: 0 20px 50px rgba(0,0,0,0.8); max-height: 80vh; display: flex; flex-direction: column; }
@@ -82,7 +82,7 @@
         
         .epg-rows-container { overflow-y: auto; flex-grow: 1; padding-right: 5px; }
         
-        /* MEGNÖVELT, JÓL OLVASHATÓ, VASTAG EPG SOROK STÍLUSA */
+        /* MEGNÖVELT, VASTAG EPG SOROK STÍLUSA */
         .epg-row { display: flex; align-items: center; padding: 14px 12px; border-bottom: 1px solid #1f2633; font-size: 18px; font-weight: bold; }
         .epg-row:last-child { border-bottom: none; }
         .epg-time { color: #ffb300; font-weight: bold; min-width: 90px; font-size: 19px; }
@@ -124,15 +124,15 @@
             <button class="channel-btn" onclick="switchChannel('besthitstv')">Best Hits TV</button>
         </div>
     </div>
-</div>
 
-<div id="epgModalOverlay" class="epg-modal-overlay" onclick="toggleEpg(false)">
-    <div class="epg-modal" onclick="event.stopPropagation()">
-        <div class="epg-header">
-            <h3 class="epg-title" id="epgModalTitle">Műsorújság</h3>
-            <button class="btn-close-epg" onclick="toggleEpg(false)">Bezárás ✕</button>
+    <div id="epgModalOverlay" class="epg-modal-overlay" onclick="toggleEpg(false)">
+        <div class="epg-modal" onclick="event.stopPropagation()">
+            <div class="epg-header">
+                <h3 class="epg-title" id="epgModalTitle">Műsorújság</h3>
+                <button class="btn-close-epg" onclick="toggleEpg(false)">Bezárás ✕</button>
+            </div>
+            <div id="epgRowsContainer" class="epg-rows-container"></div>
         </div>
-        <div id="epgRowsContainer" class="epg-rows-container"></div>
     </div>
 </div>
 
@@ -159,7 +159,6 @@ function parseLocalISO(isoStr) {
 
 function toggleEpg(show) {
     if (show) {
-        // Dinamikusan kiírjuk a mai dátumot az új formátumban
         const ma = new Date();
         const ev = ma.getFullYear();
         const ho = String(ma.getMonth() + 1).padStart(2, '0');
@@ -246,7 +245,6 @@ async function runTvEngine() {
             overlay.style.display = 'none';
             lblShow.innerText = currentTrack.title;
             
-            // KISZÁMOLJUK A KEZDÉSI ÉS VÉGZŐDÉSI IDŐPONTOT AZ ALSÓ SÁVRA
             const startTimestamp = parseLocalISO(currentTrack.start);
             const endTimestamp = new Date(startTimestamp.getTime() + currentTrack.duration * 1000);
             
@@ -255,7 +253,6 @@ async function runTvEngine() {
             const endHr = String(endTimestamp.getHours()).padStart(2, '0');
             const endMin = String(endTimestamp.getMinutes()).padStart(2, '0');
             
-            // Kiírjuk a kért formátumban: "23:00 - 00:47"
             lblTime.innerText = `${startHr}:${startMin} - ${endHr}:${endMin}`;
 
             if (currentTrack.url !== lastRenderedUrl) {
@@ -270,7 +267,6 @@ async function runTvEngine() {
                     }
                     
                     if (archiveId) {
-                        // Kiszámoljuk az offset másodpercet az adáshoz igazítva
                         const trackStart = parseLocalISO(currentTrack.start);
                         const currentOffset = (now.getTime() - trackStart.getTime()) / 1000;
                         const startSeconds = Math.round(currentOffset);
