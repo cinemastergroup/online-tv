@@ -2,325 +2,155 @@
 <html lang="hu">
 <head>
     <meta charset="UTF-8">
-    <title>CineMaster Smart TV Player with EPG</title>
+    <title>Online TV Hálózat - Élő Adások</title>
     <style>
-        body { margin: 0; background: #000; color: #fff; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
-        
-        /* A TELJES KÉPERNYŐS KONTÉNER */
-        .video-container { 
-            position: relative; 
-            width: 100vw; 
-            height: 100vh; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            background: #000;
-        }
-
-        video { 
-            width: 100%; 
-            height: 100%; 
-            object-fit: contain; 
-        }
-
-        /* DINAMIKUS TÉVÉ LOGÓ */
-        .tv-logo { 
-            position: absolute; 
-            z-index: 9999; 
-            pointer-events: none; 
-            filter: drop-shadow(0 2px 5px rgba(0,0,0,0.7));
-            transition: width 0.2s;
-        }
-
-        /* OKOS CSATORNAVÁLTÓ SÁV (EGÉRHÚZÁSRA JELENIK MEG) */
-        .tv-control-bar {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            background: linear-gradient(to top, rgba(0,0,0,0.95) 80%, rgba(0,0,0,0));
-            padding: 25px;
-            box-sizing: border-box;
-            display: flex;
-            gap: 12px;
-            align-items: center;
-            z-index: 10000;
-            opacity: 0; 
-            transition: opacity 0.3s;
-        }
-
-        /* Amikor az egeret leviszed az ablak aljára, megjelenik a menü */
-        .video-container:hover .tv-control-bar {
-            opacity: 1;
-        }
-
-        .channel-btn, .action-btn {
-            background: #1f2633;
-            color: #fff;
-            border: 1px solid #3d495e;
-            padding: 10px 18px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 13px;
-            transition: 0.2s;
-        }
-        .channel-btn:hover, .channel-btn.active {
-            background: #536dfe;
-            border-color: #536dfe;
-            box-shadow: 0 0 10px rgba(83,109,254,0.5);
-        }
-
-        .action-btn { background: #2c323f; border-color: #444; }
-        .action-btn:hover { background: #00b0ff; border-color: #00b0ff; }
-        .epg-active-btn { background: #ffb300 !important; color: #000 !important; border-color: #ffb300 !important; font-weight: bold; }
-
-        /* MODERN TÉVÉS EPG PANEL */
-        .epg-overlay {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 500px;
-            max-height: 400px;
-            background: rgba(15, 17, 21, 0.92);
-            border: 1px solid #262f3d;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
-            z-index: 10005;
-            display: none; 
-            overflow-y: auto;
-        }
-        .epg-header {
-            font-size: 18px;
-            font-weight: bold;
-            border-bottom: 1px solid #262f3d;
-            padding-bottom: 10px;
-            margin-bottom: 15px;
-            color: #ffb300;
-            display: flex;
-            justify-content: space-between;
-        }
-        .epg-row {
-            display: flex;
-            padding: 10px;
-            border-bottom: 1px solid #181d26;
-            align-items: center;
-            font-size: 14px;
-        }
-        .epg-row.live {
-            background: rgba(83, 109, 254, 0.15);
-            border-left: 3px solid #536dfe;
-            border-radius: 0 4px 4px 0;
-        }
-        .epg-time {
-            font-family: monospace;
-            font-weight: bold;
-            color: #00e676;
-            min-width: 80px;
-        }
-        .epg-title {
-            font-weight: 500;
-            color: #fff;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            flex-grow: 1;
-            margin-right: 10px;
-        }
-        .epg-live-tag {
-            font-size: 10px;
-            background: #ff3d00;
-            color: white;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
+        :root { --bg-color: #0f1115; --panel-color: #181d26; --accent-color: #536dfe; --text-color: #e3e8f0; --border-color: #262f3d; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .channel-selector { display: flex; gap: 10px; margin-bottom: 20px; width: 100%; max-width: 960px; overflow-x: auto; padding-bottom: 10px; }
+        .channel-btn { background: #262f3d; border: 1px solid var(--border-color); color: #fff; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.2s; white-space: nowrap; }
+        .channel-btn.active { background: var(--accent-color); border-color: var(--accent-color); }
+        .channel-btn:hover { background: #3d5afe; }
+        .tv-container { width: 100%; max-width: 960px; background: var(--panel-color); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .video-box { position: relative; width: 100%; aspect-ratio: 16/9; background: #000; }
+        video { width: 100%; height: 100%; }
+        .tv-watermark { position: absolute; opacity: 0.7; pointer-events: none; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8)); z-index: 10; }
+        .info-bar { display: flex; justify-content: space-between; align-items: center; padding: 20px; background: #11141a; border-top: 1px solid var(--border-color); }
+        .current-show-info { display: flex; flex-direction: column; gap: 4px; }
+        .live-badge { display: inline-block; background: #d32f2f; color: white; font-size: 11px; font-weight: bold; padding: 2px 6px; border-radius: 3px; width: fit-content; text-transform: uppercase; }
+        .show-title { font-size: 18px; font-weight: bold; color: #fff; margin-top: 4px; }
+        .show-time { font-size: 13px; color: #8a99ad; font-family: monospace; }
+        .epg-btn { background: var(--accent-color); color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
+        .epg-panel { display: none; background: #11141a; border-top: 1px solid var(--border-color); padding: 20px; max-height: 250px; overflow-y: auto; }
+        .epg-row { display: flex; padding: 10px; border-bottom: 1px solid var(--border-color); font-size: 14px; }
+        .epg-row.active { background: rgba(83, 109, 254, 0.1); border-left: 3px solid var(--accent-color); }
+        .epg-time { font-weight: bold; color: #ffb300; min-width: 140px; font-family: monospace; }
+        .epg-title { color: #fff; flex-grow: 1; }
     </style>
 </head>
 <body>
 
-<div class="video-container" id="mainVisualContainer">
-    <img id="tvLogoElement" class="tv-logo" src="" style="display: none;" alt="Logo">
-    
-    <video id="tvEngine" autoplay muted playsinline></video>
-    
-    <div id="epgModalWindow" class="epg-overlay">
-        <div class="epg-header">
-            <span id="epgChannelNameTitle">Műsorújság</span>
-            <span style="font-size: 12px; color: #627288; cursor:pointer;" onclick="toggleEPG()">[Bezárás]</span>
+<div class="channel-selector" id="channelButtonsContainer">Csatornák betöltése...</div>
+
+<div class="tv-container">
+    <div class="video-box">
+        <img id="viewerLogo" class="tv-watermark" style="display:none;" alt="Logo">
+        <video id="tvEngine" controls autoplay muted></video>
+    </div>
+    <div class="info-bar">
+        <div class="current-show-info">
+            <div class="live-badge">Élő adás</div>
+            <div id="liveTitle" class="show-title">Kérlek válassz csatornát!</div>
+            <div id="liveTime" class="show-time">--:--</div>
         </div>
-        <div id="epgRowsContainer">
-            </div>
+        <button class="epg-btn" onclick="toggleEPG()">Műsorújság (EPG) 📅</button>
     </div>
-    
-    <div class="tv-control-bar">
-        <div style="font-size: 11px; color: #8a99ad; font-weight: bold; text-transform: uppercase; margin-right: 10px;">Csatornák:</div>
-        <div id="channelButtonsContainer" style="display: flex; gap: 8px;">
-            </div>
-        
-        <button id="epgToggleBtn" class="action-btn" onclick="toggleEPG()" style="margin-left: auto;">📅 Műsorújság (EPG)</button>
-        
-        <button class="action-btn" onclick="toggleSmartFullscreen()">📺 Valódi Teljes Képernyő</button>
-    </div>
+    <div id="epgPanel" class="epg-panel"></div>
 </div>
 
 <script>
-let currentChannelId = ""; 
-let currentChannelName = "";
-let playlist = [];
-let logoData = {};
-let masterChannels = [];
+let activeChannelData = null;
+let currentActiveId = null;
 
-// 1. Csatornalista betöltése
-fetch(`channels.json?v=${Date.now()}`)
-    .then(r => r.json())
-    .then(channels => {
-        masterChannels = channels;
-        buildChannelButtons();
-        if(masterChannels.length > 0) {
-            switchChannel(masterChannels[0].id, masterChannels[0].name);
-        }
-    });
+async function loadChannelList() {
+    try {
+        const response = await fetch('channels.json?t=' + new Date().getTime());
+        const channels = await response.json();
+        buildChannelMenu(channels);
+    } catch (error) {
+        document.getElementById('channelButtonsContainer').innerText = "Hiba a csatornalista betöltésekor.";
+    }
+}
 
-function buildChannelButtons() {
+function buildChannelMenu(channels) {
     const container = document.getElementById('channelButtonsContainer');
     container.innerHTML = '';
-    masterChannels.forEach(ch => {
+    if(channels.length === 0) return;
+    channels.forEach((ch, index) => {
         const btn = document.createElement('button');
-        btn.className = `channel-btn ch-btn-${ch.id}`;
+        btn.className = 'channel-btn';
         btn.innerText = ch.name;
-        btn.onclick = () => switchChannel(ch.id, ch.name);
+        btn.onclick = () => switchChannel(ch.id, btn);
         container.appendChild(btn);
     });
+    switchChannel(channels[0].id, container.firstChild);
 }
 
-// 2. Csatornaváltás
-function switchChannel(id, name) {
-    currentChannelId = id;
-    currentChannelName = name;
-    
+async function switchChannel(channelId, buttonElement) {
+    currentActiveId = channelId;
     document.querySelectorAll('.channel-btn').forEach(b => b.classList.remove('active'));
-    const activeBtn = document.querySelector(`.ch-btn-${id}`);
-    if(activeBtn) activeBtn.classList.add('active');
+    buttonElement.classList.add('active');
+    document.getElementById('liveTitle').innerText = "Csatorna betöltése...";
+    document.getElementById('epgPanel').style.display = 'none';
 
-    fetch(`${id}.json?v=${Date.now()}`)
-        .then(r => r.json())
-        .then(data => {
-            logoData = data.logo;
-            playlist = data.schedule;
-            setupLogo();
-            syncExecution();
-            if(document.getElementById('epgModalWindow').style.display === "block") {
-                renderEPGData();
-            }
-        }).catch(() => {
-            document.getElementById('tvEngine').src = "";
-            document.getElementById('tvLogoElement').style.display = "none";
-            playlist = [];
-        });
+    try {
+        const response = await fetch(`${channelId}.json?t=${new Date().getTime()}`);
+        activeChannelData = await response.json();
+        setupLogo(activeChannelData.logo);
+        renderEPG(activeChannelData.schedule);
+        checkLiveStream();
+    } catch (error) {
+        document.getElementById('liveTitle').innerText = "Ez a csatorna jelenleg nem sugároz.";
+        document.getElementById('viewerLogo').style.display = 'none';
+        document.getElementById('tvEngine').src = "";
+        activeChannelData = null;
+    }
 }
 
-function setupLogo() {
-    const logoImg = document.getElementById('tvLogoElement');
-    if (!logoData || !logoData.url) { logoImg.style.display = "none"; return; }
-    logoImg.src = logoData.url;
-    logoImg.style.top = logoData.topPercent + "%";
-    logoImg.style.left = logoData.leftPercent + "%";
-    let baseWidthVw = (logoData.size / 600) * 100;
-    if(baseWidthVw < 3) baseWidthVw = 4;
-    logoImg.style.width = baseWidthVw + "vw";
-    logoImg.style.display = "block";
+function setupLogo(logoConfig) {
+    if (!logoConfig || !logoConfig.url) return;
+    const logoImg = document.getElementById('viewerLogo');
+    logoImg.src = logoConfig.url; logoImg.style.width = logoConfig.size + 'px';
+    logoImg.style.top = logoConfig.topPercent + '%'; logoImg.style.left = logoConfig.leftPercent + '%';
+    logoImg.style.display = 'block';
 }
 
-// 3. Időzítő motor
-function syncExecution() {
-    const video = document.getElementById('tvEngine');
-    if(playlist.length === 0) return;
-    
+function checkLiveStream() {
+    if (!activeChannelData || !activeChannelData.schedule) return;
+    const videoElement = document.getElementById('tvEngine');
     const now = new Date();
-    const currentVideo = playlist.find(track => {
-        const start = new Date(track.start);
-        const end = new Date(start.getTime() + track.duration * 1000);
-        return now >= start && now < end;
+    
+    const runningTracks = activeChannelData.schedule.filter(track => {
+        const trackStart = new Date(track.start);
+        const trackEnd = new Date(trackStart.getTime() + track.duration * 1000);
+        return now >= trackStart && now < trackEnd;
     });
 
-    if (currentVideo) {
-        const offset = (now.getTime() - new Date(currentVideo.start).getTime()) / 1000;
-        if (video.src !== currentVideo.url) {
-            video.src = currentVideo.url;
-            video.currentTime = offset;
-            video.play().catch(() => {});
-        } else if (Math.abs(video.currentTime - offset) > 3) {
-            video.currentTime = offset;
+    if (runningTracks.length > 0) {
+        const currentTrack = runningTracks.reduce((latest, track) => {
+            return new Date(track.start) > new Date(latest.start) ? track : latest;
+        }, runningTracks[0]);
+
+        const trackStart = new Date(currentTrack.start);
+        const currentOffset = (now.getTime() - trackStart.getTime()) / 1000;
+        
+        document.getElementById('liveTitle').innerText = currentTrack.title;
+        document.getElementById('liveTime').innerText = `Kezdés: ${trackStart.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
+
+        if (videoElement.src !== currentTrack.url) {
+            videoElement.src = currentTrack.url;
+            videoElement.currentTime = currentOffset;
+            videoElement.play().catch(() => {});
         }
+        highlightActiveEPG(currentTrack.start);
     } else {
-        video.src = "";
-        video.removeAttribute("src");
+        document.getElementById('liveTitle').innerText = "Jelenleg nincs adás ezen a csatornán";
+        document.getElementById('liveTime').innerText = "--:--";
+        videoElement.src = "";
     }
 }
 
-setInterval(() => {
-    if(currentChannelId) syncExecution();
-}, 1000);
-
-// 4. MŰSORÚJSÁG (EPG) LOGIKA
-function toggleEPG() {
-    const modal = document.getElementById('epgModalWindow');
-    const btn = document.getElementById('epgToggleBtn');
-    
-    if (modal.style.display === "none" || modal.style.display === "") {
-        modal.style.display = "block";
-        btn.classList.add('epg-active-btn');
-        renderEPGData();
-    } else {
-        modal.style.display = "none";
-        btn.classList.remove('epg-active-btn');
-    }
-}
-
-function renderEPGData() {
-    document.getElementById('epgChannelNameTitle').innerText = `📅 ${currentChannelName} - Műsor`;
-    const container = document.getElementById('epgRowsContainer');
-    container.innerHTML = '';
-    
-    if(playlist.length === 0) {
-        container.innerHTML = '<div style="padding:20px; text-align:center; color:#627288;">Nincs elérhető műsorterv.</div>';
-        return;
-    }
-    
-    const now = new Date();
-    
-    playlist.forEach(track => {
-        const startTime = new Date(track.start);
-        const endTime = new Date(startTime.getTime() + track.duration * 1000);
-        const timeString = startTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        
-        let isLive = (now >= startTime && now < endTime);
-        let rowClass = isLive ? "epg-row live" : "epg-row";
-        let liveTag = isLive ? '<span class="epg-live-tag">ÉLŐ</span>' : '';
-        
-        container.innerHTML += `
-            <div class="${rowClass}">
-                <div class="epg-time">${timeString}</div>
-                <div class="epg-title">${track.title}</div>
-                ${liveTag}
-            </div>
-        `;
+function renderEPG(schedule) {
+    const epgPanel = document.getElementById('epgPanel'); epgPanel.innerHTML = '';
+    schedule.forEach(track => {
+        const trackStart = new Date(track.start);
+        epgPanel.innerHTML += `<div class="epg-row" id="epg-${track.start}"><div class="epg-time">${trackStart.toLocaleDateString([], {month:'short', day: 'numeric'})} ${trackStart.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div><div class="epg-title">${track.title}</div></div>`;
     });
 }
+function highlightActiveEPG(activeStartId) { document.querySelectorAll('.epg-row').forEach(row => row.classList.remove('active')); const activeRow = document.getElementById(`epg-${activeStartId}`); if (activeRow) activeRow.classList.add('active'); }
+function toggleEPG() { const panel = document.getElementById('epgPanel'); panel.style.display = (panel.style.display === 'block') ? 'none' : 'block'; }
 
-function toggleSmartFullscreen() {
-    const container = document.getElementById('mainVisualContainer');
-    if (!document.fullscreenElement) {
-        container.requestFullscreen().catch(() => {});
-    } else {
-        document.exitFullscreen();
-    }
-}
+window.onload = loadChannelList;
+setInterval(() => { if(activeChannelData) checkLiveStream(); }, 5000);
 </script>
-
 </body>
 </html>
