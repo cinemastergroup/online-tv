@@ -2,7 +2,7 @@
 <html lang="hu">
 <head>
     <meta charset="UTF-8">
-    <title>Catcast Multi-Channel - Időzóna Fix Admin</title>
+    <title>CineMaster TV - Smart Admin Panel</title>
     <style>
         :root { --bg-color: #0f1115; --panel-color: #181d26; --accent-color: #536dfe; --text-color: #e3e8f0; --border-color: #262f3d; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; }
@@ -25,12 +25,21 @@
         .card-title { font-weight: 600; color: #fff; margin-bottom: 4px; font-size: 14px; }
         .card-url { font-size: 11px; color: #627288; word-break: break-all; }
         .card-duration { font-size: 12px; background: #11141a; padding: 4px 8px; border-radius: 4px; color: #a4b3c6; }
-        .btn-download { background: #00b0ff; margin-top: 15px; }
-        .btn-download:hover { background: #0091ea; }
-        .btn-create { background: #00e676; color: #000; }
-        .btn-create:hover { background: #00c853; }
+        
+        .btn-logo-save { background: #00b0ff; margin-top: 15px; border: 1px solid #0091ea; }
+        .btn-logo-save:hover { background: #0091ea; }
+        .btn-download { background: #00e676; color: #000; margin-top: 15px; }
+        .btn-download:hover { background: #00c853; }
+        .btn-create { background: #37474f; color: #fff; }
+        .btn-create:hover { background: #263238; }
+        
+        /* STÍLUS A BEOLVASÓ GOMBHOZ */
+        .btn-load { background: #ff9100; color: #000; font-weight: bold; }
+        .btn-load:hover { background: #ff6d00; }
+        
         input[type="range"] { padding: 0; height: 10px; background: #11141a; border: none; cursor: pointer; }
         .status-msg { margin-top: 8px; font-size: 13px; font-weight: bold; text-align: center; }
+        .section-divider { border: 0; height: 1px; background: var(--border-color); margin: 25px 0; }
     </style>
 </head>
 <body>
@@ -38,80 +47,96 @@
 <div class="dashboard">
     <div>
         <div class="panel">
-            <h2>✨ Új Csatorna Létrehozása</h2>
+            <h2>✨ Új Csatorna Rendszerbe Vétele</h2>
             <div class="input-row">
                 <div>
-                    <label>Csatorna Neve:</label>
-                    <input type="text" id="newChannelName" placeholder="pl. 🌿 Kert TV">
+                    <label>Csatorna Megjelenési Neve:</label>
+                    <input type="text" id="newChannelName" placeholder="pl. CineMaster Retro">
                 </div>
                 <div>
-                    <label>Technikai Azonosító:</label>
-                    <input type="text" id="newChannelId" placeholder="pl. kert_tv">
+                    <label>Fájl Azonosító (id):</label>
+                    <input type="text" id="newChannelId" placeholder="pl. retrotv">
                 </div>
             </div>
-            <button class="btn-create" onclick="createNewChannelConfig()">Csatorna hozzáadása és listafájl exportálása</button>
+            <button class="btn-create" onclick="createNewChannelConfig()">Csatorna regisztráció (channels.json)</button>
         </div>
 
         <div class="panel">
-            <h2>Élő Monitor</h2>
+            <h2>📺 Élő Monitor & Logó Pozicionáló</h2>
             <div class="video-box" id="videoBoxContainer">
                 <img id="channelLogoImg" src="https://upload.wikimedia.org/wikipedia/commons/a/ab/Logo_TV_2015.png" class="tv-watermark" alt="Logo">
                 <video id="catcastEngine" controls autoplay muted crossorigin="anonymous"></video>
             </div>
             
             <div style="margin-top: 20px; background: #11141a; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
-                <h3 style="margin-top:0; font-size: 14px; color:#fff;">Vizuális Logó Beállítások</h3>
+                <h3 style="margin-top:0; font-size: 14px; color:#fff;">Arculati Logó Beállítások</h3>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>Melyik csatornához mented a logót?:</label>
+                    <input type="text" id="logoChannelId" value="cinemaster">
+                </div>
                 <div class="form-group" style="margin-bottom: 15px;">
                     <label>Logó Kép URL (.png)</label>
                     <input type="text" id="logoUrlInput" value="https://upload.wikimedia.org/wikipedia/commons/a/ab/Logo_TV_2015.png" oninput="changeLogoSrc()">
                 </div>
-                <div class="form-group">
-                    <label>Logó Mérete: <span id="logoSizeVal" style="color:var(--accent-color); font-weight:bold;">60px</span></label>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>Logó Alapmérete: <span id="logoSizeVal" style="color:var(--accent-color); font-weight:bold;">60px</span></label>
                     <input type="range" id="logoSizeSlider" min="30" max="200" value="60" oninput="changeLogoSize()">
                 </div>
+                
+                <button class="btn-logo-save" onclick="exportLogoOnlyJSON()">Csak a Logó Beállítások Mentése (logo_only.json) 💾</button>
+                <div id="logoStatusLog" class="status-msg" style="color: #8a99ad;">A logó adatai függetlenek a műsortól.</div>
             </div>
         </div>
     </div>
 
     <div class="panel">
-        <h2>Műsorfolyam Tervező (Időzóna Biztos)</h2>
-        <div class="input-row">
+        <h2>📅 Műsorfolyam Tervező (Műsorújság Generátor)</h2>
+        <div class="input-row" style="margin-bottom: 20px;">
             <div>
-                <label>Melyik csatorna műsorát írod éppen?:</label>
+                <label>Melyik csatorna műsorát írod?:</label>
                 <input type="text" id="channelId" value="cinemaster">
             </div>
             <div>
-                <label>Adásfolyam kezdete:</label>
+                <label>Adásfolyam fix kezdete:</label>
                 <input type="datetime-local" id="streamStartDateTime" onchange="refreshTimeline()">
             </div>
         </div>
 
+        <div style="padding: 15px; background: #1a1f2c; border-radius: 8px; border: 1px solid #ff9100; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; gap: 15px;">
+            <div style="flex-grow: 1;">
+                <label style="color: #ff9100;">Folytatni szeretnél egy korábbi tervezést?</label>
+                <input type="file" id="importFileSelector" accept=".json" style="padding: 5px; font-size: 12px; background: transparent; border: none;">
+            </div>
+            <button class="btn-load" style="width: auto; white-space: nowrap;" onclick="importScheduleJSON()">Fájl Beolvasása 📂</button>
+        </div>
+
         <div style="padding: 15px; background: #11141a; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px;">
-            <div style="font-size: 12px; color: #8a99ad; font-weight: 600; text-transform: uppercase; margin-bottom: 5px;">Műsorfolyam lefedettsége:</div>
+            <div style="font-size: 12px; color: #8a99ad; font-weight: 600; text-transform: uppercase; margin-bottom: 5px;">Adásfolyam lefedettsége:</div>
             <div style="font-size: 15px; color: #fff;">
-                Az adásfájl jelenleg eddig tart: <strong id="streamEndTimeCounter" style="color: #00e676;">Nincs beállítva</strong>
+                A műsorrend jelenleg eddig tart: <strong id="streamEndTimeCounter" style="color: #00e676;">Nincs beállítva</strong>
             </div>
             <div style="font-size: 12px; color: #627288; margin-top: 5px;" id="streamTotalDurationMinutes">
                 (Összesen: 0 perc)
             </div>
         </div>
 
-        <hr style="border: 0; height: 1px; background: var(--border-color); margin: 20px 0;">
+        <hr class="section-divider">
 
         <div class="form-group" style="margin-bottom:15px">
             <label>Videó / Műsor címe</label>
-            <input type="text" id="vTitle" placeholder="pl. Esti film">
+            <input type="text" id="vTitle" placeholder="pl. Esti nagyfilm: 300">
         </div>
         <div class="form-group" style="margin-bottom:20px">
-            <label>Backblaze Friendly URL Link (.mp4)</label>
+            <label>Backblaze friendly URL vagy közvetlen link (.mp4)</label>
             <input type="text" id="vUrl" placeholder="https://f003.backblazeb2.com/file/...">
         </div>
 
-        <button id="addBlockBtn" onclick="pushToTimelineIntelligent()">Műsorblokk beszúrása (Hossz automata mérésével) ↓</button>
+        <button id="addBlockBtn" onclick="pushToTimelineIntelligent()">Műsorblokk beszúrása a listába ↓</button>
         <div id="statusConsoleLog" class="status-msg" style="color: #8a99ad;">Rendszer kész.</div>
         
         <div class="catcast-timeline" id="timelineContainer"></div>
-        <button class="btn-download" onclick="exportCatcastJSON()">Ezen Csatorna Fájljának Mentése (Azonosító.json)</button>
+        
+        <button class="btn-download" onclick="exportScheduleOnlyJSON()">Csak a Műsorrend Mentése (schedule_only.json) 📅</button>
     </div>
 </div>
 
@@ -135,13 +160,31 @@ function createNewChannelConfig() {
     const a = document.createElement('a'); a.href = url; a.download = "channels.json"; a.click();
 }
 
-function changeLogoSrc() { logoConfig.url = document.getElementById('logoUrlInput').value; document.getElementById('channelLogoImg').src = logoConfig.url; }
-function changeLogoSize() { const size = document.getElementById('logoSizeSlider').value; document.getElementById('logoSizeVal').innerText = size + "px"; document.getElementById('channelLogoImg').style.width = size + "px"; logoConfig.size = parseInt(size); }
+function changeLogoSrc() { 
+    logoConfig.url = document.getElementById('logoUrlInput').value; 
+    document.getElementById('channelLogoImg').src = logoConfig.url; 
+}
+
+function changeLogoSize() { 
+    const size = document.getElementById('logoSizeSlider').value; 
+    document.getElementById('logoSizeVal').innerText = size + "px"; 
+    document.getElementById('channelLogoImg').style.width = size + "px"; 
+    logoConfig.size = parseInt(size); 
+}
 
 const logoImg = document.getElementById('channelLogoImg');
 const containerBox = document.getElementById('videoBoxContainer');
 let isDragging = false; let startX, startY, initialTop, initialLeft;
-logoImg.addEventListener('mousedown', (e) => { isDragging = true; startX = e.clientX; startY = e.clientY; initialTop = logoImg.offsetTop; initialLeft = logoImg.offsetLeft; e.preventDefault(); });
+
+logoImg.addEventListener('mousedown', (e) => { 
+    isDragging = true; 
+    startX = e.clientX; 
+    startY = e.clientY; 
+    initialTop = logoImg.offsetTop; 
+    initialLeft = logoImg.offsetLeft; 
+    e.preventDefault(); 
+});
+
 document.addEventListener('mousemove', (e) => {
     if (!isDragging) return;
     const deltaX = e.clientX - startX; const deltaY = e.clientY - startY;
@@ -149,7 +192,8 @@ document.addEventListener('mousemove', (e) => {
     const maxTop = containerBox.clientHeight - logoImg.clientHeight; const maxLeft = containerBox.clientWidth - logoImg.clientWidth;
     if(newTop < 0) newTop = 0; if(newTop > maxTop) newTop = maxTop; if(newLeft < 0) newLeft = 0; if(newLeft > maxLeft) newLeft = maxLeft;
     logoImg.style.top = newTop + 'px'; logoImg.style.left = newLeft + 'px';
-    logoConfig.topPercent = (newTop / containerBox.clientHeight) * 100; logoConfig.leftPercent = (newLeft / containerBox.clientWidth) * 100;
+    logoConfig.topPercent = (newTop / containerBox.clientHeight) * 100; 
+    logoConfig.leftPercent = (newLeft / containerBox.clientWidth) * 100;
 });
 document.addEventListener('mouseup', () => { isDragging = false; });
 
@@ -181,20 +225,16 @@ function pushToTimelineIntelligent() {
     document.getElementById('vTitle').value = '';
     document.getElementById('vUrl').value = '';
     statusLog.style.color = "#00e676";
-    statusLog.innerText = "✅ Sikeres automata felismerés! Videó hozzáadva.";
+    statusLog.innerText = "✅ Blokk sikeresen hozzáadva a listához.";
     refreshTimeline();
 }
 
-// FIXÁLT DÁTUMFELDOLGOZÁS IDŐZÓNA-ELTOLÓDÁS NÉLKÜL
 function refreshTimeline() {
     const startInput = document.getElementById('streamStartDateTime').value; 
     const container = document.getElementById('timelineContainer');
     if (!startInput || catcastPlaylist.length === 0) return;
     
     container.innerHTML = ''; 
-    
-    // Tiszta helyi idő kinyerése a mezőből
-    let cleanStart = startInput.replace(/\s+/g, '').replace('T', '-').replace(':', '-');
     let parts = startInput.split(/[-T:]/);
     let timelinePointer = new Date(parts[0], parts[1] - 1, parts[2], parts[3], parts[4], 0);
     
@@ -204,7 +244,6 @@ function refreshTimeline() {
 
     let totalSecs = 0;
     catcastPlaylist.forEach((track) => {
-        // Elmentjük a tiszta helyi időstringet ISO-szerűen, de eltolás nélkül
         let y = timelinePointer.getFullYear();
         let m = String(timelinePointer.getMonth() + 1).padStart(2, '0');
         let d = String(timelinePointer.getDate()).padStart(2, '0');
@@ -231,13 +270,82 @@ function refreshTimeline() {
     document.getElementById('streamTotalDurationMinutes').innerText = `(Összesen: ${Math.round(totalSecs / 60)} perc)`;
 }
 
-function exportCatcastJSON() {
-    if (catcastPlaylist.length === 0) return;
-    const chId = document.getElementById('channelId').value.trim() || "cinemaster";
-    const channelConfig = { logo: logoConfig, schedule: catcastPlaylist };
-    const blob = new Blob([JSON.stringify(channelConfig, null, 2)], {type : 'application/json'});
+// ÚJ AUTOMATIKUS JSON BEOLVASÓ LOGIKA
+function importScheduleJSON() {
+    const fileSelector = document.getElementById('importFileSelector');
+    const statusLog = document.getElementById('statusConsoleLog');
+    
+    if (fileSelector.files.length === 0) {
+        alert("Kérlek, előbb válaszd ki a lementett .json műsorfájlt!");
+        return;
+    }
+    
+    const file = fileSelector.files[0];
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            
+            // Megnézzük, hogy tiszta schedule-only vagy régi típusú kombinált fájl-e
+            if (data.schedule && Array.isArray(data.schedule)) {
+                catcastPlaylist = data.schedule;
+                
+                // Ha van benne rögzített első adásidő, automatikusan beállítjuk a naptárat is
+                if (catcastPlaylist.length > 0 && catcastPlaylist[0].start) {
+                    // Átkonvertáljuk a mentett start időt a datetime-local mező formátumára (YYYY-MM-DDTHH:MM)
+                    const savedStart = catcastPlaylist[0].start;
+                    document.getElementById('streamStartDateTime').value = savedStart.substring(0, 16);
+                }
+                
+                statusLog.style.color = "#00e676";
+                statusLog.innerText = `成功! ${file.name} sikeresen beolvasva. A táblázat helyreállt.`;
+                refreshTimeline();
+            } else {
+                alert("Ez a fájl nem tartalmaz érvényes műsorrendet (schedule)!");
+            }
+        } catch (err) {
+            alert("Hiba történt a JSON fájl feldolgozása során! Biztos jó fájlt választottál?");
+        }
+    };
+    
+    reader.readAsText(file);
+}
+
+function exportLogoOnlyJSON() {
+    const chId = document.getElementById('logoChannelId').value.trim() || "cinemaster";
+    const statusLog = document.getElementById('logoStatusLog');
+    const logoOutput = { logo: logoConfig };
+    
+    const blob = new Blob([JSON.stringify(logoOutput, null, 2)], {type : 'application/json'});
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = chId + ".json"; a.click();
+    const a = document.createElement('a'); 
+    a.href = url; 
+    a.download = chId + "_logo.json"; 
+    a.click();
+    
+    statusLog.style.color = "#00e676";
+    statusLog.innerText = `✅ Logó sikeresen elmentve: ${chId}_logo.json`;
+}
+
+function exportScheduleOnlyJSON() {
+    if (catcastPlaylist.length === 0) {
+        alert("A műsorrend üres! Előbb adj hozzá blokkokat.");
+        return;
+    }
+    const chId = document.getElementById('channelId').value.trim() || "cinemaster";
+    const statusLog = document.getElementById('statusConsoleLog');
+    const scheduleOutput = { schedule: catcastPlaylist };
+    
+    const blob = new Blob([JSON.stringify(scheduleOutput, null, 2)], {type : 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); 
+    a.href = url; 
+    a.download = chId + "_schedule.json"; 
+    a.click();
+    
+    statusLog.style.color = "#00e676";
+    statusLog.innerText = `✅ Műsorrend sikeresen elmentve: ${chId}_schedule.json`;
 }
 </script>
 </body>
