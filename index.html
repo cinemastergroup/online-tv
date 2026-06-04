@@ -13,24 +13,34 @@
         .channel-btn:hover { background: #3d4556; color: #fff; }
         .channel-btn.active { background: var(--accent-color); color: white; }
 
-        /* LEJÁTSZÓ KÖZPONTI KONTÉNER */
-        .tv-container { position: relative; width: 100%; max-width: 1000px; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 12px 36px rgba(0,0,0,0.5); border: 1px solid var(--border-color); display: flex; justify-content: center; align-items: center; }
+        /* LEJÁTSZÓ KONTÉNER - KONTÉNER METRIKÁVAL ELLÁTVA */
+        .tv-container { 
+            position: relative; 
+            width: 100%; 
+            max-width: 1000px; 
+            aspect-ratio: 16/9; 
+            background: #000; 
+            border-radius: 12px; 
+            overflow: hidden; 
+            box-shadow: 0 12px 36px rgba(0,0,0,0.5); 
+            border: 1px solid var(--border-color); 
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+            container-type: inline-size; /* Ez teszi lehetővé, hogy a logó a konténer arányait figyelje */
+        }
         
-        /* RUGALMAS BELSŐ DOBOZ, AMI LEKÖVETI A FILMET */
-        .player-viewport { position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
+        iframe, video { width: 100%; height: 100%; border: none; background: #000; position: absolute; top: 0; left: 0; z-index: 1 !important; }
         
-        iframe, video { width: 100%; height: 100%; border: none; background: #000; position: absolute; top: 0; left: 0; z-index: 1; }
-        
-        /* GOLYÓÁLLÓ, FIX PIXELMÉRETŰ LEBEGŐ LOGÓ */
+        /* LOGÓ - DINAMIKUS KONTÉNERARÁNYOS BEÁLLÍTÁSSAL */
         .tv-watermark { 
             position: absolute; 
-            width: 75px !important; /* FIX, JÓL OLVASHATÓ, DE NEM TOLAKODÓ MÉRET GÉPEN ÉS TÉVÉN IS */
-            height: auto !important;
-            opacity: 0.85; 
+            opacity: 0.9; 
             pointer-events: none; 
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.9)); 
             z-index: 999999999 !important; 
             display: none; 
+            height: auto !important;
         }
         
         /* INFO SÁV */
@@ -84,11 +94,8 @@
     <div class="fs-trigger-bottom"></div>
 
     <div id="noStreamOverlay" class="no-stream-overlay">📡 Csatorna betöltése...</div>
-    
-    <div class="player-viewport" style="width: 100%; height: 100%;">
-        <img id="tvWatermark" class="tv-watermark" alt="Logo">
-        <div id="mediaPlaceholder" style="width:100%; height:100%;"></div>
-    </div>
+    <img id="tvWatermark" class="tv-watermark" alt="Logo">
+    <div id="mediaPlaceholder" style="width:100%; height:100%; position: absolute; top:0; left:0; z-index: 1;"></div>
 </div>
 
 <div class="info-bar" id="mainInfoBar">
@@ -173,9 +180,16 @@ async function runTvEngine() {
             watermark.src = config.logo.url;
             watermark.style.display = 'block';
             
-            // POZÍCIÓ BEÁLLÍTÁSA A BELSŐ ABLAKHOZ KÉPEST
+            // AZ IGAZI KONTROLLABLAK ARÁNYOSÍTÁS:
+            // Ha az admin felületeden (ami 320px széles kontroll-box volt) pl. 60-as a méret, 
+            // akkor az a kontrollablak szélességének pontosan a 18.75%-a.
+            // Ezt a tiszta százalékos arányt kényszerítjük rá a lejátszó konténerére (cqw).
+            const adminPanelWidth = 320;
+            const sizeInPercent = (config.logo.size / adminPanelWidth) * 100;
+            
+            watermark.style.width = sizeInPercent + 'cqw'; 
             watermark.style.top = config.logo.topPercent + '%';
-            watermark.style.left = (config.logo.leftPercent + 1) + '%'; // Kis finomhangolás az Archive sáv miatt
+            watermark.style.left = config.logo.leftPercent + '%';
         } else {
             watermark.style.display = 'none';
         }
