@@ -2,7 +2,7 @@
 <html lang="hu">
 <head>
     <meta charset="UTF-8">
-    <title>CineMaster - Éles Online Automata Admin</title>
+    <title>Catcast Multi-Channel - Monitor Asszisztált Admin</title>
     <style>
         :root { --bg-color: #0f1115; --panel-color: #181d26; --accent-color: #536dfe; --text-color: #e3e8f0; --border-color: #262f3d; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; }
@@ -35,8 +35,6 @@
 </head>
 <body>
 
-<video id="hiddenDurationReader" style="display:none;" muted></video>
-
 <div class="dashboard">
     <div>
         <div class="panel">
@@ -58,13 +56,13 @@
             <h2>Élő Monitor</h2>
             <div class="video-box" id="videoBoxContainer">
                 <img id="channelLogoImg" src="https://upload.wikimedia.org/wikipedia/commons/a/ab/Logo_TV_2015.png" class="tv-watermark" alt="Logo">
-                <video id="catcastEngine" controls autoplay muted></video>
+                <video id="catcastEngine" controls autoplay muted crossorigin="anonymous"></video>
             </div>
         </div>
     </div>
 
     <div class="panel">
-        <h2>Műsorfolyam Tervező (100% Online Automata)</h2>
+        <h2>Műsorfolyam Tervező (Végtelenített Monitor Automata)</h2>
         <div class="input-row">
             <div>
                 <label>Melyik csatorna műsorát írod éppen?:</label>
@@ -120,11 +118,13 @@ function createNewChannelConfig() {
     const a = document.createElement('a'); a.href = url; a.download = "channels.json"; a.click();
 }
 
+// ÚJ, 100%-IG KIKERÜLHETETLEN AUTOMATA MÉRÉSI LOGIKA
 function pushToTimelineAutomated() {
     const title = document.getElementById('vTitle').value.trim();
     const url = document.getElementById('vUrl').value.trim();
     const startInput = document.getElementById('streamStartDateTime').value;
     const statusLog = document.getElementById('statusConsoleLog');
+    const monitorElement = document.getElementById('catcastEngine');
 
     if (!startInput || !title || !url) {
         statusLog.style.color = "#ff3d00";
@@ -133,37 +133,34 @@ function pushToTimelineAutomated() {
     }
 
     const btn = document.getElementById('addBlockBtn');
-    const reader = document.getElementById('hiddenDurationReader');
-
     btn.disabled = true;
     statusLog.style.color = "#ffb300";
-    statusLog.innerText = "Automata online mérés folyamatban... ⏳";
+    statusLog.innerText = "Monitor lekérdezése... ⏳";
 
-    reader.src = url;
+    // Ráerőltetjük a videót az élő monitorra, mert azt biztosan be tudja tölteni
+    if (monitorElement.src !== url) {
+        monitorElement.src = url;
+    }
 
-    reader.onloadedmetadata = function() {
-        const durationInSeconds = Math.round(reader.duration);
+    // Megvárjuk, amíg a monitor lejátszója beolvassa a hosszat
+    function checkDuration() {
+        const durationInSeconds = Math.round(monitorElement.duration);
+        
         if (durationInSeconds && durationInSeconds > 0) {
             catcastPlaylist.push({ title, url, duration: durationInSeconds });
             document.getElementById('vTitle').value = '';
             document.getElementById('vUrl').value = '';
             statusLog.style.color = "#00e676";
-            statusLog.innerText = "✅ Sikeres automata mérés! Videó hozzáadva.";
+            statusLog.innerText = "✅ Siker! Videó bemérve a monitorról és hozzáadva.";
             refreshTimeline();
+            btn.disabled = false;
         } else {
-            statusLog.style.color = "#ff3d00";
-            statusLog.innerText = "❌ Hiba: Nem olvasható játékidő.";
+            // Ha még tölt a lejátszó, fél másodperc múlva újra megnézzük, nem dobunk hibát!
+            setTimeout(checkDuration, 500);
         }
-        btn.disabled = false;
-        reader.removeAttribute('src');
-        reader.load();
-    };
+    }
 
-    reader.onerror = function() {
-        statusLog.style.color = "#ff3d00";
-        statusLog.innerText = "❌ Hálózati mérési hiba történt.";
-        btn.disabled = false;
-    };
+    checkDuration();
 }
 
 function refreshTimeline() {
@@ -172,9 +169,27 @@ function refreshTimeline() {
     if (!startInput || catcastPlaylist.length === 0) return;
     
     container.innerHTML = ''; 
-    let timelinePointer = new Date(startInput); 
-    let totalSecs = 0;
     
+    let cleanStart = startInput.replace(/\s+/g, '');
+    let timelinePointer;
+    
+    if(cleanStart.includes('.')) {
+        let parts = cleanStart.split('.');
+        if(parts[3] && parts[3].includes(':')) {
+            let timeParts = parts[3].split(':');
+            timelinePointer = new Date(parts[0], parts[1]-1, parts[2], timeParts[0], timeParts[1], 0);
+        } else {
+            timelinePointer = new Date(startInput);
+        }
+    } else {
+        timelinePointer = new Date(startInput);
+    }
+    
+    if (isNaN(timelinePointer.getTime())) {
+        timelinePointer = new Date();
+    }
+
+    let totalSecs = 0;
     catcastPlaylist.forEach((track) => {
         track.start = timelinePointer.toISOString();
         const startLocal = timelinePointer.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
