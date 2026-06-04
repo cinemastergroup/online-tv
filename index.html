@@ -54,7 +54,9 @@
         .info-left { display: flex; flex-direction: column; }
         .badge-live { background: #ff1744; color: white; font-size: 10px; font-weight: bold; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; width: max-content; margin-bottom: 4px; }
         .show-title { font-size: 22px; font-weight: bold; color: #fff; }
-        .time-info { font-family: monospace; font-size: 13px; color: #8a99ad; margin-left: 10px; }
+        
+        /* ALAP IDŐINFÓ STÍLUS - NAGYOBB, OLVASHATÓBB BETŰSTÍLUS */
+        .time-info { font-size: 18px; font-weight: bold; color: #8a99ad; margin-left: 15px; }
         
         /* KONTROLL GOMBOK CSOPORTJA */
         .controls-right { display: flex; gap: 10px; }
@@ -69,20 +71,22 @@
         .channel-btn:hover { background: #323a4b; color: #fff; border-color: #536dfe; }
         .channel-btn.active { background: var(--accent-color); color: white; border-color: var(--accent-color); box-shadow: 0 0 15px rgba(83, 109, 254, 0.4); }
 
-        /* KÖZÉPSŐ POPUP MŰSORÚJSÁG (MODAL) */
-        .epg-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 200000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
-        .epg-modal-overlay.active { opacity: 1; pointer-events: auto; }
+        /* KÖZÉPSŐ POPUP MŰSORÚJSÁG - MAXIMUMRA EMELT RÉTEGREND TELJES KÉPERNYŐHÖZ */
+        .epg-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 2000000000 !important; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .epg-modal-overlay.active { opacity: 1; pointer-events: auto; display: flex; justify-content: center; align-items: center; }
         
         .epg-modal { width: 90%; max-width: 650px; background: #12161f; border: 1px solid var(--border-color); border-radius: 16px; padding: 25px; box-sizing: border-box; box-shadow: 0 20px 50px rgba(0,0,0,0.8); max-height: 80vh; display: flex; flex-direction: column; }
         .epg-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 15px; }
-        .epg-title { font-size: 20px; font-weight: bold; color: #fff; margin: 0; }
+        .epg-title { font-size: 22px; font-weight: bold; color: #fff; margin: 0; }
         .btn-close-epg { background: #ff1744; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; }
         
         .epg-rows-container { overflow-y: auto; flex-grow: 1; padding-right: 5px; }
-        .epg-row { display: flex; align-items: center; padding: 12px; border-bottom: 1px solid #1f2633; font-size: 15px; }
+        
+        /* MEGNÖVELT, JÓL OLVASHATÓ, VASTAG EPG SOROK STÍLUSA */
+        .epg-row { display: flex; align-items: center; padding: 14px 12px; border-bottom: 1px solid #1f2633; font-size: 18px; font-weight: bold; }
         .epg-row:last-child { border-bottom: none; }
-        .epg-time { color: #ffb300; font-family: monospace; font-weight: bold; min-width: 80px; font-size: 16px; }
-        .epg-track-title { color: #fff; font-weight: 600; }
+        .epg-time { color: #ffb300; font-weight: bold; min-width: 90px; font-size: 19px; }
+        .epg-track-title { color: #fff; font-weight: bold; }
         
         .no-stream-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; color: #8a99ad; font-size: 20px; font-weight: bold; background: #0f1115; z-index: 5; }
     </style>
@@ -102,7 +106,7 @@
                 <div class="badge-live">Élő adás</div>
                 <div style="display: flex; align-items: center;">
                     <span class="show-title" id="lblShow">Betöltés...</span>
-                    <span class="time-info" id="lblTime">Kezdés: --:--</span>
+                    <span class="time-info" id="lblTime">--:--</span>
                 </div>
             </div>
             
@@ -125,7 +129,7 @@
 <div id="epgModalOverlay" class="epg-modal-overlay" onclick="toggleEpg(false)">
     <div class="epg-modal" onclick="event.stopPropagation()">
         <div class="epg-header">
-            <h3 class="epg-title">📺 Mai teljes műsorfolyam</h3>
+            <h3 class="epg-title" id="epgModalTitle">Műsorújság</h3>
             <button class="btn-close-epg" onclick="toggleEpg(false)">Bezárás ✕</button>
         </div>
         <div id="epgRowsContainer" class="epg-rows-container"></div>
@@ -141,6 +145,7 @@ const lblTime = document.getElementById('lblTime');
 const epgModalOverlay = document.getElementById('epgModalOverlay');
 const epgRowsContainer = document.getElementById('epgRowsContainer');
 const mediaPlaceholder = document.getElementById('mediaPlaceholder');
+const epgModalTitle = document.getElementById('epgModalTitle');
 
 let activeChannel = 'cinemaster';
 let lastRenderedUrl = '';
@@ -154,13 +159,19 @@ function parseLocalISO(isoStr) {
 
 function toggleEpg(show) {
     if (show) {
+        // Dinamikusan kiírjuk a mai dátumot az új formátumban
+        const ma = new Date();
+        const ev = ma.getFullYear();
+        const ho = String(ma.getMonth() + 1).padStart(2, '0');
+        const nap = String(ma.getDate()).padStart(2, '0');
+        epgModalTitle.innerText = `Műsorújság (${ev}-${ho}-${nap})`;
+        
         epgModalOverlay.classList.add('active');
     } else {
         epgModalOverlay.classList.remove('active');
     }
 }
 
-// BÖNGÉSZŐ NATÍV FULLSCREEN FUNKCIÓ
 function toggleNativeFullscreen() {
     if (!document.fullscreenElement) {
         container.requestFullscreen().then(() => setTimeout(updateLogoScale, 100)).catch(err => console.log(err));
@@ -169,12 +180,10 @@ function toggleNativeFullscreen() {
     }
 }
 
-// Ha a natív fullscreen változik, a logót újraszámoljuk
 document.addEventListener('fullscreenchange', () => {
     setTimeout(updateLogoScale, 100);
 });
 
-// ARÁNYOS LOGÓMÉRETEZÉS AZ ADMIN ARÁNYOK ALAPJÁN
 function updateLogoScale() {
     if (!currentLogoConfig || !currentLogoConfig.url) return;
     const currentContainerWidth = container.clientWidth;
@@ -217,7 +226,6 @@ async function runTvEngine() {
 
         const now = new Date();
         let currentTrack = null;
-        let currentOffset = 0;
 
         epgRowsContainer.innerHTML = '';
 
@@ -231,7 +239,6 @@ async function runTvEngine() {
 
             if (now >= trackStart && now < trackEnd) {
                 currentTrack = track;
-                currentOffset = (now.getTime() - trackStart.getTime()) / 1000;
             }
         });
 
@@ -239,8 +246,17 @@ async function runTvEngine() {
             overlay.style.display = 'none';
             lblShow.innerText = currentTrack.title;
             
+            // KISZÁMOLJUK A KEZDÉSI ÉS VÉGZŐDÉSI IDŐPONTOT AZ ALSÓ SÁVRA
             const startTimestamp = parseLocalISO(currentTrack.start);
-            lblTime.innerText = `Kezdés: ${String(startTimestamp.getHours()).padStart(2,'0')}:${String(startTimestamp.getMinutes()).padStart(2,'0')}`;
+            const endTimestamp = new Date(startTimestamp.getTime() + currentTrack.duration * 1000);
+            
+            const startHr = String(startTimestamp.getHours()).padStart(2, '0');
+            const startMin = String(startTimestamp.getMinutes()).padStart(2, '0');
+            const endHr = String(endTimestamp.getHours()).padStart(2, '0');
+            const endMin = String(endTimestamp.getMinutes()).padStart(2, '0');
+            
+            // Kiírjuk a kért formátumban: "23:00 - 00:47"
+            lblTime.innerText = `${startHr}:${startMin} - ${endHr}:${endMin}`;
 
             if (currentTrack.url !== lastRenderedUrl) {
                 lastRenderedUrl = currentTrack.url;
@@ -254,7 +270,11 @@ async function runTvEngine() {
                     }
                     
                     if (archiveId) {
+                        // Kiszámoljuk az offset másodpercet az adáshoz igazítva
+                        const trackStart = parseLocalISO(currentTrack.start);
+                        const currentOffset = (now.getTime() - trackStart.getTime()) / 1000;
                         const startSeconds = Math.round(currentOffset);
+                        
                         mediaPlaceholder.innerHTML = `<iframe src="https://archive.org/embed/${archiveId}?start=${startSeconds}&autoplay=1" allowfullscreen></iframe>`;
                     } else {
                         mediaPlaceholder.innerHTML = `<video src="${currentTrack.url}" controls autoplay muted></video>`;
@@ -262,6 +282,8 @@ async function runTvEngine() {
                 } else {
                     mediaPlaceholder.innerHTML = `<video id="tvEngine" controls autoplay muted src="${currentTrack.url}"></video>`;
                     const vid = document.getElementById('tvEngine');
+                    const trackStart = parseLocalISO(currentTrack.start);
+                    const currentOffset = (now.getTime() - trackStart.getTime()) / 1000;
                     vid.currentTime = currentOffset;
                     vid.play().catch(() => { vid.muted = true; vid.play().catch(()=>{}); });
                 }
@@ -271,7 +293,7 @@ async function runTvEngine() {
             overlay.style.display = 'flex';
             overlay.innerText = "📡 Jelenleg nincs adás ezen a csatornán.";
             lblShow.innerText = "Adásszünet";
-            lblTime.innerText = "Kezdés: --:--";
+            lblTime.innerText = "--:--";
             watermark.style.display = 'none';
         }
 
@@ -280,13 +302,15 @@ async function runTvEngine() {
         overlay.style.display = 'flex';
         overlay.innerText = "📡 Jelenleg nincs aktív adásfájl.";
         lblShow.innerText = "Adásszünet";
-        lblTime.innerText = "Kezdés: --:--";
+        lblTime.innerText = "--:--";
         watermark.style.display = 'none';
     }
 }
 
-runTvEngine();
-setInterval(runTvEngine, 15000);
+window.addEventListener('DOMContentLoaded', () => {
+    runTvEngine();
+    setInterval(runTvEngine, 15000);
+});
 </script>
 </body>
 </html>
