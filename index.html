@@ -179,13 +179,21 @@ window.addEventListener('keydown', showControls);
 // ---------------------------------------------
 
 function parseLocalISO(isoStr) {
-    // Ha nincs a végén Z betű, manuálisan hozzáadjuk a szabványos feldolgozáshoz
-    if (!isoStr.endsWith('Z')) {
-        isoStr += 'Z';
-    }
-    let clean = isoStr.replace('Z', '');
+    // Töröljük a Z betűt vagy az időzóna eltolódásokat, ha az admin odatenné,
+    // mert mi tiszta helyi időként akarjuk beolvasni.
+    let clean = isoStr.replace('Z', '').split('+')[0];
     let parts = clean.split(/[-T:]/);
-    return new Date(parts[0], parts[1] - 1, parts[2], parts[3], parts[4], parts[5] || 0);
+    
+    // A Date objektumot így létrehozva a böngésző pontosan annak a gépnek/tévének
+    // a helyi időzónáját fogja használni, amin épp fut a lejátszó (Magyarországon a magyar időt).
+    return new Date(
+        parseInt(parts[0]), 
+        parseInt(parts[1]) - 1, 
+        parseInt(parts[2]), 
+        parseInt(parts[3]), 
+        parseInt(parts[4]), 
+        parseInt(parts[5]) || 0
+    );
 }
 
 function toggleEpg(show) {
