@@ -20,6 +20,7 @@
             width: 100%; 
             height: 100%; 
             object-fit: contain; 
+            background: #000;
         }
 
         .tv-logo { 
@@ -30,7 +31,7 @@
             transition: width 0.2s;
         }
 
-        /* VEZÉRLŐSÁV AUTOMATA REJTÉSSEL */
+        /* VEZÉRLŐSÁV */
         .tv-control-bar {
             position: absolute;
             bottom: 0;
@@ -128,13 +129,13 @@
 
 <div id="tvStartGate" class="tv-start-overlay">
     <h1 style="margin-bottom: 25px; font-size: 28px; color: #fff;">🎬 CineMaster Multi-Channel TV</h1>
-    <button class="tv-start-btn" onclick="initializeSmartTVConnection()">📺 CSATORNÁK BETÖLTÉSE</button>
+    <button class="tv-start-btn" onclick="initializeSmartTVConnection()"> Letöltés indítása</button>
 </div>
 
 <div class="video-container" id="mainVisualContainer">
     <img id="tvLogoElement" class="tv-logo" src="" style="display: none;" alt="Logo">
     
-    <video id="tvEngine" autoplay muted playsinline></video>
+    <video id="tvEngine" autoplay playsinline></video>
     
     <div id="epgModalWindow" class="epg-overlay">
         <div class="epg-header">
@@ -148,7 +149,7 @@
         <div style="font-size: 12px; color: #8a99ad; font-weight: bold; text-transform: uppercase; margin-right: 10px;">Csatornák:</div>
         <div id="channelButtonsContainer" style="display: flex; gap: 8px;"></div>
         <button id="epgToggleBtn" class="action-btn" onclick="toggleEPG()" style="margin-left: auto;">📅 Műsorújság (EPG)</button>
-        <button class="action-btn" onclick="toggleSmartFullscreen()">📺 Fullscreen</button>
+        <button class="action-btn" onclick="toggleSmartFullscreen()"> Fullscreen</button>
     </div>
 </div>
 
@@ -160,26 +161,26 @@ let logoData = {};
 let masterChannels = [];
 let uiTimeout;
 
-// ATOMBIZTOS INDÍTÁS SZEKVENCIA
+// EGYSZERŰSÍTETT, AZONNALI INDÍTÁS
 function initializeSmartTVConnection() {
-    const video = document.getElementById('tvEngine');
-    
-    // 1. Eltüntetjük a kaput
+    // 1. Első mozdulattal FORCE eltüntetjük a fekete kaput
     document.getElementById('tvStartGate').style.display = "none";
     
-    // 2. Elindítjuk a lejátszást (mivel még muted, a böngésző boldogan engedi)
-    video.play().then(() => {
-        // 3. HA elindult a kép, egy apró tizedmásodperccel később rákapcsoljuk a hangot
-        setTimeout(() => {
-            video.muted = false;
-        }, 100);
-    }).catch(err => {
-        // Biztonsági tartalék, ha mégis makacskodna
-        video.muted = false;
-        video.play().catch(() => {});
+    // 2. Hang bekapcsolása és lejátszás rákényszerítése
+    const video = document.getElementById('tvEngine');
+    video.muted = false;
+    
+    // Elindítjuk az időzítő motort és a videót közvetlenül
+    syncExecution();
+    video.play().catch(function() {
+        // Ha a böngésző hisztizne a hang miatt, elindítjuk némítva, majd felhangosítjuk
+        video.muted = true;
+        video.play().then(function() {
+            setTimeout(function() { video.muted = false; }, 200);
+        });
     });
     
-    // 4. Megjelenítjük a vezérlősávot
+    // 3. Menü mutatása
     showControlBarWithTimeout();
 }
 
@@ -188,7 +189,7 @@ function showControlBarWithTimeout() {
     bar.classList.add('show');
     
     clearTimeout(uiTimeout);
-    uiTimeout = setTimeout(() => {
+    uiTimeout = setTimeout(function() {
         if(document.getElementById('epgModalWindow').style.display !== "block") {
             bar.classList.remove('show');
         }
@@ -198,9 +199,10 @@ function showControlBarWithTimeout() {
 document.addEventListener('mousemove', showControlBarWithTimeout);
 document.addEventListener('click', showControlBarWithTimeout);
 
-fetch(`channels.json?v=${Date.now()}`)
-    .then(r => r.json())
-    .then(channels => {
+// Csatornalista lekérése cache-törléssel
+fetch('channels.json?v=' + Date.now())
+    .then(function(r) { return r.json(); })
+    .then(function(channels) {
         masterChannels = channels;
         buildChannelButtons();
         if(masterChannels.length > 0) {
@@ -211,11 +213,11 @@ fetch(`channels.json?v=${Date.now()}`)
 function buildChannelButtons() {
     const container = document.getElementById('channelButtonsContainer');
     container.innerHTML = '';
-    masterChannels.forEach(ch => {
+    masterChannels.forEach(function(ch) {
         const btn = document.createElement('button');
-        btn.className = `channel-btn ch-btn-${ch.id}`;
+        btn.className = 'channel-btn ch-btn-' + ch.id;
         btn.innerText = ch.name;
-        btn.onclick = () => { switchChannel(ch.id, ch.name); showControlBarWithTimeout(); };
+        btn.onclick = function() { switchChannel(ch.id, ch.name); showControlBarWithTimeout(); };
         container.appendChild(btn);
     });
 }
@@ -224,13 +226,13 @@ function switchChannel(id, name) {
     currentChannelId = id;
     currentChannelName = name;
     
-    document.querySelectorAll('.channel-btn').forEach(b => b.classList.remove('active'));
-    const activeBtn = document.querySelector(`.ch-btn-${id}`);
+    document.querySelectorAll('.channel-btn').forEach(function(b) { b.classList.remove('active'); });
+    const activeBtn = document.querySelector('.ch-btn-' + id);
     if(activeBtn) activeBtn.classList.add('active');
 
-    fetch(`${id}.json?v=${Date.now()}`)
-        .then(r => r.json())
-        .then(data => {
+    fetch(id + '.json?v=' + Date.now())
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
             logoData = data.logo;
             playlist = data.schedule;
             setupLogo();
@@ -238,7 +240,7 @@ function switchChannel(id, name) {
             if(document.getElementById('epgModalWindow').style.display === "block") {
                 renderEPGData();
             }
-        }).catch(() => {
+        }).catch(function() {
             document.getElementById('tvEngine').src = "";
             document.getElementById('tvLogoElement').style.display = "none";
             playlist = [];
@@ -259,10 +261,10 @@ function setupLogo() {
 
 function syncExecution() {
     const video = document.getElementById('tvEngine');
-    if(playlist.length === 0) return;
+    if(!playlist || playlist.length === 0) return;
     
     const now = new Date();
-    const currentVideo = playlist.find(track => {
+    const currentVideo = playlist.find(function(track) {
         const start = new Date(track.start);
         const end = new Date(start.getTime() + track.duration * 1000);
         return now >= start && now < end;
@@ -273,7 +275,7 @@ function syncExecution() {
         if (video.src !== currentVideo.url) {
             video.src = currentVideo.url;
             video.currentTime = offset;
-            video.play().catch(() => {});
+            video.play().catch(function() {});
         } else if (Math.abs(video.currentTime - offset) > 3) {
             video.currentTime = offset;
         }
@@ -283,7 +285,7 @@ function syncExecution() {
     }
 }
 
-setInterval(() => {
+setInterval(function() {
     if(currentChannelId) syncExecution();
 }, 1000);
 
@@ -303,7 +305,7 @@ function toggleEPG() {
 }
 
 function renderEPGData() {
-    document.getElementById('epgChannelNameTitle').innerText = `📅 ${currentChannelName} - Műsor`;
+    document.getElementById('epgChannelNameTitle').innerText = '📅 ' + currentChannelName + ' - Műsor';
     const container = document.getElementById('epgRowsContainer');
     container.innerHTML = '';
     
@@ -313,7 +315,7 @@ function renderEPGData() {
     }
     
     const now = new Date();
-    playlist.forEach(track => {
+    playlist.forEach(function(track) {
         const startTime = new Date(track.start);
         const endTime = new Date(startTime.getTime() + track.duration * 1000);
         const timeString = startTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
@@ -322,14 +324,14 @@ function renderEPGData() {
         let rowClass = isLive ? "epg-row live" : "epg-row";
         let liveTag = isLive ? '<span class="epg-live-tag">ÉLŐ</span>' : '';
         
-        container.innerHTML += `<div class="${rowClass}"><div class="epg-time">${timeString}</div><div class="epg-title">${track.title}</div>${liveTag}</div>`;
+        container.innerHTML += '<div class="' + rowClass + '"><div class="epg-time">' + timeString + '</div><div class="epg-title">' + track.title + '</div>' + liveTag + '</div>';
     });
 }
 
 function toggleSmartFullscreen() {
     const container = document.getElementById('mainVisualContainer');
     if (!document.fullscreenElement) {
-        container.requestFullscreen().catch(() => {});
+        container.requestFullscreen().catch(function() {});
     } else {
         document.exitFullscreen();
     }
