@@ -2,7 +2,7 @@
 <html lang="hu">
 <head>
     <meta charset="UTF-8">
-    <title>Catcast Multi-Channel - Teljes Automata Admin</title>
+    <title>Catcast Multi-Channel - Időzóna Fix Admin</title>
     <style>
         :root { --bg-color: #0f1115; --panel-color: #181d26; --accent-color: #536dfe; --text-color: #e3e8f0; --border-color: #262f3d; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; }
@@ -74,7 +74,7 @@
     </div>
 
     <div class="panel">
-        <h2>Műsorfolyam Tervező (Intelligens Automata)</h2>
+        <h2>Műsorfolyam Tervező (Időzóna Biztos)</h2>
         <div class="input-row">
             <div>
                 <label>Melyik csatorna műsorát írod éppen?:</label>
@@ -120,7 +120,6 @@ let catcastPlaylist = [];
 let logoConfig = { url: "https://upload.wikimedia.org/wikipedia/commons/a/ab/Logo_TV_2015.png", size: 60, topPercent: 5, leftPercent: 5 };
 let masterChannelList = [];
 
-// AUTOMATA IDŐTARTAM ADATBÁZIS
 const videoDatabase = {
     "300.mp4": 7000,
     "300": 7000
@@ -186,26 +185,18 @@ function pushToTimelineIntelligent() {
     refreshTimeline();
 }
 
+// FIXÁLT DÁTUMFELDOLGOZÁS IDŐZÓNA-ELTOLÓDÁS NÉLKÜL
 function refreshTimeline() {
     const startInput = document.getElementById('streamStartDateTime').value; 
     const container = document.getElementById('timelineContainer');
     if (!startInput || catcastPlaylist.length === 0) return;
     
     container.innerHTML = ''; 
-    let timelinePointer;
     
-    let cleanStart = startInput.replace(/\s+/g, '');
-    if(cleanStart.includes('.')) {
-        let parts = cleanStart.split('.');
-        if(parts[3] && parts[3].includes(':')) {
-            let timeParts = parts[3].split(':');
-            timelinePointer = new Date(parts[0], parts[1]-1, parts[2], timeParts[0], timeParts[1], 0);
-        } else {
-            timelinePointer = new Date(startInput);
-        }
-    } else {
-        timelinePointer = new Date(startInput);
-    }
+    // Tiszta helyi idő kinyerése a mezőből
+    let cleanStart = startInput.replace(/\s+/g, '').replace('T', '-').replace(':', '-');
+    let parts = startInput.split(/[-T:]/);
+    let timelinePointer = new Date(parts[0], parts[1] - 1, parts[2], parts[3], parts[4], 0);
     
     if (isNaN(timelinePointer.getTime())) {
         timelinePointer = new Date();
@@ -213,9 +204,19 @@ function refreshTimeline() {
 
     let totalSecs = 0;
     catcastPlaylist.forEach((track) => {
-        track.start = timelinePointer.toISOString();
-        const startLocal = timelinePointer.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+        // Elmentjük a tiszta helyi időstringet ISO-szerűen, de eltolás nélkül
+        let y = timelinePointer.getFullYear();
+        let m = String(timelinePointer.getMonth() + 1).padStart(2, '0');
+        let d = String(timelinePointer.getDate()).padStart(2, '0');
+        let hr = String(timelinePointer.getHours()).padStart(2, '0');
+        let min = String(timelinePointer.getMinutes()).padStart(2, '0');
+        let sec = String(timelinePointer.getSeconds()).padStart(2, '0');
+        
+        track.start = `${y}-${m}-${d}T${hr}:${min}:${sec}`;
+        
+        const startLocal = `${hr}:${min}:${sec}`;
         const dateLocal = timelinePointer.toLocaleDateString([], {month: 'short', day: 'numeric', weekday: 'short'});
+        
         timelinePointer = new Date(timelinePointer.getTime() + track.duration * 1000);
         totalSecs += track.duration;
         
