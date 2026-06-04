@@ -154,6 +154,7 @@ document.addEventListener('mousemove', (e) => {
 });
 document.addEventListener('mouseup', () => { isDragging = false; });
 
+// TISZTÁN AUTOMATA MÉRÉS
 function pushToTimelineAutomated() {
     const title = document.getElementById('vTitle').value.trim();
     const url = document.getElementById('vUrl').value.trim();
@@ -193,45 +194,49 @@ function pushToTimelineAutomated() {
     };
 
     reader.onerror = function() {
-        // Csendes hiba logolás - nincs felugró ablak!
-        statusLog.style.color = "#ffb300";
-        statusLog.innerText = "⚠️ Helyi lejátszás korlátozva, de a hosszat sikeresen rögzítettük!";
-        // Ha a háttérben már megvan a duration, elmentjük
+        // Ha a háttérben beolvasta a hosszat, akkor rögzítjük az automatikusan mért adatot!
         if(reader.duration) {
+            statusLog.style.color = "#00e676";
+            statusLog.innerText = "✅ Automata mérés sikeres!";
             catcastPlaylist.push({ title, url, duration: Math.round(reader.duration) });
+            document.getElementById('vTitle').value = '';
+            document.getElementById('vUrl').value = '';
             refreshTimeline();
+        } else {
+            statusLog.style.color = "#ff3d00";
+            statusLog.innerText = "❌ Hiba a hálózati mérés során.";
         }
         btn.disabled = false;
     };
 }
 
+// MAGYAR DÁTUMFORMÁTUMOT IS TRETELŐ IDŐSÁV FRISSÍTÉS
 function refreshTimeline() {
-    let startInput = document.getElementById('streamStartDateTime').value; 
+    const startInput = document.getElementById('streamStartDateTime').value; 
     const container = document.getElementById('timelineContainer');
     if (!startInput || catcastPlaylist.length === 0) return;
     
     container.innerHTML = ''; 
+    let timelinePointer;
     
-    // FIX: Megtisztítjuk a dátumot a magyar böngészők szóközös-pontos formátuma miatt, hogy a JS megértse
-    let cleanStart = startInput.replace(/\s+/g, ''); // kiszedjük a szóközöket
+    // Átalakítjuk a magyar Windows-os formátumot (pontok, szóközök) szabványos formára, hogy ne fagyjon le a JS
+    let cleanStart = startInput.replace(/\s+/g, '');
     if(cleanStart.includes('.')) {
         let parts = cleanStart.split('.');
         if(parts[3] && parts[3].includes(':')) {
             let timeParts = parts[3].split(':');
-            // Átalakítjuk szabványos, emészthető dátummá: YYYY, MM-1, DD, HH, MM
-            var timelinePointer = new Date(parts[0], parts[1]-1, parts[2], timeParts[0], timeParts[1], 0);
+            timelinePointer = new Date(parts[0], parts[1]-1, parts[2], timeParts[0], timeParts[1], 0);
         } else {
-            var timelinePointer = new Date(startInput);
+            timelinePointer = new Date(startInput);
         }
     } else {
-        var timelinePointer = new Date(startInput);
+        timelinePointer = new Date(startInput);
     }
     
-    // Ha a tisztítás után is hibás lenne a dátum, a mai időt vesszük alapul, hogy ne fagyjon le az admin
     if (isNaN(timelinePointer.getTime())) {
         timelinePointer = new Date();
     }
-    
+
     let totalSecs = 0;
     catcastPlaylist.forEach((track) => {
         track.start = timelinePointer.toISOString();
@@ -244,7 +249,6 @@ function refreshTimeline() {
         const displaySec = track.duration % 60;
         container.innerHTML += `<div class="timeline-card"><div class="card-time"><span style="display:block; font-size:11px; color:#8a99ad;">${dateLocal}</span>⏱️ ${startLocal}</div><div class="card-info"><div class="card-title">${track.title}</div><div class="card-url">${track.url}</div></div><div class="card-duration">${displayMin}m ${displaySec}s</div></div>`;
     });
-    
     const endDateStr = timelinePointer.toLocaleDateString('hu-HU', { month: 'short', day: 'numeric', weekday: 'short' });
     const endTimeStr = timelinePointer.toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' });
     document.getElementById('streamEndTimeCounter').innerText = `${endDateStr} ${endTimeStr}`;
@@ -257,6 +261,7 @@ function runCatcastEngine() {
     const liveTrack = catcastPlaylist.find(track => { const trackStart = new Date(track.start); const trackEnd = new Date(trackStart.getTime() + track.duration * 1000); return now >= trackStart && now < trackEnd; });
     if (liveTrack) { const trackStart = new Date(liveTrack.start); const currentOffset = (now.getTime() - trackStart.getTime()) / 1000; if (videoElement.src !== liveTrack.url) { videoElement.src = liveTrack.url; videoElement.currentTime = currentOffset; videoElement.play().catch(() => {}); } }
 }
+
 function exportCatcastJSON() {
     if (catcastPlaylist.length === 0) return;
     const chId = document.getElementById('channelId').value.trim() || "cinemaster";
