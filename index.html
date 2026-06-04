@@ -2,34 +2,72 @@
 <html lang="hu">
 <head>
     <meta charset="UTF-8">
-    <title>Catcast Multi-Channel TV - Élő Adás</title>
+    <title>CineMaster Stream - Élő Adás</title>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; font-family: sans-serif; }
-        .video-container { position: relative; width: 100%; height: 100%; }
-        video { width: 100%; height: 100%; background: #000; }
-        .tv-logo { position: absolute; z-index: 999; pointer-events: none; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8)); display: none; }
-        .info-bar { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(15, 17, 21, 0.85); backdrop-filter: blur(10px); color: #fff; padding: 20px; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #262f3d; z-index: 1000; transition: opacity 0.5s; }
+        :root { --bg-color: #0f1115; --panel-color: #181d26; --accent-color: #536dfe; --text-color: #e3e8f0; --border-color: #262f3d; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        
+        /* CSATORNA GOMBOK */
+        .channel-selector { display: flex; gap: 10px; margin-bottom: 20px; width: 100%; max-width: 1000px; justify-content: flex-start; overflow-x: auto; padding-bottom: 5px; }
+        .channel-btn { background: #2c323f; color: #a4b3c6; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; white-space: nowrap; }
+        .channel-btn:hover { background: #3d4556; color: #fff; }
+        .channel-btn.active { background: var(--accent-color); color: white; }
+
+        /* LEJÁTSZÓ DOBOZ */
+        .tv-container { position: relative; width: 100%; max-width: 1000px; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 12px 36px rgba(0,0,0,0.5); border: 1px solid var(--border-color); }
+        video { width: 100%; height: 100%; object-fit: contain; }
+        
+        /* ÉLES ONLINE WATERMARK LOGÓ */
+        .tv-watermark { position: absolute; top: 5%; left: 5%; width: 60px; opacity: 0.7; pointer-events: none; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8)); z-index: 10; display: none; }
+        
+        /* INFO SÁV */
+        .info-bar { width: 100%; max-width: 1000px; background: var(--panel-color); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-top: 20px; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; }
         .info-left { display: flex; flex-direction: column; }
-        .channel-title { font-size: 14px; color: #536dfe; font-weight: bold; text-transform: uppercase; margin-bottom: 4px; }
-        .show-title { font-size: 18px; font-weight: bold; }
-        .time-info { font-family: monospace; font-size: 16px; color: #ffb300; background: #11141a; padding: 6px 12px; border-radius: 6px; border: 1px solid #262f3d; }
-        .no-stream { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; color: #8a99ad; font-size: 20px; font-weight: bold; background: #0f1115; z-index: 500; }
+        .badge-live { background: #ff1744; color: white; font-size: 10px; font-weight: bold; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; width: max-content; margin-bottom: 8px; }
+        .show-title { font-size: 20px; font-weight: bold; color: #fff; margin-bottom: 4px; }
+        .time-info { font-family: monospace; font-size: 13px; color: #8a99ad; }
+        
+        /* EPG MŰSORÚJSÁG GOMB ÉS PANEL */
+        .btn-epg { background: #304ffe; color: white; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; }
+        .btn-epg:hover { background: #1a237e; }
+        .epg-panel { width: 100%; max-width: 1000px; background: #11141a; border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-top: 15px; box-sizing: border-box; }
+        .epg-title { font-size: 16px; font-weight: bold; color: #fff; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
+        .epg-row { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #1f2633; font-size: 14px; }
+        .epg-row:last-child { border-bottom: none; }
+        .epg-time { color: #ffb300; font-family: monospace; font-weight: bold; min-width: 80px; }
+        .epg-track-title { color: #fff; font-weight: 600; }
+        
+        .no-stream-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; color: #8a99ad; font-size: 18px; font-weight: bold; background: #0f1115; z-index: 5; }
     </style>
 </head>
 <body>
 
-<div class="video-container">
-    <div id="noStreamOverlay" class="no-stream">📡 Csatorna betöltése...</div>
-    <img id="tvWatermark" class="tv-logo" alt="Logo">
-    <video id="tvEngine" crossorigin="anonymous"></video>
+<div class="channel-selector" id="channelButtonsContainer">
+    <button class="channel-btn active" onclick="switchChannel('cinemaster')">CineMaster</button>
+    <button class="channel-btn" onclick="switchChannel('cinemaster2')">CineMaster 2</button>
+    <button class="channel-btn" onclick="switchChannel('retrotv')">RetroTV</button>
+    <button class="channel-btn" onclick="switchChannel('horrorchannel')">Horror Channel</button>
+    <button class="channel-btn" onclick="switchChannel('besthitstv')">Best Hits TV</button>
+</div>
 
-    <div class="info-bar" id="infoBar">
-        <div class="info-left">
-            <div class="channel-title" id="lblChannel">CineMaster Élő Adás</div>
-            <div class="show-title" id="lblShow">Műsor betöltése...</div>
-        </div>
+<div class="tv-container">
+    <div id="noStreamOverlay" class="no-stream-overlay">📡 Csatorna betöltése...</div>
+    <img id="tvWatermark" class="tv-watermark" alt="Logo">
+    <video id="tvEngine" controls autoplay muted crossorigin="anonymous"></video>
+</div>
+
+<div class="info-bar">
+    <div class="info-left">
+        <div class="badge-live">Élő adás</div>
+        <div class="show-title" id="lblShow">Betöltés...</div>
         <div class="time-info" id="lblTime">Kezdés: --:--</div>
     </div>
+    <button class="btn-epg" onclick="toggleEpg()">Műsorújság (EPG) 📅</button>
+</div>
+
+<div id="epgPanel" class="epg-panel" style="display: none;">
+    <div class="epg-title">📺 Mai teljes műsorfolyam</div>
+    <div id="epgRowsContainer"></div>
 </div>
 
 <script>
@@ -38,44 +76,67 @@ const overlay = document.getElementById('noStreamOverlay');
 const watermark = document.getElementById('tvWatermark');
 const lblShow = document.getElementById('lblShow');
 const lblTime = document.getElementById('lblTime');
+const epgPanel = document.getElementById('epgPanel');
+const epgRowsContainer = document.getElementById('epgRowsContainer');
 
-// Kinyerjük a csatorna ID-t a URL-ből (pl. tv.html?channel=cinemaster), ha nincs, marad a cinemaster
-const urlParams = new URLSearchParams(window.location.search);
-const channelId = urlParams.get('channel') || 'cinemaster';
+let activeChannel = 'cinemaster';
 
 function parseLocalISO(isoStr) {
-    // Biztosítjuk, hogy az időzónák ne kavarjanak be
     let clean = isoStr.replace('Z', '');
     let parts = clean.split(/[-T:]/);
     return new Date(parts[0], parts[1] - 1, parts[2], parts[3], parts[4], parts[5] || 0);
 }
 
+function toggleEpg() {
+    epgPanel.style.display = (epgPanel.style.display === 'none') ? 'block' : 'none';
+}
+
+function switchChannel(channelId) {
+    activeChannel = channelId;
+    document.querySelectorAll('.channel-btn').forEach(btn => btn.classList.remove('active'));
+    
+    // Aktív gomb beszínezése
+    const clickedBtn = Array.from(document.querySelectorAll('.channel-btn')).find(btn => btn.getAttribute('onclick').includes(channelId));
+    if(clickedBtn) clickedBtn.classList.add('active');
+    
+    runTvEngine();
+}
+
 async function runTvEngine() {
     try {
-        // Friss JSON lekérése a GitHub-ról cache nélkül
-        const response = await fetch(`${channelId}.json?t=${new Date().getTime()}`);
-        if (!response.ok) throw new Error("Nem található műsorfájl.");
+        const response = await fetch(`${activeChannel}.json?t=${new Date().getTime()}`);
+        if (!response.ok) throw new Error("Üres műsor.");
         
         const config = await response.json();
         
-        // Logó beállítása
+        // Vizuális Logó beállítások élesítése
         if (config.logo && config.logo.url) {
             watermark.src = config.logo.url;
             watermark.style.width = config.logo.size + 'px';
             watermark.style.top = config.logo.topPercent + '%';
             watermark.style.left = config.logo.leftPercent + '%';
             watermark.style.display = 'block';
+        } else {
+            watermark.style.display = 'none';
         }
 
         const now = new Date();
         let currentTrack = null;
         let currentOffset = 0;
 
-        // Megkeressük, mi fut most
+        // EPG kirajzolása
+        epgRowsContainer.innerHTML = '';
+
         config.schedule.forEach(track => {
             const trackStart = parseLocalISO(track.start);
             const trackEnd = new Date(trackStart.getTime() + track.duration * 1000);
 
+            // Időformázás az EPG-hez
+            const hr = String(trackStart.getHours()).padStart(2, '0');
+            const min = String(trackStart.getMinutes()).padStart(2, '0');
+            epgRowsContainer.innerHTML += `<div class="epg-row"><div class="epg-time">${hr}:${min}</div><div class="epg-track-title">${track.title}</div></div>`;
+
+            // Futó műsor ellenőrzése
             if (now >= trackStart && now < trackEnd) {
                 currentTrack = track;
                 currentOffset = (now.getTime() - trackStart.getTime()) / 1000;
@@ -89,19 +150,16 @@ async function runTvEngine() {
             const startTimestamp = parseLocalISO(currentTrack.start);
             lblTime.innerText = `Kezdés: ${String(startTimestamp.getHours()).padStart(2,'0')}:${String(startTimestamp.getMinutes()).padStart(2,'0')}`;
 
-            // Csak akkor váltunk forrást, ha új videó jön
             if (videoElement.src !== currentTrack.url) {
                 videoElement.src = currentTrack.url;
                 videoElement.currentTime = currentOffset;
                 
-                // GOLYÓÁLLÓ AUTOMATA INDÍTÁS
+                // Automata indítás némítással, ha a Chrome tiltaná
                 videoElement.play().catch(() => {
-                    // Ha a böngésző hisztizik a hang miatt, lenémítjuk és úgy indítjuk el automatikusan!
                     videoElement.muted = true;
-                    videoElement.play().catch(err => console.log("Lejátszási hiba:", err));
+                    videoElement.play().catch(err => console.log(err));
                 });
             } else {
-                // Ha nagyon elcsúszna az idő (pl. pufferelés miatt), finoman utánhúzzuk
                 if (Math.abs(videoElement.currentTime - currentOffset) > 3) {
                     videoElement.currentTime = currentOffset;
                 }
@@ -116,13 +174,16 @@ async function runTvEngine() {
         }
 
     } catch (error) {
-        console.error(error);
         overlay.style.display = 'flex';
-        overlay.innerText = "⚠️ Hiba a műsorfolyam betöltése közben.";
+        overlay.innerText = "📡 Jelenleg nincs aktív adásfájl.";
+        lblShow.innerText = "Adásszünet";
+        lblTime.innerText = "Kezdés: --:--";
+        watermark.style.display = 'none';
+        videoElement.pause();
+        videoElement.removeAttribute('src');
     }
 }
 
-// Azonnali indítás és folyamatos szinkronizáció 5 másodpercenként
 runTvEngine();
 setInterval(runTvEngine, 5000);
 </script>
