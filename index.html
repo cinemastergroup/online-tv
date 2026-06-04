@@ -13,13 +13,25 @@
         .channel-btn:hover { background: #3d4556; color: #fff; }
         .channel-btn.active { background: var(--accent-color); color: white; }
 
-        /* LEJÁTSZÓ KONTÉNER */
+        /* LEJÁTSZÓ KÖZPONTI KONTÉNER */
         .tv-container { position: relative; width: 100%; max-width: 1000px; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden; box-shadow: 0 12px 36px rgba(0,0,0,0.5); border: 1px solid var(--border-color); display: flex; justify-content: center; align-items: center; }
         
-        iframe, video { width: 100%; height: 100%; border: none; background: #000; position: absolute; top: 0; left: 0; z-index: 1 !important; }
+        /* RUGALMAS BELSŐ DOBOZ, AMI LEKÖVETI A FILMET */
+        .player-viewport { position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
         
-        /* A KÜLSŐ LOGÓT KIKAPCSOLJUK, MERT BEÉGETJÜK AZ IFRAME-BE */
-        .tv-watermark { display: none !important; }
+        iframe, video { width: 100%; height: 100%; border: none; background: #000; position: absolute; top: 0; left: 0; z-index: 1; }
+        
+        /* GOLYÓÁLLÓ, FIX PIXELMÉRETŰ LEBEGŐ LOGÓ */
+        .tv-watermark { 
+            position: absolute; 
+            width: 75px !important; /* FIX, JÓL OLVASHATÓ, DE NEM TOLAKODÓ MÉRET GÉPEN ÉS TÉVÉN IS */
+            height: auto !important;
+            opacity: 0.85; 
+            pointer-events: none; 
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.9)); 
+            z-index: 999999999 !important; 
+            display: none; 
+        }
         
         /* INFO SÁV */
         .info-bar { width: 100%; max-width: 1000px; background: var(--panel-color); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-top: 20px; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; transition: all 0.3s ease; z-index: 100; }
@@ -72,8 +84,11 @@
     <div class="fs-trigger-bottom"></div>
 
     <div id="noStreamOverlay" class="no-stream-overlay">📡 Csatorna betöltése...</div>
-    <img id="tvWatermark" class="tv-watermark" alt="Logo">
-    <div id="mediaPlaceholder" style="width:100%; height:100%; position: absolute; top:0; left:0; z-index: 1;"></div>
+    
+    <div class="player-viewport" style="width: 100%; height: 100%;">
+        <img id="tvWatermark" class="tv-watermark" alt="Logo">
+        <div id="mediaPlaceholder" style="width:100%; height:100%;"></div>
+    </div>
 </div>
 
 <div class="info-bar" id="mainInfoBar">
@@ -153,7 +168,17 @@ async function runTvEngine() {
         if (!response.ok) throw new Error("Üres műsor.");
         
         const config = await response.json();
-        const logoUrl = (config.logo && config.logo.url) ? config.logo.url : '';
+        
+        if (config.logo && config.logo.url) {
+            watermark.src = config.logo.url;
+            watermark.style.display = 'block';
+            
+            // POZÍCIÓ BEÁLLÍTÁSA A BELSŐ ABLAKHOZ KÉPEST
+            watermark.style.top = config.logo.topPercent + '%';
+            watermark.style.left = (config.logo.leftPercent + 1) + '%'; // Kis finomhangolás az Archive sáv miatt
+        } else {
+            watermark.style.display = 'none';
+        }
 
         const now = new Date();
         let currentTrack = null;
@@ -195,14 +220,7 @@ async function runTvEngine() {
                     
                     if (archiveId) {
                         const startSeconds = Math.round(currentOffset);
-                        
-                        // ÁTADJUK A LOGÓT DIREKTBEN AZ ARCHIVE.ORG LEJÁTSZÓ MOTORJÁNAK (URL-EN KÓDOLVA)
-                        let embedUrl = `https://archive.org/embed/${archiveId}?start=${startSeconds}&autoplay=1`;
-                        if (logoUrl) {
-                            embedUrl += `&logo=${encodeURIComponent(logoUrl)}`;
-                        }
-                        
-                        mediaPlaceholder.innerHTML = `<iframe src="${embedUrl}" allowfullscreen></iframe>`;
+                        mediaPlaceholder.innerHTML = `<iframe src="https://archive.org/embed/${archiveId}?start=${startSeconds}&autoplay=1" allowfullscreen></iframe>`;
                     } else {
                         mediaPlaceholder.innerHTML = `<video src="${currentTrack.url}" controls autoplay muted></video>`;
                     }
@@ -219,6 +237,7 @@ async function runTvEngine() {
             overlay.innerText = "📡 Jelenleg nincs adás ezen a csatornán.";
             lblShow.innerText = "Adásszünet";
             lblTime.innerText = "Kezdés: --:--";
+            watermark.style.display = 'none';
         }
 
     } catch (error) {
@@ -227,6 +246,7 @@ async function runTvEngine() {
         overlay.innerText = "📡 Jelenleg nincs aktív adásfájl.";
         lblShow.innerText = "Adásszünet";
         lblTime.innerText = "Kezdés: --:--";
+        watermark.style.display = 'none';
     }
 }
 
