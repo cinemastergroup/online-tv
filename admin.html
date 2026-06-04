@@ -2,7 +2,7 @@
 <html lang="hu">
 <head>
     <meta charset="UTF-8">
-    <title>Catcast Multi-Channel - Fix Automata Admin</title>
+    <title>CineMaster - Éles Online Automata Admin</title>
     <style>
         :root { --bg-color: #0f1115; --panel-color: #181d26; --accent-color: #536dfe; --text-color: #e3e8f0; --border-color: #262f3d; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; }
@@ -35,11 +35,9 @@
 </head>
 <body>
 
-<video id="hiddenDurationReader" style="display:none;" muted crossorigin="anonymous"></video>
+<video id="hiddenDurationReader" style="display:none;" muted></video>
 
 <div class="dashboard">
-    
-    <!-- BAL OLDAL -->
     <div>
         <div class="panel">
             <h2>✨ Új Csatorna Létrehozása</h2>
@@ -60,29 +58,17 @@
             <h2>Élő Monitor</h2>
             <div class="video-box" id="videoBoxContainer">
                 <img id="channelLogoImg" src="https://upload.wikimedia.org/wikipedia/commons/a/ab/Logo_TV_2015.png" class="tv-watermark" alt="Logo">
-                <video id="catcastEngine" controls autoplay muted crossorigin="anonymous"></video>
-            </div>
-            <div style="margin-top: 20px; background: #11141a; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
-                <h3 style="margin-top:0; font-size: 14px; color:#fff;">Vizuális Logó Beállítások</h3>
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label>Logó Kép URL (.png)</label>
-                    <input type="text" id="logoUrlInput" value="https://upload.wikimedia.org/wikipedia/commons/a/ab/Logo_TV_2015.png" oninput="changeLogoSrc()">
-                </div>
-                <div class="form-group">
-                    <label>Logó Mérete: <span id="logoSizeVal" style="color:var(--accent-color); font-weight:bold;">60px</span></label>
-                    <input type="range" id="logoSizeSlider" min="30" max="200" value="60" oninput="changeLogoSize()">
-                </div>
+                <video id="catcastEngine" controls autoplay muted></video>
             </div>
         </div>
     </div>
 
-    <!-- JOBB OLDAL -->
     <div class="panel">
-        <h2>Műsorfolyam Tervező (Végtelenített Fix Automata)</h2>
+        <h2>Műsorfolyam Tervező (100% Online Automata)</h2>
         <div class="input-row">
             <div>
                 <label>Melyik csatorna műsorát írod éppen?:</label>
-                <input type="text" id="channelId" value="cinemaster" placeholder="pl. cinemaster">
+                <input type="text" id="channelId" value="cinemaster">
             </div>
             <div>
                 <label>Adásfolyam kezdete:</label>
@@ -129,32 +115,11 @@ function createNewChannelConfig() {
     const id = document.getElementById('newChannelId').value.trim().toLowerCase();
     if(!name || !id) return;
     masterChannelList.push({ id, name });
-    document.getElementById('channelId').value = id;
     const blob = new Blob([JSON.stringify(masterChannelList, null, 2)], {type : 'application/json'});
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = "channels.json"; a.click(); URL.revokeObjectURL(url);
-    document.getElementById('newChannelName').value = ''; document.getElementById('newChannelId').value = '';
+    const a = document.createElement('a'); a.href = url; a.download = "channels.json"; a.click();
 }
 
-function changeLogoSrc() { logoConfig.url = document.getElementById('logoUrlInput').value; document.getElementById('channelLogoImg').src = logoConfig.url; }
-function changeLogoSize() { const size = document.getElementById('logoSizeSlider').value; document.getElementById('logoSizeVal').innerText = size + "px"; document.getElementById('channelLogoImg').style.width = size + "px"; logoConfig.size = parseInt(size); }
-
-const logoImg = document.getElementById('channelLogoImg');
-const containerBox = document.getElementById('videoBoxContainer');
-let isDragging = false; let startX, startY, initialTop, initialLeft;
-logoImg.addEventListener('mousedown', (e) => { isDragging = true; startX = e.clientX; startY = e.clientY; initialTop = logoImg.offsetTop; initialLeft = logoImg.offsetLeft; e.preventDefault(); });
-document.addEventListener('mousemove', (e) => {
-    if (!isDragging) return;
-    const deltaX = e.clientX - startX; const deltaY = e.clientY - startY;
-    let newTop = initialTop + deltaY; let newLeft = initialLeft + deltaX;
-    const maxTop = containerBox.clientHeight - logoImg.clientHeight; const maxLeft = containerBox.clientWidth - logoImg.clientWidth;
-    if(newTop < 0) newTop = 0; if(newTop > maxTop) newTop = maxTop; if(newLeft < 0) newLeft = 0; if(newLeft > maxLeft) newLeft = maxLeft;
-    logoImg.style.top = newTop + 'px'; logoImg.style.left = newLeft + 'px';
-    logoConfig.topPercent = (newTop / containerBox.clientHeight) * 100; logoConfig.leftPercent = (newLeft / containerBox.clientWidth) * 100;
-});
-document.addEventListener('mouseup', () => { isDragging = false; });
-
-// TISZTÁN AUTOMATA MÉRÉS
 function pushToTimelineAutomated() {
     const title = document.getElementById('vTitle').value.trim();
     const url = document.getElementById('vUrl').value.trim();
@@ -172,7 +137,7 @@ function pushToTimelineAutomated() {
 
     btn.disabled = true;
     statusLog.style.color = "#ffb300";
-    statusLog.innerText = "Mérés folyamatban... ⏳";
+    statusLog.innerText = "Automata online mérés folyamatban... ⏳";
 
     reader.src = url;
 
@@ -183,61 +148,33 @@ function pushToTimelineAutomated() {
             document.getElementById('vTitle').value = '';
             document.getElementById('vUrl').value = '';
             statusLog.style.color = "#00e676";
-            statusLog.innerText = "✅ Siker! Videó hozzáadva az idősávhoz.";
+            statusLog.innerText = "✅ Sikeres automata mérés! Videó hozzáadva.";
             refreshTimeline();
         } else {
             statusLog.style.color = "#ff3d00";
             statusLog.innerText = "❌ Hiba: Nem olvasható játékidő.";
         }
         btn.disabled = false;
-        reader.src = "";
+        reader.removeAttribute('src');
+        reader.load();
     };
 
     reader.onerror = function() {
-        // Ha a háttérben beolvasta a hosszat, akkor rögzítjük az automatikusan mért adatot!
-        if(reader.duration) {
-            statusLog.style.color = "#00e676";
-            statusLog.innerText = "✅ Automata mérés sikeres!";
-            catcastPlaylist.push({ title, url, duration: Math.round(reader.duration) });
-            document.getElementById('vTitle').value = '';
-            document.getElementById('vUrl').value = '';
-            refreshTimeline();
-        } else {
-            statusLog.style.color = "#ff3d00";
-            statusLog.innerText = "❌ Hiba a hálózati mérés során.";
-        }
+        statusLog.style.color = "#ff3d00";
+        statusLog.innerText = "❌ Hálózati mérési hiba történt.";
         btn.disabled = false;
     };
 }
 
-// MAGYAR DÁTUMFORMÁTUMOT IS TRETELŐ IDŐSÁV FRISSÍTÉS
 function refreshTimeline() {
     const startInput = document.getElementById('streamStartDateTime').value; 
     const container = document.getElementById('timelineContainer');
     if (!startInput || catcastPlaylist.length === 0) return;
     
     container.innerHTML = ''; 
-    let timelinePointer;
-    
-    // Átalakítjuk a magyar Windows-os formátumot (pontok, szóközök) szabványos formára, hogy ne fagyjon le a JS
-    let cleanStart = startInput.replace(/\s+/g, '');
-    if(cleanStart.includes('.')) {
-        let parts = cleanStart.split('.');
-        if(parts[3] && parts[3].includes(':')) {
-            let timeParts = parts[3].split(':');
-            timelinePointer = new Date(parts[0], parts[1]-1, parts[2], timeParts[0], timeParts[1], 0);
-        } else {
-            timelinePointer = new Date(startInput);
-        }
-    } else {
-        timelinePointer = new Date(startInput);
-    }
-    
-    if (isNaN(timelinePointer.getTime())) {
-        timelinePointer = new Date();
-    }
-
+    let timelinePointer = new Date(startInput); 
     let totalSecs = 0;
+    
     catcastPlaylist.forEach((track) => {
         track.start = timelinePointer.toISOString();
         const startLocal = timelinePointer.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
@@ -249,17 +186,11 @@ function refreshTimeline() {
         const displaySec = track.duration % 60;
         container.innerHTML += `<div class="timeline-card"><div class="card-time"><span style="display:block; font-size:11px; color:#8a99ad;">${dateLocal}</span>⏱️ ${startLocal}</div><div class="card-info"><div class="card-title">${track.title}</div><div class="card-url">${track.url}</div></div><div class="card-duration">${displayMin}m ${displaySec}s</div></div>`;
     });
+    
     const endDateStr = timelinePointer.toLocaleDateString('hu-HU', { month: 'short', day: 'numeric', weekday: 'short' });
     const endTimeStr = timelinePointer.toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' });
     document.getElementById('streamEndTimeCounter').innerText = `${endDateStr} ${endTimeStr}`;
     document.getElementById('streamTotalDurationMinutes').innerText = `(Összesen: ${Math.round(totalSecs / 60)} perc)`;
-    runCatcastEngine();
-}
-
-function runCatcastEngine() {
-    const videoElement = document.getElementById('catcastEngine'); const now = new Date();
-    const liveTrack = catcastPlaylist.find(track => { const trackStart = new Date(track.start); const trackEnd = new Date(trackStart.getTime() + track.duration * 1000); return now >= trackStart && now < trackEnd; });
-    if (liveTrack) { const trackStart = new Date(liveTrack.start); const currentOffset = (now.getTime() - trackStart.getTime()) / 1000; if (videoElement.src !== liveTrack.url) { videoElement.src = liveTrack.url; videoElement.currentTime = currentOffset; videoElement.play().catch(() => {}); } }
 }
 
 function exportCatcastJSON() {
@@ -268,7 +199,7 @@ function exportCatcastJSON() {
     const channelConfig = { logo: logoConfig, schedule: catcastPlaylist };
     const blob = new Blob([JSON.stringify(channelConfig, null, 2)], {type : 'application/json'});
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = chId + ".json"; a.click(); URL.revokeObjectURL(url);
+    const a = document.createElement('a'); a.href = url; a.download = chId + ".json"; a.click();
 }
 </script>
 </body>
