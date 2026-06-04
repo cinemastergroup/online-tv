@@ -1,0 +1,22 @@
+[
+  {
+    "id": "cinemaster",
+    "name": "CineMaster"
+  },
+  {
+    "id": "cinemaster2",
+    "name": "CineMaster 2"
+  },
+  {
+    "id": "retrotv",
+    "name": "RetroTV"
+  },
+  {
+    "id": "horrorchannel",
+    "name": "Horror Channel"
+  },
+  {
+    "id": "besthits",
+    "name": "Best Hits TV"
+  }
+]
