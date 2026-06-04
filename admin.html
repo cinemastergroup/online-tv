@@ -2,7 +2,7 @@
 <html lang="hu">
 <head>
     <meta charset="UTF-8">
-    <title>Catcast Multi-Channel - Intelligens Automata Admin</title>
+    <title>Catcast Multi-Channel - Teljes Automata Admin</title>
     <style>
         :root { --bg-color: #0f1115; --panel-color: #181d26; --accent-color: #536dfe; --text-color: #e3e8f0; --border-color: #262f3d; }
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px; }
@@ -58,6 +58,18 @@
                 <img id="channelLogoImg" src="https://upload.wikimedia.org/wikipedia/commons/a/ab/Logo_TV_2015.png" class="tv-watermark" alt="Logo">
                 <video id="catcastEngine" controls autoplay muted crossorigin="anonymous"></video>
             </div>
+            
+            <div style="margin-top: 20px; background: #11141a; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+                <h3 style="margin-top:0; font-size: 14px; color:#fff;">Vizuális Logó Beállítások</h3>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>Logó Kép URL (.png)</label>
+                    <input type="text" id="logoUrlInput" value="https://upload.wikimedia.org/wikipedia/commons/a/ab/Logo_TV_2015.png" oninput="changeLogoSrc()">
+                </div>
+                <div class="form-group">
+                    <label>Logó Mérete: <span id="logoSizeVal" style="color:var(--accent-color); font-weight:bold;">60px</span></label>
+                    <input type="range" id="logoSizeSlider" min="30" max="200" value="60" oninput="changeLogoSize()">
+                </div>
+            </div>
         </div>
     </div>
 
@@ -108,12 +120,10 @@ let catcastPlaylist = [];
 let logoConfig = { url: "https://upload.wikimedia.org/wikipedia/commons/a/ab/Logo_TV_2015.png", size: 60, topPercent: 5, leftPercent: 5 };
 let masterChannelList = [];
 
-// INTELLIGENS AUTOMATA ADATBÁZIS
-// Ide gyűjtjük ki a filmek pontos másodperceit. A gép ebből magától megméri!
+// AUTOMATA IDŐTARTAM ADATBÁZIS
 const videoDatabase = {
     "300.mp4": 7000,
     "300": 7000
-    // Ha van még filmed, ide bármikor beírhatod a fájlnevet és a hosszat, és azt is magától mérni fogja!
 };
 
 function createNewChannelConfig() {
@@ -125,6 +135,24 @@ function createNewChannelConfig() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = "channels.json"; a.click();
 }
+
+function changeLogoSrc() { logoConfig.url = document.getElementById('logoUrlInput').value; document.getElementById('channelLogoImg').src = logoConfig.url; }
+function changeLogoSize() { const size = document.getElementById('logoSizeSlider').value; document.getElementById('logoSizeVal').innerText = size + "px"; document.getElementById('channelLogoImg').style.width = size + "px"; logoConfig.size = parseInt(size); }
+
+const logoImg = document.getElementById('channelLogoImg');
+const containerBox = document.getElementById('videoBoxContainer');
+let isDragging = false; let startX, startY, initialTop, initialLeft;
+logoImg.addEventListener('mousedown', (e) => { isDragging = true; startX = e.clientX; startY = e.clientY; initialTop = logoImg.offsetTop; initialLeft = logoImg.offsetLeft; e.preventDefault(); });
+document.addEventListener('mousemove', (e) => {
+    if (!isDragging) return;
+    const deltaX = e.clientX - startX; const deltaY = e.clientY - startY;
+    let newTop = initialTop + deltaY; let newLeft = initialLeft + deltaX;
+    const maxTop = containerBox.clientHeight - logoImg.clientHeight; const maxLeft = containerBox.clientWidth - logoImg.clientWidth;
+    if(newTop < 0) newTop = 0; if(newTop > maxTop) newTop = maxTop; if(newLeft < 0) newLeft = 0; if(newLeft > maxLeft) newLeft = maxLeft;
+    logoImg.style.top = newTop + 'px'; logoImg.style.left = newLeft + 'px';
+    logoConfig.topPercent = (newTop / containerBox.clientHeight) * 100; logoConfig.leftPercent = (newLeft / containerBox.clientWidth) * 100;
+});
+document.addEventListener('mouseup', () => { isDragging = false; });
 
 function pushToTimelineIntelligent() {
     const title = document.getElementById('vTitle').value.trim();
@@ -138,10 +166,7 @@ function pushToTimelineIntelligent() {
         return;
     }
 
-    // AUTOMATA JÁTÉKIDŐ KERESÉS
     let durationInSeconds = 0;
-    
-    // Megnézzük, hogy a link végén lévő fájlnév szerepel-e az adatbázisban
     for (let key in videoDatabase) {
         if (url.toLowerCase().includes(key.toLowerCase()) || title.toLowerCase().includes(key.toLowerCase())) {
             durationInSeconds = videoDatabase[key];
@@ -149,18 +174,15 @@ function pushToTimelineIntelligent() {
         }
     }
 
-    // Ha teljesen új a film és nincs a listában, kap egy alapértelmezett 2 órás hosszat (7200 mp), hogy ne fagyjon le
     if (durationInSeconds === 0) {
         durationInSeconds = 7200; 
     }
 
     catcastPlaylist.push({ title, url, duration: durationInSeconds });
-    
     document.getElementById('vTitle').value = '';
     document.getElementById('vUrl').value = '';
     statusLog.style.color = "#00e676";
     statusLog.innerText = "✅ Sikeres automata felismerés! Videó hozzáadva.";
-    
     refreshTimeline();
 }
 
@@ -206,11 +228,6 @@ function refreshTimeline() {
     const endTimeStr = timelinePointer.toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' });
     document.getElementById('streamEndTimeCounter').innerText = `${endDateStr} ${endTimeStr}`;
     document.getElementById('streamTotalDurationMinutes').innerText = `(Összesen: ${Math.round(totalSecs / 60)} perc)`;
-    
-    // Elindítjuk az előnézetet a monitoron is, ha a jelenlegi időbe esik
-    const videoElement = document.getElementById('catcastEngine'); const now = new Date();
-    const liveTrack = catcastPlaylist.find(track => { const trackStart = new Date(track.start); const trackEnd = new Date(trackStart.getTime() + track.duration * 1000); return now >= trackStart && now < trackEnd; });
-    if (liveTrack) { const trackStart = new Date(liveTrack.start); const currentOffset = (now.getTime() - trackStart.getTime()) / 1000; if (videoElement.src !== liveTrack.url) { videoElement.src = liveTrack.url; videoElement.currentTime = currentOffset; videoElement.play().catch(() => {}); } }
 }
 
 function exportCatcastJSON() {
