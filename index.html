@@ -8,18 +8,30 @@
         
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--bg-color); color: var(--text-color); font-family: 'Segoe UI', Tahoma, sans-serif; overflow: hidden; }
 
-        /* A LEJÁTSZÓ KONTÉNER - ALAPÉRTELMEZETTEN TELJES KÉPERNYŐS */
+        /* A LEJÁTSZÓ KONTÉNER */
         .tv-container { position: relative; width: 100vw; height: 100vh; background: #000; display: flex; justify-content: center; align-items: center; }
         
         iframe, video { width: 100%; height: 100%; border: none; background: #000; position: absolute; top: 0; left: 0; z-index: 1; }
         
-        /* MATEMATIKAI ALAPÚ LOGÓ - VÉGIG A HELYÉN MARAD */
+        /* LÁTHATATLAN SMART TV ÜVEGFAL (FAL) */
+        .tv-mouse-tracker {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 99999; /* Pontosan a videó/iframe (1) felett, de a vízjel és az info-bar alatt */
+            background: rgba(0,0,0,0.01);
+            pointer-events: auto; /* Alapból aktív, nem engedi át a mozgást az iframe-nek */
+        }
+
+        /* MATEMATIKAI ALAPÚ LOGÓ */
         .tv-watermark { 
             position: absolute; 
             opacity: 0.9; 
             pointer-events: none; 
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.9)); 
-            z-index: 999999 !important; /* Mindig a videó felett legyen */
+            z-index: 999999 !important;
             display: block; 
             height: auto !important;
         }
@@ -27,7 +39,7 @@
         /* REJTHETŐ ALSÓ SMART SÁV */
         .info-bar { 
             position: absolute; 
-            bottom: -220px; /* Alapértelmezetten rejtve a képernyő alatt */
+            bottom: -220px; 
             left: 2%; 
             width: 96%; 
             background: var(--panel-color); 
@@ -45,31 +57,25 @@
             box-shadow: 0 -10px 30px rgba(0,0,0,0.7);
         }
         
-        /* Amikor aktív, felúszik a helyére */
         .info-bar.visible { bottom: 0px; }
 
         .info-top-row { display: flex; align-items: center; justify-content: space-between; width: 100%; }
         .info-left { display: flex; flex-direction: column; }
         .badge-live { background: #ff1744; color: white; font-size: 10px; font-weight: bold; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; width: max-content; margin-bottom: 4px; }
         .show-title { font-size: 22px; font-weight: bold; color: #fff; }
-        
-        /* ALAP IDŐINFÓ STÍLUS */
         .time-info { font-size: 18px; font-weight: bold; color: #8a99ad; margin-left: 15px; }
         
-        /* KONTROLL GOMBOK CSOPORTJA */
         .controls-right { display: flex; gap: 10px; }
         .btn-epg { background: #304ffe; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; transition: 0.2s; }
         .btn-epg:hover { background: #1a237e; box-shadow: 0 0 10px rgba(48, 79, 254, 0.5); }
         .btn-fs { background: #2e7d32; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; transition: 0.2s; }
         .btn-fs:hover { background: #1b5e20; box-shadow: 0 0 10px rgba(46, 125, 50, 0.5); }
 
-        /* CSATORNA VÁLASZTÓ AZ ALSÓ PANELEN */
         .channel-selector { display: flex; gap: 10px; width: 100%; justify-content: flex-start; overflow-x: auto; padding-bottom: 5px; }
         .channel-btn { background: #232936; color: #a4b3c6; border: 1px solid #2c3545; padding: 10px 22px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; white-space: nowrap; font-size: 14px; }
         .channel-btn:hover { background: #323a4b; color: #fff; border-color: #536dfe; }
         .channel-btn.active { background: var(--accent-color); color: white; border-color: var(--accent-color); box-shadow: 0 0 15px rgba(83, 109, 254, 0.4); }
 
-        /* KÖZÉPSŐ POPUP MŰSORÚJSÁG */
         .epg-modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 2000000000 !important; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
         .epg-modal-overlay.active { opacity: 1; pointer-events: auto; display: flex; justify-content: center; align-items: center; }
         
@@ -79,26 +85,12 @@
         .btn-close-epg { background: #ff1744; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; }
         
         .epg-rows-container { overflow-y: auto; flex-grow: 1; padding-right: 5px; }
-        
-        /* MEGNÖVELT, VASTAG EPG SOROK STÍLUSA */
         .epg-row { display: flex; align-items: center; padding: 14px 12px; border-bottom: 1px solid #1f2633; font-size: 18px; font-weight: bold; }
         .epg-row:last-child { border-bottom: none; }
         .epg-time { color: #ffb300; font-weight: bold; min-width: 90px; font-size: 19px; }
         .epg-track-title { color: #fff; font-weight: bold; }
         
         .no-stream-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; color: #8a99ad; font-size: 20px; font-weight: bold; background: #0f1115; z-index: 5; }
-
-        /* LÁTHATATLAN SMART TV ESEMÉNY FIGYELŐ SÁV (FELSŐ 85%) */
-        .tv-mouse-tracker {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 85vh;
-            z-index: 100000; /* A videó felett van, de a menü alatt */
-            background: rgba(0,0,0,0.01);
-            pointer-events: none; /* Átengedi a kattintásokat a play gombra */
-        }
     </style>
 </head>
 <body>
@@ -106,7 +98,9 @@
 <div class="tv-container" id="mainTvContainer">
     <div id="noStreamOverlay" class="no-stream-overlay">📡 Csatorna betöltése...</div>
     <div id="mediaPlaceholder" style="width:100%; height:100%;"></div>
+    
     <div class="tv-mouse-tracker" id="tvMouseTracker"></div>
+    
     <img id="tvWatermark" class="tv-watermark" alt="Logo">
 
     <div class="info-bar" id="mainInfoBar">
@@ -156,6 +150,7 @@ const epgRowsContainer = document.getElementById('epgRowsContainer');
 const mediaPlaceholder = document.getElementById('mediaPlaceholder');
 const epgModalTitle = document.getElementById('epgModalTitle');
 const mainInfoBar = document.getElementById('mainInfoBar');
+const tracker = document.getElementById('tvMouseTracker');
 
 let activeChannel = 'cinemaster';
 let lastRenderedUrl = '';
@@ -163,10 +158,14 @@ let currentLogoConfig = null;
 let idleTimer;
 let isEpgOpen = false;
 
-// --- IDLE TIMER LOGIKA (AUTOMATA ELREJTÉS) ---
+// --- IDLE TIMER LOGIKA (AUTOMATA ELREJTÉS + DINAMIKUS PAJZS) ---
 
 function showControls() {
     mainInfoBar.classList.add('visible');
+    
+    // AMÍG LÁTHATÓ A SÁV: Kikapcsoljuk a falat, hogy lehessen tekerni a videót!
+    if (tracker) tracker.style.pointerEvents = 'none';
+    
     clearTimeout(idleTimer);
     if (!isEpgOpen) {
         idleTimer = setTimeout(hideControls, 3000);
@@ -176,17 +175,27 @@ function showControls() {
 function hideControls() {
     if (!isEpgOpen) {
         mainInfoBar.classList.remove('visible');
+        // AMINT ELTŰNIK A SÁV: Visszakapcsoljuk a falat, hogy teljes képernyőn is elkapja a mozgást!
+        if (tracker) tracker.style.pointerEvents = 'auto';
     }
 }
 
-// Golyóálló mozgásérzékelés iframe-ek mellett is (Globális ablak események)
-window.addEventListener('mousemove', showControls);
-window.addEventListener('click', showControls);
-window.addEventListener('keydown', showControls);
-window.addEventListener('touchstart', showControls);
+// Kizárólag a láthatatlan fal figyelése (hogy az iframe ne nyelje el)
+if (tracker) {
+    tracker.addEventListener('mousemove', showControls);
+    tracker.addEventListener('click', showControls);
+    tracker.addEventListener('touchstart', showControls);
+}
 
-// Ha magán az alsó felugró sávon mozogsz, tartsa nyitva
+// Ha magán az alsó felugró sávon dolgozunk, maradjon nyitva a menü
 mainInfoBar.addEventListener('mousemove', showControls);
+mainInfoBar.addEventListener('click', (e) => {
+    e.stopPropagation();
+    showControls();
+});
+
+// Billentyűzet támogatás Smart TV távirányítókhoz
+window.addEventListener('keydown', showControls);
 
 // ---------------------------------------------
 
@@ -257,7 +266,6 @@ function switchChannel(channelId) {
 
 async function runTvEngine() {
     try {
-        // 1. Logó betöltése
         try {
             const logoResponse = await fetch(`${activeChannel}_logo.json?t=${new Date().getTime()}`, {
                 cache: "no-store",
@@ -280,7 +288,6 @@ async function runTvEngine() {
             currentLogoConfig = null;
         }
 
-        // 2. Műsorrend betöltése
         const response = await fetch(`${activeChannel}_schedule.json?t=${new Date().getTime()}`, {
             cache: "no-store",
             headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
