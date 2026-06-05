@@ -195,7 +195,7 @@ document.addEventListener('mousemove', (e) => {
 });
 document.addEventListener('mouseup', () => { isDragging = false; });
 
-function pushToTimelineIntelligent() {
+async function pushToTimelineIntelligent() {
     const title = document.getElementById('vTitle').value.trim();
     const url = document.getElementById('vUrl').value.trim();
     const startInput = document.getElementById('streamStartDateTime').value;
@@ -208,57 +208,90 @@ function pushToTimelineIntelligent() {
     }
 
     statusLog.style.color = "#ff9100";
-    statusLog.innerText = "⏳ Videó hosszának kinyerése közvetlenül a fájlból...";
-    document.getElementById('addBlockBtn').disabled = true; // Letiltjuk a gombot a mérés idejére
+    statusLog.innerText = "⏳ Valós játékidő lekérése az Archive.org-ról...";
+    document.getElementById('addBlockBtn').disabled = true;
 
-    // 1. LÉPÉS: Létrehozunk egy láthatatlan videó elemet a memóriában a méréshez
-    const tempVideo = document.createElement('video');
-    tempVideo.src = url;
-    tempVideo.preload = "metadata"; // Csak a metaadatokat (hossz, felbontás) kérjük le, nem tölti le a teljes filmet!
-    tempVideo.crossOrigin = "anonymous"; // CORS hibák elkerülése érdekében
+    let durationInSeconds = 7200; // Alapértelmezett 120 perc tartaléknak
 
-    // 2. LÉPÉS: Amikor a böngésző sikeresen kiolvasta a videó hosszát
-    tempVideo.onloadedmetadata = function() {
-        let durationInSeconds = Math.round(tempVideo.duration);
+    // 1. MEGNÉZZÜK, HOGY ARCHIVE.ORG LINK-E
+    if (url.includes('archive.org')) {
+        try {
+            // Kinyerjük az Archive ID-t a linkből
+            let archiveId = '';
+            if (url.includes('/download/')) {
+                archiveId = url.split('/download/')[1].split('/')[0];
+            } else if (url.includes('/details/')) {
+                archiveId = url.split('/details/')[1].split('/')[0];
+            }
 
-        // Biztonsági ellenőrzés (ha hibás lenne a fájl)
-        if (isNaN(durationInSeconds) || durationInSeconds === 0) {
-            durationInSeconds = 7200; // Tartalék 120 perc, ha a mérés kudarcot vallana
+            if (archiveId) {
+                // Meghívjuk az Archive.org hivatalos, szabadon átjárható API-ját
+                const apiUrl = `https://archive.org/metadata/${archiveId}`;
+                const response = await fetch(apiUrl);
+                
+                if (response.ok) {
+                    const metaData = await response.json();
+                    
+                    // Megkeressük a metaadatok között a hossz (length) mezőt
+                    if (metaData.metadata && metaData.metadata.length) {
+                        const rawLength = metaData.metadata.length[0] || metaData.metadata.length;
+                        
+                        // Ha HH:MM:SS formátumban van (pl. 01:30:25), átváltjuk másodpercre
+                        if (String(rawLength).includes(':')) {
+                            const p = String(rawLength).split(':');
+                            let secs = 0;
+                            if (p.length === 3) secs = (+p[0]) * 3600 + (+p[1]) * 60 + (+p[2]);
+                            else if (p.length === 2) secs = (+p[0]) * 60 + (+p[1]);
+                            if (secs > 0) durationInSeconds = Math.round(secs);
+                        } else {
+                            // Ha sima számként adta vissza (másodpercben)
+                            if (!isNaN(rawLength) && parseFloat(rawLength) > 0) {
+                                durationInSeconds = Math.round(parseFloat(rawLength));
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (apiError) {
+            console.log("Nem sikerült elérni az Archive API-t, marad a 120 perc.", apiError);
         }
+    } else {
+        // 2. HA NEM ARCHIVE LINK (PL. BACKBLAZE) – Megpróbáljuk a natív böngészős mérést
+        try {
+            const tempVideo = document.createElement('video');
+            tempVideo.src = url;
+            tempVideo.preload = "metadata";
+            tempVideo.crossOrigin = "anonymous";
+            
+            await new Promise((resolve, reject) => {
+                tempVideo.onloadedmetadata = () => {
+                    if (!isNaN(tempVideo.duration) && tempVideo.duration > 0) {
+                        durationInSeconds = Math.round(tempVideo.duration);
+                    }
+                    resolve();
+                };
+                tempVideo.onerror = () => reject();
+                // Biztonsági időkorlát, ha a nem-archive szerver nem válaszolna 3 mp-en belül
+                setTimeout(resolve, 3000); 
+            });
+        } catch (e) {
+            console.log("Helyi mérés hiba, fallback 120 percre.");
+        }
+    }
 
-        // Hozzáadjuk a listához a VALÓDI, kinyert hosszal
-        catcastPlaylist.push({ title, url, duration: durationInSeconds });
-        
-        // Alaphelyzetbe állítjuk az űrlapot
-        document.getElementById('vTitle').value = '';
-        document.getElementById('vUrl').value = '';
-        
-        statusLog.style.color = "#00e676";
-        const min = Math.floor(durationInSeconds / 60);
-        statusLog.innerText = `✅ Sikeresen kinyerve! (${min} perc). Blokk hozzáadva a listához.`;
-        
-        document.getElementById('addBlockBtn').disabled = false; // Visszakapcsoljuk a gombot
-        refreshTimeline();
-    };
-
-    // 3. LÉPÉS: Hibakezelés (Ha rossz a link, nem létezik a fájl, vagy a szerver tiltja a lekérést)
-    tempVideo.onerror = function() {
-        console.log("Nem sikerült a videó automatikus mérése, fallback 120 percre.");
-        
-        // Nem akasztjuk meg a munkát, rátesszük a 120 perces sablont tartaléknak
-        catcastPlaylist.push({ title, url, duration: 7200 });
-        
-        document.getElementById('vTitle').value = '';
-        document.getElementById('vUrl').value = '';
-        
-        statusLog.style.color = "#ff9100";
-        statusLog.innerText = "⚠️ A videót nem sikerült közvetlenül megmérni (biztonsági okokból), 120 perccel lett hozzáadva.";
-        
-        document.getElementById('addBlockBtn').disabled = false;
-        refreshTimeline();
-    };
+    // Blokkszerű hozzáadás a véglegesített időtartammal
+    catcastPlaylist.push({ title, url, duration: durationInSeconds });
+    
+    document.getElementById('vTitle').value = '';
+    document.getElementById('vUrl').value = '';
+    document.getElementById('addBlockBtn').disabled = false;
+    
+    statusLog.style.color = "#00e676";
+    const finalMin = Math.floor(durationInSeconds / 60);
+    statusLog.innerText = `✅ Sikeresen rögzítve! Valós játékidő: ${finalMin} perc.`;
+    
+    refreshTimeline();
 }
-
 // ÚJ VISSZATÖRLŐ FUNKCIÓ: Kivágja a műsort a listából, és kényszeríti az újraszámolást
 function removeTrackFromTimeline(index) {
     catcastPlaylist.splice(index, 1);
