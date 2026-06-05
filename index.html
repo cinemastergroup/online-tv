@@ -87,6 +87,17 @@
         .epg-track-title { color: #fff; font-weight: bold; }
         
         .no-stream-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; color: #8a99ad; font-size: 20px; font-weight: bold; background: #0f1115; z-index: 5; }
+
+	/* LÁTHATATLAN ESEMÉNYELNYELŐ RÉTEG SMART TV-RE */
+	.tv-mouse-tracker {
+    		position: absolute;
+    		top: 0;
+    		left: 0;
+    		width: 100%;
+    		height: 100%;
+    		z-index: 100000; /* A videó felett van, de a menü (100001) alatt */
+    		background: rgba(0,0,0,0.01); /* Minimális opacity, hogy a TV böngészője érzékelje */
+    		pointer-events: auto; }
     </style>
 </head>
 <body>
@@ -94,6 +105,7 @@
 <div class="tv-container" id="mainTvContainer">
     <div id="noStreamOverlay" class="no-stream-overlay">📡 Csatorna betöltése...</div>
     <div id="mediaPlaceholder" style="width:100%; height:100%;"></div>
+    <div class="tv-mouse-tracker" id="tvMouseTracker"></div>
     <img id="tvWatermark" class="tv-watermark" alt="Logo">
 
     <div class="info-bar" id="mainInfoBar">
@@ -171,10 +183,32 @@ function hideControls() {
     }
 }
 
-// TV és egér eseményfigyelők az aktiváláshoz
-window.addEventListener('mousemove', showControls);
-window.addEventListener('click', showControls);
-window.addEventListener('keydown', showControls);
+// Megkeressük az új láthatatlan réteget
+const tracker = document.getElementById('tvMouseTracker');
+
+// Közös funkció az események kezelésére
+function handleUserActivity(e) {
+    showControls();
+    
+    // Ha a láthatatlan rétegre kattintottak, szimuláljuk a kattintást az alatta lévő videón is
+    if (e.type === 'click' && e.target === tracker) {
+        const videoEl = document.getElementById('tvEngine');
+        if (videoEl) {
+            if (videoEl.paused) videoEl.play().catch(()=>{});
+            else videoEl.pause();
+        }
+    }
+}
+
+// Figyeljük a globális ablakot
+window.addEventListener('mousemove', handleUserActivity);
+window.addEventListener('click', handleUserActivity);
+window.addEventListener('keydown', handleUserActivity);
+
+// Kifejezetten a láthatatlan rétegre is rákötjük a fülest
+tracker.addEventListener('mousemove', handleUserActivity);
+tracker.addEventListener('click', handleUserActivity);
+tracker.addEventListener('touchstart', handleUserActivity);
 
 // ---------------------------------------------
 
