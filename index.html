@@ -216,31 +216,37 @@ vid.onplay = () => { btnPlayToggle.innerText = '⏸'; };
 vid.onpause = () => { btnPlayToggle.innerText = '▶'; };
 
 // --- LEJÁTSZÁS / SZÜNET INTELLIGENS VEZÉRLŐ ---
-// --- LEJÁTSZÁS / SZÜNET EGYSZERŰSÍTETT TRIGGER ---
 function togglePlayPause() {
-    // Egyszerűen szimulálunk egy kattintást a láthatatlan üvegfalon keresztül
-    // Ez PC-n és TV-n is azonnal elindítja a natív videót vagy az iframe-et, amin épp áll a fókusz
-    const videoEl = document.getElementById('tvEngine');
-    
-    if (videoEl && videoEl.style.display !== 'none') {
-        if (videoEl.paused) {
-            videoEl.play().catch(()=>{});
-            btnPlayToggle.innerText = '⏸';
+    if (!lastRenderedUrl) return;
+
+    // 1. HA DIRECT MP4 VIDEÓ FUT
+    if (!lastRenderedUrl.includes('archive.org')) {
+        if (vid.paused) {
+            vid.muted = false; // Biztonsági némítás feloldása, ha az autoplay blokkolta volna
+            vid.play().then(() => {
+                btnPlayToggle.innerText = '⏸';
+            }).catch(e => console.log("Videó indítási hiba:", e));
         } else {
-            videoEl.pause();
+            vid.pause();
             btnPlayToggle.innerText = '▶';
         }
+        return;
+    }
+
+    // 2. HA ARCHIVE.ORG IFRAME FUT
+    // Először megváltoztatjuk a belső állapotjelzőt
+    isArchivePlaying = !isArchivePlaying;
+
+    if (isArchivePlaying) {
+        btnPlayToggle.innerText = '⏸';
+        // Elküldjük a szabványos YouTube/Archive play parancsot
+        archiveIframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+        // Biztonsági másodlagos parancs, ha az elsőt ignorálná az iframe
+        archiveIframe.contentWindow.postMessage('{"method":"play"}', '*');
     } else {
-        // Ha Archive.org iFrame fut, az enablejsapi miatt a postMessage-es módszer a biztos:
-        if (isArchivePlaying) {
-            archiveIframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
-            btnPlayToggle.innerText = '▶';
-            isArchivePlaying = false;
-        } else {
-            archiveIframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
-            btnPlayToggle.innerText = '⏸';
-            isArchivePlaying = true;
-        }
+        btnPlayToggle.innerText = '▶';
+        archiveIframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+        archiveIframe.contentWindow.postMessage('{"method":"pause"}', '*');
     }
 }
 
@@ -310,8 +316,10 @@ function switchChannel(channelId) {
     vid.style.display = 'none';
     archiveIframe.src = '';
     archiveIframe.style.display = 'none';
-    btnPlayToggle.innerText = '⏸';
-    isArchivePlaying = true;
+    
+    // EZ A KÉT SOR JAVÍTJA A CSATORNAVÁLTÁSKORI BERAGADÁST:
+    btnPlayToggle.innerText = '▶'; // Alapból Play ikon legyen, hiszen még el kell indítani!
+    isArchivePlaying = false;      // Alapból álljon az állapot
     
     document.querySelectorAll('.channel-btn').forEach(btn => btn.classList.remove('active'));
     const clickedBtn = Array.from(document.querySelectorAll('.channel-btn')).find(btn => btn.getAttribute('onclick').includes(channelId));
