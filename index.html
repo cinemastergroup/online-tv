@@ -250,7 +250,7 @@ function switchChannel(channelId) {
 
 async function runTvEngine() {
     try {
-        const response = await fetch(`${activeChannel}.json?t=${new Date().getTime()}`);
+        const response = await fetch(`${activeChannel}_schedule.json?t=${new Date().getTime()}`);
         if (!response.ok) throw new Error("Üres műsor.");
         
         const config = await response.json();
