@@ -98,7 +98,7 @@
 <div class="tv-container" id="mainTvContainer">
     <div id="noStreamOverlay" class="no-stream-overlay">📡 Csatorna betöltése...</div>
     
-    <video id="tvEngine" controls autoplay muted style="display: none;"></video>
+    <video id="tvEngine" controls autoplay style="display: none;"></video>
     <iframe id="archiveEngine" allowfullscreen style="display: none;"></iframe>
     
     <div class="tv-mouse-tracker" id="tvMouseTracker"></div>
@@ -153,7 +153,6 @@ const epgModalTitle = document.getElementById('epgModalTitle');
 const mainInfoBar = document.getElementById('mainInfoBar');
 const tracker = document.getElementById('tvMouseTracker');
 
-// Fix hivatkozások a lejátszókra
 const vid = document.getElementById('tvEngine');
 const archiveIframe = document.getElementById('archiveEngine');
 
@@ -171,7 +170,7 @@ function showControls() {
     
     clearTimeout(idleTimer);
     if (!isEpgOpen) {
-        idleTimer = setTimeout(hideControls, 15000); // 15 másodpercre állítva PC-re
+        idleTimer = setTimeout(hideControls, 15000);
     }
 }
 
@@ -196,7 +195,6 @@ mainInfoBar.addEventListener('click', (e) => {
 
 window.addEventListener('keydown', showControls);
 
-// AUTOMATIKUS MŰSORVÁLTÁS TRIGERELÉSE: Ha vége az MP4 fájlnak, azonnal lekérjük az újat!
 vid.onended = function() {
     console.log("Műsor vége! Azonnali váltás a következő adásra...");
     runTvEngine();
@@ -263,7 +261,6 @@ window.addEventListener('resize', () => setTimeout(updateLogoScale, 50));
 function switchChannel(channelId) {
     activeChannel = channelId;
     lastRenderedUrl = '';
-    // Leállítjuk a korábbi adásokat váltáskor
     vid.pause();
     vid.src = '';
     vid.style.display = 'none';
@@ -278,7 +275,6 @@ function switchChannel(channelId) {
 
 async function runTvEngine() {
     try {
-        // 1. Logó betöltése
         try {
             const logoResponse = await fetch(`${activeChannel}_logo.json?t=${new Date().getTime()}`, {
                 cache: "no-store",
@@ -301,7 +297,6 @@ async function runTvEngine() {
             currentLogoConfig = null;
         }
 
-        // 2. Műsorrend betöltése
         const response = await fetch(`${activeChannel}_schedule.json?t=${new Date().getTime()}`, {
             cache: "no-store",
             headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
@@ -341,14 +336,11 @@ async function runTvEngine() {
             
             lblTime.innerText = `${startHr}:${startMin} - ${endHr}:${endMin}`;
 
-            // CSAK AKKOR NYÚLUNK A FORRÁSHOZ, HA VALÓBAN ÚJ MŰSORHOZ ÉRTÜNK
-            // CSAK AKKOR NYÚLUNK A FORRÁSHOZ, HA VALÓBAN ÚJ MŰSORHOZ ÉRTÜNK
             if (currentTrack.url !== lastRenderedUrl) {
                 lastRenderedUrl = currentTrack.url;
                 const trackStart = parseLocalISO(currentTrack.start);
                 const currentOffset = (now.getTime() - trackStart.getTime()) / 1000;
                 
-                // Reseteljük a play gombot az új indításhoz
                 if (typeof btnPlayToggle !== 'undefined') btnPlayToggle.innerText = '⏸';
                 if (typeof isArchivePlaying !== 'undefined') isArchivePlaying = true;
                 
@@ -367,8 +359,8 @@ async function runTvEngine() {
                     
                     if (archiveId) {
                         const startSeconds = Math.round(currentOffset);
-                        // Hozzáadva az autoplay=1 mellett a kontrollok elrejtése, hogy kevesebb ajánló ablak legyen
-                        archiveIframe.src = `https://archive.org/embed/${archiveId}?start=${startSeconds}&autoplay=1&mute=0`;
+                        // Ha iframe fut, kénytelenek vagyunk mute=1-et küldeni, hogy elinduljon gomb nélkül
+                        archiveIframe.src = `https://archive.org/embed/${archiveId}?start=${startSeconds}&autoplay=1&mute=1`;
                         archiveIframe.style.display = 'block';
                     } else {
                         archiveIframe.style.display = 'none';
@@ -376,7 +368,7 @@ async function runTvEngine() {
                         vid.style.display = 'block';
                     }
                 } 
-                // 2. KÖZVETLEN MP4 STREAM
+                // 2. KÖZVETLEN MP4 STREAM (Ez fut nálad!)
                 else {
                     archiveIframe.src = '';
                     archiveIframe.style.display = 'none';
@@ -386,27 +378,30 @@ async function runTvEngine() {
                     
                     vid.onloadedmetadata = function() {
                         if (currentOffset > 0 && currentOffset < vid.duration) {
-                            
                             vid.currentTime = currentOffset;
                         }
-                        vid.play().catch(() => { vid.muted = false; vid.play().catch(()=>{}); });
+                        
+                        // JAVÍTOTT UTÁNGYÁRTOTT INDÍTÓ LOGIKA HANGGAL:
+                        vid.muted = false; // Először megpróbáljuk tiszta hanggal
+                        vid.play().catch(() => {
+                            // Ha a TV letiltaná a hangos autoplay-t, elindítjuk némítva (hogy pörögjön a kép)...
+                            vid.muted = true;
+                            vid.play().then(() => {
+                                // ...és amint elindult a lejátszás, azonnal visszakapcsoljuk a hangot a háttérben!
+                                setTimeout(() => { vid.muted = false; }, 100);
+                            }).catch(()=>{});
+                        });
                     };
-                    vid.play().catch(() => {});
                 }
             } else {
-                // IDŐALAPÚ KÉNYSZERÍTETT VÁLTÁS: 
-                // Ha az URL ugyanaz, de az idő szerint már a következő műsornak KELLENE mennie, 
-                // akkor a háttérben futó 15 másodperces timer (setInterval) automatikusan tovább fogja lökni!
-                // Így ha az Archive feldobja a hülye ajánlóit, a rendszer maximum 15 másodperc múlva 
-                // magától kitörli és betölti a következő adást.
+                // IDŐALAPÚ KÉNYSZERÍTETT VÁLTÁS AKTÍV
             }
         } else {
-            // Adásszünet: Minden lejátszót kikapcsolunk
             vid.pause();
             vid.src = '';
             vid.style.display = 'none';
             archiveIframe.src = '';
-            archiveIframe.style.display = 'none';
+            archiveIframe.style.none = 'none';
             
             overlay.style.display = 'flex';
             overlay.innerText = "📡 Jelenleg nincs adás ezen a csatornán.";
@@ -428,7 +423,7 @@ async function runTvEngine() {
 
 window.addEventListener('DOMContentLoaded', () => {
     runTvEngine();
-    setInterval(runTvEngine, 15000); // 15 másodpercenként ellenőrzi a JSON-t a háttérben
+    setInterval(runTvEngine, 15000);
     showControls();
 });
 </script>
