@@ -213,12 +213,13 @@ vid.onended = function() {
 vid.onplay = () => { btnPlayToggle.innerText = '⏸'; };
 vid.onpause = () => { btnPlayToggle.innerText = '▶'; };
 
-// --- GOLYÓÁLLÓ LEJÁTSZÁS / SZÜNET TRÜKK ---
+// ---  LEJÁTSZÁS / SZÜNET TRÜKK ---
+// --- KÉPERNYŐ KÖZEPÉRE KATTINTÓ INTELLIGENS TRIGGER ---
 function togglePlayPause() {
     if (!lastRenderedUrl) return;
 
+    // 1. Ha sima MP4 videó fut, azt közvetlenül is tudjuk kezelni
     if (!lastRenderedUrl.includes('archive.org')) {
-        // Sima videó indítása
         if (vid.paused) {
             vid.muted = false;
             vid.play().then(() => { btnPlayToggle.innerText = '⏸'; }).catch(()=>{});
@@ -226,29 +227,50 @@ function togglePlayPause() {
             vid.pause();
             btnPlayToggle.innerText = '▶';
         }
-    } else {
-        // TRÜKK ARCHIVE.ORG-RA: Ha le van engedve a sáv, a tracker fekszik az iframe felett.
-        // Átmenetileg visszakapcsoljuk a falat egy ezredmásodpercre, és küldünk rá egy szoftveres kattintást!
-        if (tracker) {
-            tracker.style.pointerEvents = 'auto';
-            
-            // Ha simán az iframe-nek küldünk üzenetet
-            archiveIframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
-            archiveIframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
-            
-            // Váltjuk a gomb feliratát manuálisan, ha az autoplay elindult volna
-            if (btnPlayToggle.innerText === '▶') {
-                btnPlayToggle.innerText = '⏸';
-                archiveIframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
-            } else {
-                btnPlayToggle.innerText = '▶';
-                archiveIframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
-            }
-            
-            // Azonnal visszaadjuk az irányítást a sávnak
-            setTimeout(() => { if (mainInfoBar.classList.contains('visible')) tracker.style.pointerEvents = 'none'; }, 50);
-        }
+        return;
     }
+
+    // 2. Ha Archive.org iFrame fut: szimulálunk egy kattintást a képernyő mértani közepére!
+    // Kiszámoljuk a képernyő közepének koordinátáit
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
+
+    // Átmenetileg kikapcsoljuk a láthatatlan üvegfalat és az alsó sávot az egér elől,
+    // hogy a klikkelés akadálymentesen lemehessen a mögöttük lévő iFrame-re
+    if (tracker) tracker.style.pointerEvents = 'none';
+    mainInfoBar.style.pointerEvents = 'none';
+
+    // Létrehozunk egy valódi, natív kattintás eseményt
+    const clickEvent = new MouseEvent('click', {
+        clientX: centerX,
+        clientY: centerY,
+        bubbles: true,
+        cancelable: true,
+        view: window
+    });
+
+    // Elküldjük a kattintást az iFrame-nek a koordináták alapján
+    const elementAtCenter = document.elementFromPoint(centerX, centerY);
+    if (elementAtCenter) {
+        elementAtCenter.dispatchEvent(clickEvent);
+    }
+
+    // Manuálisan átváltjuk a gomb ikonját, hiszen most már elindult a film
+    if (btnPlayToggle.innerText === '▶') {
+        btnPlayToggle.innerText = '⏸';
+    } else {
+        btnPlayToggle.innerText = '▶';
+    }
+
+    // Azonnal (50 ezredmásodperc múlva) visszakapcsoljuk a sáv és az üvegfal védelmét
+    setTimeout(() => {
+        mainInfoBar.style.pointerEvents = 'auto';
+        if (mainInfoBar.classList.contains('visible')) {
+            if (tracker) tracker.style.pointerEvents = 'none';
+        } else {
+            if (tracker) tracker.style.pointerEvents = 'auto';
+        }
+    }, 50);
 }
 
 // ---------------------------------------------
