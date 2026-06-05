@@ -216,60 +216,18 @@ vid.onplay = () => { btnPlayToggle.innerText = '⏸'; };
 vid.onpause = () => { btnPlayToggle.innerText = '▶'; };
 
 // --- LEJÁTSZÁS / SZÜNET INTELLIGENS VEZÉRLŐ ---
-// --- LEJÁTSZÁS / SZÜNET ATOMBIZTOS FIZIKAI TRIGGER ---
 function togglePlayPause() {
-    if (!lastRenderedUrl) return;
+    if (!vid.src) return;
 
-    // 1. HA NORMÁL MP4 VIDEÓ FUT: Azt közvetlenül tudjuk vezérelni
-    if (!lastRenderedUrl.includes('archive.org')) {
-        if (vid.paused) {
-            vid.muted = false;
-            vid.play().then(() => { btnPlayToggle.innerText = '⏸'; }).catch(()=>{});
-        } else {
-            vid.pause();
-            btnPlayToggle.innerText = '▶';
-        }
-        return;
-    }
-
-    // 2. HA MAKACS ARCHIVE.ORG IFRAME FUT: Kényszerített fizikai kattintás a képernyő közepére!
-    // Átmenetileg visszakapcsoljuk az üvegfalat, hogy átvigye a kattintást
-    if (tracker) tracker.style.pointerEvents = 'auto';
-
-    // Kiszámoljuk a képernyő (konténer) abszolút közepét, ahol a nagy Play gomb van
-    const rect = container.getBoundingClientRect();
-    const centerX = rect.left + (rect.width / 2);
-    const centerY = rect.top + (rect.height / 2);
-
-    // Létrehozunk egy valódi, natív kattintás eseményt
-    const clickEvent = new MouseEvent('click', {
-        clientX: centerX,
-        clientY: centerY,
-        bubbles: true,
-        cancelable: true,
-        view: window
-    });
-
-    // Elküldjük a kattintást az elemnek, ami pontosan az iFrame felett áll
-    // Ez szimulálja, mintha a felhasználó pont a nagy középső gombra bökött volna rá!
-    const targetEl = document.elementFromPoint(centerX, centerY);
-    if (targetEl) {
-        targetEl.dispatchEvent(clickEvent);
-    }
-
-    // Animációs visszajelzés a gombon (mivel az iframe állapotát nem látjuk, csak átváltunk)
-    if (btnPlayToggle.innerText === '⏸') {
-        btnPlayToggle.innerText = '▶';
+    if (vid.paused) {
+        vid.muted = false; // Kattintásra azonnal feloldjuk a némítást is, ha volt!
+        vid.play().then(() => {
+            btnPlayToggle.innerText = '⏸';
+        }).catch(e => console.log(e));
     } else {
-        btnPlayToggle.innerText = '⏸';
+        vid.pause();
+        btnPlayToggle.innerText = '▶';
     }
-
-    // Kattintás után azonnal visszaadjuk a vezérlést a sávnak, hogy lehessen gombokat nyomni
-    setTimeout(() => {
-        if (mainInfoBar.classList.contains('visible') && tracker) {
-            tracker.style.pointerEvents = 'none';
-        }
-    }, 50);
 }
 
 // ---------------------------------------------
@@ -398,66 +356,61 @@ async function runTvEngine() {
             }
         });
 
-        if (currentTrack) {
-            overlay.style.display = 'none';
-            lblShow.innerText = currentTrack.title;
-            
-            const startTimestamp = parseLocalISO(currentTrack.start);
-            const endTimestamp = new Date(startTimestamp.getTime() + currentTrack.duration * 1000);
-            
-            const startHr = String(startTimestamp.getHours()).padStart(2, '0');
-            const startMin = String(startTimestamp.getMinutes()).padStart(2, '0');
-            const endHr = String(endTimestamp.getHours()).padStart(2, '0');
-            const endMin = String(endTimestamp.getMinutes()).padStart(2, '0');
-            
-            lblTime.innerText = `${startHr}:${startMin} - ${endHr}:${endMin}`;
+        // --- EZT A BLOKKOT CSERÉLD LE A runTvEngine() FÜGGVÉNYBEN ---
 
-            if (currentTrack.url !== lastRenderedUrl) {
-                lastRenderedUrl = currentTrack.url;
-                const trackStart = parseLocalISO(currentTrack.start);
-                const currentOffset = (now.getTime() - trackStart.getTime()) / 1000;
-                btnPlayToggle.innerText = '⏸';
-                isArchivePlaying = true;
+        if (currentTrack.url !== lastRenderedUrl) {
+            lastRenderedUrl = currentTrack.url;
+            const trackStart = parseLocalISO(currentTrack.start);
+            const currentOffset = (now.getTime() - trackStart.getTime()) / 1000;
+            
+            btnPlayToggle.innerText = '▶'; // Alapból Play ikonnal indítunk csatornaváltáskor
+            
+            // 1. HA ARCHIVE.ORG LINKET LÁT A KÓD
+            if (currentTrack.url.includes('archive.org')) {
+                archiveIframe.src = '';
+                archiveIframe.style.display = 'none'; // Az iframe-et teljesen kikapcsoljuk!
                 
-                if (currentTrack.url.includes('archive.org')) {
-                    vid.pause();
-                    vid.src = '';
-                    vid.style.display = 'none';
-                    
-                    let archiveId = '';
-                    if (currentTrack.url.includes('/download/')) {
-                        archiveId = currentTrack.url.split('/download/')[1].split('/')[0];
-                    } else if (currentTrack.url.includes('/details/')) {
-                        archiveId = currentTrack.url.split('/details/')[1].split('/')[0];
-                    }
-                    
-                    if (archiveId) {
-                        const startSeconds = Math.round(currentOffset);
-                        // Hozzáadva az enablejsapi=1 paraméter, hogy a külső gombunk vezérelhesse az iframe-et
-                        archiveIframe.src = `https://archive.org/embed/${archiveId}?start=${startSeconds}&autoplay=1&enablejsapi=1`;
-                        archiveIframe.style.display = 'block';
-                    } else {
-                        archiveIframe.style.display = 'none';
-                        vid.src = currentTrack.url;
-                        vid.style.display = 'block';
-                    }
-                } 
-                else {
-                    archiveIframe.src = '';
-                    archiveIframe.style.display = 'none';
-                    
+                let archiveId = '';
+                if (currentTrack.url.includes('/download/')) {
+                    archiveId = currentTrack.url.split('/download/')[1].split('/')[0];
+                } else if (currentTrack.url.includes('/details/')) {
+                    archiveId = currentTrack.url.split('/details/')[1].split('/')[0];
+                }
+                
+                if (archiveId) {
+                    // TRÜKK: Átalakítjuk a linket közvetlen MP4 fájleléréssé!
+                    // Így a saját, engedelmes lejátszód fogja vinni a filmet az iframe helyett.
+                    vid.src = `https://archive.org/download/${archiveId}/${archiveId}.mp4`;
+                    vid.style.display = 'block';
+                } else {
                     vid.src = currentTrack.url;
                     vid.style.display = 'block';
-                    
-                    vid.onloadedmetadata = function() {
-                        if (currentOffset > 0 && currentOffset < vid.duration) {
-                            vid.currentTime = currentOffset;
-                        }
-                        vid.play().catch(() => { vid.muted = true; vid.play().catch(()=>{}); });
-                    };
-                    vid.play().catch(() => {});
                 }
+            } 
+            // 2. HA SIMA DIRECT MP4 LINK VAN (pl. Backblaze)
+            else {
+                archiveIframe.src = '';
+                archiveIframe.style.display = 'none';
+                
+                vid.src = currentTrack.url;
+                vid.style.display = 'block';
             }
+        
+            // Közös indító logika a saját lejátszódhoz (ezzel már nincs autoplay tiltás!)
+            vid.onloadedmetadata = function() {
+                if (currentOffset > 0 && currentOffset < vid.duration) {
+                    vid.currentTime = currentOffset;
+                }
+                // Megpróbáljuk elindítani, ha a böngésző engedi
+                vid.play().then(() => {
+                    btnPlayToggle.innerText = '⏸';
+                }).catch(() => {
+                    // Ha a böngésző elsőre blokkolná, némítva biztosan elindítja, és a gombbal hangosíthatod fel!
+                    vid.muted = true;
+                    vid.play().catch(()=>{});
+                    btnPlayToggle.innerText = '▶';
+                });
+            };
         } else {
             vid.pause();
             vid.src = '';
