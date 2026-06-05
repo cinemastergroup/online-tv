@@ -368,7 +368,7 @@ async function runTvEngine() {
                     if (archiveId) {
                         const startSeconds = Math.round(currentOffset);
                         // Hozzáadva az autoplay=1 mellett a kontrollok elrejtése, hogy kevesebb ajánló ablak legyen
-                        archiveIframe.src = `https://archive.org/embed/${archiveId}?start=${startSeconds}&autoplay=1&mute=1`;
+                        archiveIframe.src = `https://archive.org/embed/${archiveId}?start=${startSeconds}&autoplay=1&mute=0`;
                         archiveIframe.style.display = 'block';
                     } else {
                         archiveIframe.style.display = 'none';
@@ -389,7 +389,7 @@ async function runTvEngine() {
                             
                             vid.currentTime = currentOffset;
                         }
-                        vid.play().catch(() => { vid.muted = true; vid.play().catch(()=>{}); });
+                        vid.play().catch(() => { vid.muted = false; vid.play().catch(()=>{}); });
                     };
                     vid.play().catch(() => {});
                 }
