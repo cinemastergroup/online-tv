@@ -216,16 +216,15 @@ vid.onplay = () => { btnPlayToggle.innerText = '⏸'; };
 vid.onpause = () => { btnPlayToggle.innerText = '▶'; };
 
 // --- LEJÁTSZÁS / SZÜNET INTELLIGENS VEZÉRLŐ ---
+// --- LEJÁTSZÁS / SZÜNET ATOMBIZTOS FIZIKAI TRIGGER ---
 function togglePlayPause() {
     if (!lastRenderedUrl) return;
 
-    // 1. HA DIRECT MP4 VIDEÓ FUT
+    // 1. HA NORMÁL MP4 VIDEÓ FUT: Azt közvetlenül tudjuk vezérelni
     if (!lastRenderedUrl.includes('archive.org')) {
         if (vid.paused) {
-            vid.muted = false; // Biztonsági némítás feloldása, ha az autoplay blokkolta volna
-            vid.play().then(() => {
-                btnPlayToggle.innerText = '⏸';
-            }).catch(e => console.log("Videó indítási hiba:", e));
+            vid.muted = false;
+            vid.play().then(() => { btnPlayToggle.innerText = '⏸'; }).catch(()=>{});
         } else {
             vid.pause();
             btnPlayToggle.innerText = '▶';
@@ -233,21 +232,44 @@ function togglePlayPause() {
         return;
     }
 
-    // 2. HA ARCHIVE.ORG IFRAME FUT
-    // Először megváltoztatjuk a belső állapotjelzőt
-    isArchivePlaying = !isArchivePlaying;
+    // 2. HA MAKACS ARCHIVE.ORG IFRAME FUT: Kényszerített fizikai kattintás a képernyő közepére!
+    // Átmenetileg visszakapcsoljuk az üvegfalat, hogy átvigye a kattintást
+    if (tracker) tracker.style.pointerEvents = 'auto';
 
-    if (isArchivePlaying) {
-        btnPlayToggle.innerText = '⏸';
-        // Elküldjük a szabványos YouTube/Archive play parancsot
-        archiveIframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
-        // Biztonsági másodlagos parancs, ha az elsőt ignorálná az iframe
-        archiveIframe.contentWindow.postMessage('{"method":"play"}', '*');
-    } else {
-        btnPlayToggle.innerText = '▶';
-        archiveIframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
-        archiveIframe.contentWindow.postMessage('{"method":"pause"}', '*');
+    // Kiszámoljuk a képernyő (konténer) abszolút közepét, ahol a nagy Play gomb van
+    const rect = container.getBoundingClientRect();
+    const centerX = rect.left + (rect.width / 2);
+    const centerY = rect.top + (rect.height / 2);
+
+    // Létrehozunk egy valódi, natív kattintás eseményt
+    const clickEvent = new MouseEvent('click', {
+        clientX: centerX,
+        clientY: centerY,
+        bubbles: true,
+        cancelable: true,
+        view: window
+    });
+
+    // Elküldjük a kattintást az elemnek, ami pontosan az iFrame felett áll
+    // Ez szimulálja, mintha a felhasználó pont a nagy középső gombra bökött volna rá!
+    const targetEl = document.elementFromPoint(centerX, centerY);
+    if (targetEl) {
+        targetEl.dispatchEvent(clickEvent);
     }
+
+    // Animációs visszajelzés a gombon (mivel az iframe állapotát nem látjuk, csak átváltunk)
+    if (btnPlayToggle.innerText === '⏸') {
+        btnPlayToggle.innerText = '▶';
+    } else {
+        btnPlayToggle.innerText = '⏸';
+    }
+
+    // Kattintás után azonnal visszaadjuk a vezérlést a sávnak, hogy lehessen gombokat nyomni
+    setTimeout(() => {
+        if (mainInfoBar.classList.contains('visible') && tracker) {
+            tracker.style.pointerEvents = 'none';
+        }
+    }, 50);
 }
 
 // ---------------------------------------------
