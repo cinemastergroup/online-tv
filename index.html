@@ -216,11 +216,22 @@ vid.onplay = () => { btnPlayToggle.innerText = '⏸'; };
 vid.onpause = () => { btnPlayToggle.innerText = '▶'; };
 
 // --- LEJÁTSZÁS / SZÜNET INTELLIGENS VEZÉRLŐ ---
+// --- LEJÁTSZÁS / SZÜNET EGYSZERŰSÍTETT TRIGGER ---
 function togglePlayPause() {
-    if (!lastRenderedUrl) return;
-
-    if (lastRenderedUrl.includes('archive.org')) {
-        // Ha Archive.org fut, postMessage-en keresztül küldünk parancsot az iframe-nek
+    // Egyszerűen szimulálunk egy kattintást a láthatatlan üvegfalon keresztül
+    // Ez PC-n és TV-n is azonnal elindítja a natív videót vagy az iframe-et, amin épp áll a fókusz
+    const videoEl = document.getElementById('tvEngine');
+    
+    if (videoEl && videoEl.style.display !== 'none') {
+        if (videoEl.paused) {
+            videoEl.play().catch(()=>{});
+            btnPlayToggle.innerText = '⏸';
+        } else {
+            videoEl.pause();
+            btnPlayToggle.innerText = '▶';
+        }
+    } else {
+        // Ha Archive.org iFrame fut, az enablejsapi miatt a postMessage-es módszer a biztos:
         if (isArchivePlaying) {
             archiveIframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
             btnPlayToggle.innerText = '▶';
@@ -229,15 +240,6 @@ function togglePlayPause() {
             archiveIframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
             btnPlayToggle.innerText = '⏸';
             isArchivePlaying = true;
-        }
-    } else {
-        // Ha sima MP4 videó fut
-        if (vid.paused) {
-            vid.play().catch(()=>{});
-            btnPlayToggle.innerText = '⏸';
-        } else {
-            vid.pause();
-            btnPlayToggle.innerText = '▶';
         }
     }
 }
