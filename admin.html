@@ -148,13 +148,6 @@ let catcastPlaylist = [];
 let logoConfig = { url: "https://upload.wikimedia.org/wikipedia/commons/a/ab/Logo_TV_2015.png", size: 60, topPercent: 5, leftPercent: 5 };
 let masterChannelList = [];
 
-// FILM ADATBÁZIS – IDE JÖHETNEK A PONTOS JÁTÉKIDŐK MÁSODPERCBEN
-const videoDatabase = {
-    "300.mp4": 7000,
-    "300": 7000,
-    "cipőbűvölő": 5940 
-};
-
 function createNewChannelConfig() {
     const name = document.getElementById('newChannelName').value.trim();
     const id = document.getElementById('newChannelId').value.trim().toLowerCase();
@@ -214,29 +207,56 @@ function pushToTimelineIntelligent() {
         return;
     }
 
-    let durationInSeconds = 0;
-    // INTEGRÁLT DEKÓDOLÓ: Kibontja a %20 és egyéb hálózati karaktereket ékezetes szöveggé
-    const decodedUrl = decodeURIComponent(url).toLowerCase();
-    const decodedTitle = title.toLowerCase();
+    statusLog.style.color = "#ff9100";
+    statusLog.innerText = "⏳ Videó hosszának kinyerése közvetlenül a fájlból...";
+    document.getElementById('addBlockBtn').disabled = true; // Letiltjuk a gombot a mérés idejére
 
-    for (let key in videoDatabase) {
-        const cleanKey = key.toLowerCase();
-        if (decodedUrl.includes(cleanKey) || decodedTitle.includes(cleanKey)) {
-            durationInSeconds = videoDatabase[key];
-            break;
+    // 1. LÉPÉS: Létrehozunk egy láthatatlan videó elemet a memóriában a méréshez
+    const tempVideo = document.createElement('video');
+    tempVideo.src = url;
+    tempVideo.preload = "metadata"; // Csak a metaadatokat (hossz, felbontás) kérjük le, nem tölti le a teljes filmet!
+    tempVideo.crossOrigin = "anonymous"; // CORS hibák elkerülése érdekében
+
+    // 2. LÉPÉS: Amikor a böngésző sikeresen kiolvasta a videó hosszát
+    tempVideo.onloadedmetadata = function() {
+        let durationInSeconds = Math.round(tempVideo.duration);
+
+        // Biztonsági ellenőrzés (ha hibás lenne a fájl)
+        if (isNaN(durationInSeconds) || durationInSeconds === 0) {
+            durationInSeconds = 7200; // Tartalék 120 perc, ha a mérés kudarcot vallana
         }
-    }
 
-    if (durationInSeconds === 0) {
-        durationInSeconds = 7200; 
-    }
+        // Hozzáadjuk a listához a VALÓDI, kinyert hosszal
+        catcastPlaylist.push({ title, url, duration: durationInSeconds });
+        
+        // Alaphelyzetbe állítjuk az űrlapot
+        document.getElementById('vTitle').value = '';
+        document.getElementById('vUrl').value = '';
+        
+        statusLog.style.color = "#00e676";
+        const min = Math.floor(durationInSeconds / 60);
+        statusLog.innerText = `✅ Sikeresen kinyerve! (${min} perc). Blokk hozzáadva a listához.`;
+        
+        document.getElementById('addBlockBtn').disabled = false; // Visszakapcsoljuk a gombot
+        refreshTimeline();
+    };
 
-    catcastPlaylist.push({ title, url, duration: durationInSeconds });
-    document.getElementById('vTitle').value = '';
-    document.getElementById('vUrl').value = '';
-    statusLog.style.color = "#00e676";
-    statusLog.innerText = "✅ Blokk sikeresen hozzáadva a listához.";
-    refreshTimeline();
+    // 3. LÉPÉS: Hibakezelés (Ha rossz a link, nem létezik a fájl, vagy a szerver tiltja a lekérést)
+    tempVideo.onerror = function() {
+        console.log("Nem sikerült a videó automatikus mérése, fallback 120 percre.");
+        
+        // Nem akasztjuk meg a munkát, rátesszük a 120 perces sablont tartaléknak
+        catcastPlaylist.push({ title, url, duration: 7200 });
+        
+        document.getElementById('vTitle').value = '';
+        document.getElementById('vUrl').value = '';
+        
+        statusLog.style.color = "#ff9100";
+        statusLog.innerText = "⚠️ A videót nem sikerült közvetlenül megmérni (biztonsági okokból), 120 perccel lett hozzáadva.";
+        
+        document.getElementById('addBlockBtn').disabled = false;
+        refreshTimeline();
+    };
 }
 
 // ÚJ VISSZATÖRLŐ FUNKCIÓ: Kivágja a műsort a listából, és kényszeríti az újraszámolást
