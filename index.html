@@ -13,16 +13,16 @@
         
         iframe, video { width: 100%; height: 100%; border: none; background: #000; position: absolute; top: 0; left: 0; z-index: 1; }
         
-        /* MATEMATIKAI ALAPÚ LOGÓ - VÉGIG A HELYÉN MARAD */
-        .tv-watermark { 
-            position: absolute; 
-            opacity: 0.9; 
-            pointer-events: none; 
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.9)); 
-            z-index: 999999 !important; 
-            display: none; 
-            height: auto !important;
-        }
+       /* MATEMATIKAI ALAPÚ LOGÓ - VÉGIG A HELYÉN MARAD */
+	.tv-watermark { 
+   		position: absolute; 
+    		opacity: 0.9; 
+    		pointer-events: none; 
+    		filter: drop-shadow(0 2px 4px rgba(0,0,0,0.9)); 
+    		z-index: 999999 !important; /* Mindig a videó felett legyen */
+    		display: block; /* Törölve a none */
+    		height: auto !important;
+	}
 
         /* REJTHETŐ ALSÓ SMART SÁV */
         .info-bar { 
@@ -93,8 +93,8 @@
 
 <div class="tv-container" id="mainTvContainer">
     <div id="noStreamOverlay" class="no-stream-overlay">📡 Csatorna betöltése...</div>
-    <img id="tvWatermark" class="tv-watermark" alt="Logo">
     <div id="mediaPlaceholder" style="width:100%; height:100%;"></div>
+    <img id="tvWatermark" class="tv-watermark" alt="Logo">
 
     <div class="info-bar" id="mainInfoBar">
         <div class="info-top-row">
@@ -250,21 +250,38 @@ function switchChannel(channelId) {
 
 async function runTvEngine() {
     try {
-        const response = await fetch(`${activeChannel}_schedule.json?t=${new Date().getTime()}`);
-        if (!response.ok) throw new Error("Üres műsor.");
-        
-        const config = await response.json();
-        
-        if (config.logo && config.logo.url) {
-            currentLogoConfig = config.logo;
-            watermark.src = config.logo.url;
-            watermark.style.display = 'block';
-            updateLogoScale();
-        } else {
+        // 1. LETÖLTJÜK A LOGÓT A KÜLÖN FÁJLJÁBÓL
+        try {
+            const logoResponse = await fetch(`${activeChannel}_logo.json?t=${new Date().getTime()}`, {
+                cache: "no-store",
+                headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+            });
+            if (logoResponse.ok) {
+                const logoConfig = await logoResponse.json();
+                if (logoConfig.logo && logoConfig.logo.url) {
+                    currentLogoConfig = logoConfig.logo;
+                    watermark.src = logoConfig.logo.url;
+                    watermark.style.display = 'block';
+                    updateLogoScale();
+                }
+            } else {
+                watermark.style.display = 'none';
+                currentLogoConfig = null;
+            }
+        } catch (logoError) {
+            console.log("Nem sikerült letölteni a logófájlt, vagy még nem hoztad létre az adminban.");
             watermark.style.display = 'none';
             currentLogoConfig = null;
         }
 
+        // 2. LETÖLTJÜK A MŰSORRENDET
+        const response = await fetch(`${activeChannel}_schedule.json?t=${new Date().getTime()}`, {
+            cache: "no-store",
+            headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
+        });
+        if (!response.ok) throw new Error("Üres műsor.");
+        
+        const config = await response.json();
         const now = new Date();
         let currentTrack = null;
 
@@ -313,17 +330,24 @@ async function runTvEngine() {
                         const currentOffset = (now.getTime() - trackStart.getTime()) / 1000;
                         const startSeconds = Math.round(currentOffset);
                         
-                        mediaPlaceholder.innerHTML = `<iframe src="https://archive.org/embed/${archiveId}?start=${startSeconds}&autoplay=1" allowfullscreen></iframe>`;
+                        mediaPlaceholder.innerHTML = `<iframe src="https://archive.org/embed/${archiveId}?start=${startSeconds}&autoplay=1" allowfullscreen style="width:100%; height:100%; border:none;"></iframe>`;
                     } else {
                         mediaPlaceholder.innerHTML = `<video src="${currentTrack.url}" controls autoplay muted></video>`;
                     }
                 } else {
                     mediaPlaceholder.innerHTML = `<video id="tvEngine" controls autoplay muted src="${currentTrack.url}"></video>`;
                     const vid = document.getElementById('tvEngine');
-                    const trackStart = parseLocalISO(currentTrack.start);
-                    const currentOffset = (now.getTime() - trackStart.getTime()) / 1000;
-                    vid.currentTime = currentOffset;
-                    vid.play().catch(() => { vid.muted = true; vid.play().catch(()=>{}); });
+                    
+                    // Biztonságos betöltés megvárása, hogy ne haljon le a TV a tekerésnél
+                    vid.onloadedmetadata = function() {
+                        const trackStart = parseLocalISO(currentTrack.start);
+                        const currentOffset = (new Date().getTime() - trackStart.getTime()) / 1000;
+                        if (currentOffset > 0 && currentOffset < vid.duration) {
+                            vid.currentTime = currentOffset;
+                        }
+                        vid.play().catch(() => { vid.muted = true; vid.play().catch(()=>{}); });
+                    };
+                    vid.play().catch(() => {});
                 }
             }
         } else {
@@ -332,7 +356,6 @@ async function runTvEngine() {
             overlay.innerText = "📡 Jelenleg nincs adás ezen a csatornán.";
             lblShow.innerText = "Adásszünet";
             lblTime.innerText = "--:--";
-            watermark.style.display = 'none';
         }
 
     } catch (error) {
@@ -341,7 +364,6 @@ async function runTvEngine() {
         overlay.innerText = "📡 Jelenleg nincs aktív adásfájl.";
         lblShow.innerText = "Adásszünet";
         lblTime.innerText = "--:--";
-        watermark.style.display = 'none';
     }
 }
 
