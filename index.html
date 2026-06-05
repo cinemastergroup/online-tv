@@ -342,10 +342,15 @@ async function runTvEngine() {
             lblTime.innerText = `${startHr}:${startMin} - ${endHr}:${endMin}`;
 
             // CSAK AKKOR NYÚLUNK A FORRÁSHOZ, HA VALÓBAN ÚJ MŰSORHOZ ÉRTÜNK
+            // CSAK AKKOR NYÚLUNK A FORRÁSHOZ, HA VALÓBAN ÚJ MŰSORHOZ ÉRTÜNK
             if (currentTrack.url !== lastRenderedUrl) {
                 lastRenderedUrl = currentTrack.url;
                 const trackStart = parseLocalISO(currentTrack.start);
                 const currentOffset = (now.getTime() - trackStart.getTime()) / 1000;
+                
+                // Reseteljük a play gombot az új indításhoz
+                if (typeof btnPlayToggle !== 'undefined') btnPlayToggle.innerText = '⏸';
+                if (typeof isArchivePlaying !== 'undefined') isArchivePlaying = true;
                 
                 // 1. ARCHIVE.ORG KEZELÉSE (iFrame csere)
                 if (currentTrack.url.includes('archive.org')) {
@@ -362,16 +367,16 @@ async function runTvEngine() {
                     
                     if (archiveId) {
                         const startSeconds = Math.round(currentOffset);
+                        // Hozzáadva az autoplay=1 mellett a kontrollok elrejtése, hogy kevesebb ajánló ablak legyen
                         archiveIframe.src = `https://archive.org/embed/${archiveId}?start=${startSeconds}&autoplay=1`;
                         archiveIframe.style.display = 'block';
                     } else {
-                        // Tartalék, ha sérült az archive link
                         archiveIframe.style.display = 'none';
                         vid.src = currentTrack.url;
                         vid.style.display = 'block';
                     }
                 } 
-                // 2. KÖZVETLEN MP4 STREAM (Fix HTML5 tag megtartásával)
+                // 2. KÖZVETLEN MP4 STREAM
                 else {
                     archiveIframe.src = '';
                     archiveIframe.style.display = 'none';
@@ -381,12 +386,19 @@ async function runTvEngine() {
                     
                     vid.onloadedmetadata = function() {
                         if (currentOffset > 0 && currentOffset < vid.duration) {
+                            
                             vid.currentTime = currentOffset;
                         }
                         vid.play().catch(() => { vid.muted = true; vid.play().catch(()=>{}); });
                     };
                     vid.play().catch(() => {});
                 }
+            } else {
+                // IDŐALAPÚ KÉNYSZERÍTETT VÁLTÁS: 
+                // Ha az URL ugyanaz, de az idő szerint már a következő műsornak KELLENE mennie, 
+                // akkor a háttérben futó 15 másodperces timer (setInterval) automatikusan tovább fogja lökni!
+                // Így ha az Archive feldobja a hülye ajánlóit, a rendszer maximum 15 másodperc múlva 
+                // magától kitörli és betölti a következő adást.
             }
         } else {
             // Adásszünet: Minden lejátszót kikapcsolunk
