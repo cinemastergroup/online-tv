@@ -352,8 +352,8 @@ async function runTvEngine() {
                 if (typeof btnPlayToggle !== 'undefined') btnPlayToggle.innerText = '⏸';
                 if (typeof isArchivePlaying !== 'undefined') isArchivePlaying = true;
                 
-                // 1. ARCHIVE.ORG KEZELÉSE (iFrame csere)
-                if (currentTrack.url.includes('archive.org')) {
+                // 1. ARCHIVE.ORG EMBED KEZELÉSE (Csak ha NEM közvetlen .mp4 fájlról van szó!)
+                if (currentTrack.url.includes('archive.org') && !currentTrack.url.toLowerCase().endsWith('.mp4')) {
                     vid.pause();
                     vid.src = '';
                     vid.style.display = 'none';
