@@ -103,7 +103,7 @@
 <div class="tv-container" id="mainTvContainer">
     <div id="noStreamOverlay" class="no-stream-overlay">📡 Csatorna betöltése...</div>
     
-    <video id="tvEngine" controls autoplay style="display: none;"></video>
+    <video id="tvEngine" autoplay></video>
     <iframe id="archiveEngine" allowfullscreen style="display: none;"></iframe>
     
     <div class="tv-mouse-tracker" id="tvMouseTracker"></div>
@@ -172,7 +172,7 @@ function startTvWithAudio() {
     userUnlocked = true;
     document.getElementById('unlockOverlay').style.display = 'none';
     
-    // AZONNALI KÉNYSZERÍTETT FELHANGOSÍTÁS AZ INDÍTÁSKOR
+    // AZONNALI KÉNYSZERÍTETT AUDIO UNMUTE AZ INDÍTÁSKOR
     vid.muted = false;
     vid.volume = 1.0;
     
@@ -384,24 +384,26 @@ async function runTvEngine() {
                     archiveIframe.src = '';
                     archiveIframe.style.display = 'none';
                     
-                    // JAVÍTÁS: Előbb rendeljük hozzá az eseményfigyelőt, és CSAK AZUTÁN adjuk meg a forrást (.src)!
                     vid.onloadedmetadata = function() {
                         if (currentOffset > 0 && currentOffset < vid.duration) {
                             vid.currentTime = currentOffset;
                         }
                         
-                        // Kényszerített maximális hangerő és némítás kikapcsolása
+                        // KÉNYSZERÍTETT EXTRA HANGERŐ BEKAPCSOLÁS
                         vid.muted = false; 
                         vid.volume = 1.0;
                         
-                        vid.play().catch((e) => {
+                        vid.play().then(() => {
+                            // Biztonsági dupla unmute indítás után
+                            vid.muted = false;
+                            vid.volume = 1.0;
+                        }).catch((e) => {
                             console.log("Autoplay hiba, némított fallback indítás:", e);
                             vid.muted = true;
                             vid.play().catch(()=>{});
                         });
                     };
 
-                    // Az eseménykezelő beállítása után töltheti be a fájlt
                     vid.src = currentTrack.url;
                     vid.style.display = 'block';
                 }
