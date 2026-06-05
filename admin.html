@@ -26,6 +26,10 @@
         .card-url { font-size: 11px; color: #627288; word-break: break-all; }
         .card-duration { font-size: 12px; background: #11141a; padding: 4px 8px; border-radius: 4px; color: #a4b3c6; }
         
+        /* ÚJ TÖRLES GOMB STÍLUSA */
+        .btn-delete-track { background: #ff1744; color: white; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px; margin-left: 15px; transition: 0.2s; }
+        .btn-delete-track:hover { background: #b71c1c; }
+
         .btn-logo-save { background: #00b0ff; margin-top: 15px; border: 1px solid #0091ea; }
         .btn-logo-save:hover { background: #0091ea; }
         .btn-download { background: #00e676; color: #000; margin-top: 15px; }
@@ -33,7 +37,6 @@
         .btn-create { background: #37474f; color: #fff; }
         .btn-create:hover { background: #263238; }
         
-        /* STÍLUS A BEOLVASÓ GOMBHOZ */
         .btn-load { background: #ff9100; color: #000; font-weight: bold; }
         .btn-load:hover { background: #ff6d00; }
         
@@ -145,9 +148,11 @@ let catcastPlaylist = [];
 let logoConfig = { url: "https://upload.wikimedia.org/wikipedia/commons/a/ab/Logo_TV_2015.png", size: 60, topPercent: 5, leftPercent: 5 };
 let masterChannelList = [];
 
+// FILM ADATBÁZIS – IDE JÖHETNEK A PONTOS JÁTÉKIDŐK MÁSODPERCBEN
 const videoDatabase = {
     "300.mp4": 7000,
-    "300": 7000
+    "300": 7000,
+    "cipőbűvölő": 5940 
 };
 
 function createNewChannelConfig() {
@@ -210,8 +215,13 @@ function pushToTimelineIntelligent() {
     }
 
     let durationInSeconds = 0;
+    // INTEGRÁLT DEKÓDOLÓ: Kibontja a %20 és egyéb hálózati karaktereket ékezetes szöveggé
+    const decodedUrl = decodeURIComponent(url).toLowerCase();
+    const decodedTitle = title.toLowerCase();
+
     for (let key in videoDatabase) {
-        if (url.toLowerCase().includes(key.toLowerCase()) || title.toLowerCase().includes(key.toLowerCase())) {
+        const cleanKey = key.toLowerCase();
+        if (decodedUrl.includes(cleanKey) || decodedTitle.includes(cleanKey)) {
             durationInSeconds = videoDatabase[key];
             break;
         }
@@ -229,10 +239,26 @@ function pushToTimelineIntelligent() {
     refreshTimeline();
 }
 
+// ÚJ VISSZATÖRLŐ FUNKCIÓ: Kivágja a műsort a listából, és kényszeríti az újraszámolást
+function removeTrackFromTimeline(index) {
+    catcastPlaylist.splice(index, 1);
+    const statusLog = document.getElementById('statusConsoleLog');
+    statusLog.style.color = "#ff9100";
+    statusLog.innerText = "🗑️ Műsorszám eltávolítva. Az időterv újraszámolva.";
+    refreshTimeline();
+}
+
 function refreshTimeline() {
     const startInput = document.getElementById('streamStartDateTime').value; 
     const container = document.getElementById('timelineContainer');
-    if (!startInput || catcastPlaylist.length === 0) return;
+    
+    // Ha törlés után teljesen kiürül a lista, alaphelyzetbe hozzuk a számlálókat
+    if (!startInput || catcastPlaylist.length === 0) {
+        container.innerHTML = '';
+        document.getElementById('streamEndTimeCounter').innerText = "Nincs beállítva";
+        document.getElementById('streamTotalDurationMinutes').innerText = "(Összesen: 0 perc)";
+        return;
+    }
     
     container.innerHTML = ''; 
     let parts = startInput.split(/[-T:]/);
@@ -243,7 +269,7 @@ function refreshTimeline() {
     }
 
     let totalSecs = 0;
-    catcastPlaylist.forEach((track) => {
+    catcastPlaylist.forEach((track, index) => {
         let y = timelinePointer.getFullYear();
         let m = String(timelinePointer.getMonth() + 1).padStart(2, '0');
         let d = String(timelinePointer.getDate()).padStart(2, '0');
@@ -261,7 +287,22 @@ function refreshTimeline() {
         
         const displayMin = Math.floor(track.duration / 60);
         const displaySec = track.duration % 60;
-        container.innerHTML += `<div class="timeline-card"><div class="card-time"><span style="display:block; font-size:11px; color:#8a99ad;">${dateLocal}</span>⏱️ ${startLocal}</div><div class="card-info"><div class="card-title">${track.title}</div><div class="card-url">${track.url}</div></div><div class="card-duration">${displayMin}m ${displaySec}s</div></div>`;
+        
+        // BEÉPÍTETT TÖRLES GOMB: Átadja az aktuális sorszámot (index) a removeTrackFromTimeline-nak
+        container.innerHTML += `
+            <div class="timeline-card">
+                <div class="card-time">
+                    <span style="display:block; font-size:11px; color:#8a99ad;">${dateLocal}</span>⏱️ ${startLocal}
+                </div>
+                <div class="card-info">
+                    <div class="card-title">${track.title}</div>
+                    <div class="card-url">${track.url}</div>
+                </div>
+                <div style="display: flex; align-items: center;">
+                    <div class="card-duration">${displayMin}m ${displaySec}s</div>
+                    <button class="btn-delete-track" onclick="removeTrackFromTimeline(${index})">❌</button>
+                </div>
+            </div>`;
     });
     
     const endDateStr = timelinePointer.toLocaleDateString('hu-HU', { month: 'short', day: 'numeric', weekday: 'short' });
@@ -270,7 +311,6 @@ function refreshTimeline() {
     document.getElementById('streamTotalDurationMinutes').innerText = `(Összesen: ${Math.round(totalSecs / 60)} perc)`;
 }
 
-// ÚJ AUTOMATIKUS JSON BEOLVASÓ LOGIKA
 function importScheduleJSON() {
     const fileSelector = document.getElementById('importFileSelector');
     const statusLog = document.getElementById('statusConsoleLog');
@@ -287,13 +327,10 @@ function importScheduleJSON() {
         try {
             const data = JSON.parse(e.target.result);
             
-            // Megnézzük, hogy tiszta schedule-only vagy régi típusú kombinált fájl-e
             if (data.schedule && Array.isArray(data.schedule)) {
                 catcastPlaylist = data.schedule;
                 
-                // Ha van benne rögzített első adásidő, automatikusan beállítjuk a naptárat is
                 if (catcastPlaylist.length > 0 && catcastPlaylist[0].start) {
-                    // Átkonvertáljuk a mentett start időt a datetime-local mező formátumára (YYYY-MM-DDTHH:MM)
                     const savedStart = catcastPlaylist[0].start;
                     document.getElementById('streamStartDateTime').value = savedStart.substring(0, 16);
                 }
@@ -348,5 +385,3 @@ function exportScheduleOnlyJSON() {
     statusLog.innerText = `✅ Műsorrend sikeresen elmentve: ${chId}_schedule.json`;
 }
 </script>
-</body>
-</html>
