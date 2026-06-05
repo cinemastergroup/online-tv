@@ -97,7 +97,7 @@
     		height: 100%;
     		z-index: 100000; /* A videó felett van, de a menü (100001) alatt */
     		background: rgba(0,0,0,0.01); /* Minimális opacity, hogy a TV böngészője érzékelje */
-    		pointer-events: auto; }
+    		pointer-events: none; }
     </style>
 </head>
 <body>
@@ -200,15 +200,15 @@ function handleUserActivity(e) {
     }
 }
 
-// Figyeljük a globális ablakot
-window.addEventListener('mousemove', handleUserActivity);
-window.addEventListener('click', handleUserActivity);
-window.addEventListener('keydown', handleUserActivity);
+// Megkeressük a fő TV konténert és az info sávot
+const tvContainer = document.getElementById('mainTvContainer');
 
-// Kifejezetten a láthatatlan rétegre is rákötjük a fülest
-tracker.addEventListener('mousemove', handleUserActivity);
-tracker.addEventListener('click', handleUserActivity);
-tracker.addEventListener('touchstart', handleUserActivity);
+// Egyszerű mozgásfigyelő: ha a nagy konténeren belül bármi mozog, felvillantjuk a menüt
+tvContainer.addEventListener('mousemove', showControls);
+tvContainer.addEventListener('touchstart', showControls); // TV távirányító / Érintőképernyő támogatás
+
+// A billentyűzetet hagyjuk globálisan az ablakon
+window.addEventListener('keydown', showControls);
 
 // ---------------------------------------------
 
