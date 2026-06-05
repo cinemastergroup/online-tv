@@ -60,11 +60,16 @@
         .info-bar.visible { bottom: 0px; }
 
         .info-top-row { display: flex; align-items: center; justify-content: space-between; width: 100%; }
-        .info-left { display: flex; flex-direction: column; }
+        .info-left { display: flex; align-items: center; gap: 15px; }
         .badge-live { background: #ff1744; color: white; font-size: 10px; font-weight: bold; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; width: max-content; margin-bottom: 4px; }
         .show-title { font-size: 22px; font-weight: bold; color: #fff; }
         .time-info { font-size: 18px; font-weight: bold; color: #8a99ad; margin-left: 15px; }
         
+        /* ÚJ UTÁNGYÁRTOTT LEJÁTSZÁS GOMB STÍLUSA */
+        .btn-play-toggle { background: #ff9100; color: #000; border: none; width: 50px; height: 50px; border-radius: 50%; font-size: 22px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: 0.2s; box-shadow: 0 4px 12px rgba(255,145,0,0.3); }
+        .btn-play-toggle:hover { background: #ff6d00; transform: scale(1.05); }
+
+        /* KONTROLL GOMBOK CSOPORTJA */
         .controls-right { display: flex; gap: 10px; }
         .btn-epg { background: #304ffe; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; transition: 0.2s; }
         .btn-epg:hover { background: #1a237e; box-shadow: 0 0 10px rgba(48, 79, 254, 0.5); }
@@ -108,10 +113,14 @@
     <div class="info-bar" id="mainInfoBar">
         <div class="info-top-row">
             <div class="info-left">
-                <div class="badge-live">Élő adás</div>
-                <div style="display: flex; align-items: center;">
-                    <span class="show-title" id="lblShow">Betöltés...</span>
-                    <span class="time-info" id="lblTime">--:--</span>
+                <button class="btn-play-toggle" id="btnPlayToggle" onclick="togglePlayPause()">⏸</button>
+                
+                <div style="display: flex; flex-direction: column;">
+                    <div class="badge-live">Élő adás</div>
+                    <div style="display: flex; align-items: center;">
+                        <span class="show-title" id="lblShow">Betöltés...</span>
+                        <span class="time-info" id="lblTime">--:--</span>
+                    </div>
                 </div>
             </div>
             
@@ -152,8 +161,8 @@ const epgRowsContainer = document.getElementById('epgRowsContainer');
 const epgModalTitle = document.getElementById('epgModalTitle');
 const mainInfoBar = document.getElementById('mainInfoBar');
 const tracker = document.getElementById('tvMouseTracker');
+const btnPlayToggle = document.getElementById('btnPlayToggle');
 
-// Fix hivatkozások a lejátszókra
 const vid = document.getElementById('tvEngine');
 const archiveIframe = document.getElementById('archiveEngine');
 
@@ -162,6 +171,7 @@ let lastRenderedUrl = '';
 let currentLogoConfig = null;
 let idleTimer;
 let isEpgOpen = false;
+let isArchivePlaying = true; // Követi az archive.org állapotát
 
 // --- IDLE TIMER LOGIKA (AUTOMATA ELREJTÉS + DINAMIKUS PAJZS) ---
 
@@ -171,7 +181,7 @@ function showControls() {
     
     clearTimeout(idleTimer);
     if (!isEpgOpen) {
-        idleTimer = setTimeout(hideControls, 15000); // 15 másodpercre állítva PC-re
+        idleTimer = setTimeout(hideControls, 15000);
     }
 }
 
@@ -196,11 +206,41 @@ mainInfoBar.addEventListener('click', (e) => {
 
 window.addEventListener('keydown', showControls);
 
-// AUTOMATIKUS MŰSORVÁLTÁS TRIGERELÉSE: Ha vége az MP4 fájlnak, azonnal lekérjük az újat!
 vid.onended = function() {
     console.log("Műsor vége! Azonnali váltás a következő adásra...");
     runTvEngine();
 };
+
+// Sima videónál ha külsőleg megállítják/elindítják, a mi gombunk ikonja is szinkronban változik
+vid.onplay = () => { btnPlayToggle.innerText = '⏸'; };
+vid.onpause = () => { btnPlayToggle.innerText = '▶'; };
+
+// --- LEJÁTSZÁS / SZÜNET INTELLIGENS VEZÉRLŐ ---
+function togglePlayPause() {
+    if (!lastRenderedUrl) return;
+
+    if (lastRenderedUrl.includes('archive.org')) {
+        // Ha Archive.org fut, postMessage-en keresztül küldünk parancsot az iframe-nek
+        if (isArchivePlaying) {
+            archiveIframe.contentWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
+            btnPlayToggle.innerText = '▶';
+            isArchivePlaying = false;
+        } else {
+            archiveIframe.contentWindow.postMessage('{"event":"command","func":"playVideo","args":""}', '*');
+            btnPlayToggle.innerText = '⏸';
+            isArchivePlaying = true;
+        }
+    } else {
+        // Ha sima MP4 videó fut
+        if (vid.paused) {
+            vid.play().catch(()=>{});
+            btnPlayToggle.innerText = '⏸';
+        } else {
+            vid.pause();
+            btnPlayToggle.innerText = '▶';
+        }
+    }
+}
 
 // ---------------------------------------------
 
@@ -263,12 +303,13 @@ window.addEventListener('resize', () => setTimeout(updateLogoScale, 50));
 function switchChannel(channelId) {
     activeChannel = channelId;
     lastRenderedUrl = '';
-    // Leállítjuk a korábbi adásokat váltáskor
     vid.pause();
     vid.src = '';
     vid.style.display = 'none';
     archiveIframe.src = '';
     archiveIframe.style.display = 'none';
+    btnPlayToggle.innerText = '⏸';
+    isArchivePlaying = true;
     
     document.querySelectorAll('.channel-btn').forEach(btn => btn.classList.remove('active'));
     const clickedBtn = Array.from(document.querySelectorAll('.channel-btn')).find(btn => btn.getAttribute('onclick').includes(channelId));
@@ -278,7 +319,6 @@ function switchChannel(channelId) {
 
 async function runTvEngine() {
     try {
-        // 1. Logó betöltése
         try {
             const logoResponse = await fetch(`${activeChannel}_logo.json?t=${new Date().getTime()}`, {
                 cache: "no-store",
@@ -301,7 +341,6 @@ async function runTvEngine() {
             currentLogoConfig = null;
         }
 
-        // 2. Műsorrend betöltése
         const response = await fetch(`${activeChannel}_schedule.json?t=${new Date().getTime()}`, {
             cache: "no-store",
             headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
@@ -341,13 +380,13 @@ async function runTvEngine() {
             
             lblTime.innerText = `${startHr}:${startMin} - ${endHr}:${endMin}`;
 
-            // CSAK AKKOR NYÚLUNK A FORRÁSHOZ, HA VALÓBAN ÚJ MŰSORHOZ ÉRTÜNK
             if (currentTrack.url !== lastRenderedUrl) {
                 lastRenderedUrl = currentTrack.url;
                 const trackStart = parseLocalISO(currentTrack.start);
                 const currentOffset = (now.getTime() - trackStart.getTime()) / 1000;
+                btnPlayToggle.innerText = '⏸';
+                isArchivePlaying = true;
                 
-                // 1. ARCHIVE.ORG KEZELÉSE (iFrame csere)
                 if (currentTrack.url.includes('archive.org')) {
                     vid.pause();
                     vid.src = '';
@@ -362,16 +401,15 @@ async function runTvEngine() {
                     
                     if (archiveId) {
                         const startSeconds = Math.round(currentOffset);
-                        archiveIframe.src = `https://archive.org/embed/${archiveId}?start=${startSeconds}&autoplay=1`;
+                        // Hozzáadva az enablejsapi=1 paraméter, hogy a külső gombunk vezérelhesse az iframe-et
+                        archiveIframe.src = `https://archive.org/embed/${archiveId}?start=${startSeconds}&autoplay=1&enablejsapi=1`;
                         archiveIframe.style.display = 'block';
                     } else {
-                        // Tartalék, ha sérült az archive link
                         archiveIframe.style.display = 'none';
                         vid.src = currentTrack.url;
                         vid.style.display = 'block';
                     }
                 } 
-                // 2. KÖZVETLEN MP4 STREAM (Fix HTML5 tag megtartásával)
                 else {
                     archiveIframe.src = '';
                     archiveIframe.style.display = 'none';
@@ -389,7 +427,6 @@ async function runTvEngine() {
                 }
             }
         } else {
-            // Adásszünet: Minden lejátszót kikapcsolunk
             vid.pause();
             vid.src = '';
             vid.style.display = 'none';
@@ -416,7 +453,7 @@ async function runTvEngine() {
 
 window.addEventListener('DOMContentLoaded', () => {
     runTvEngine();
-    setInterval(runTvEngine, 15000); // 15 másodpercenként ellenőrzi a JSON-t a háttérben
+    setInterval(runTvEngine, 15000);
     showControls();
 });
 </script>
