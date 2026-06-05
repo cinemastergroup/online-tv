@@ -8,24 +8,21 @@
         
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--bg-color); color: var(--text-color); font-family: 'Segoe UI', Tahoma, sans-serif; overflow: hidden; }
 
-        /* A LEJÁTSZÓ KONTÉNER */
         .tv-container { position: relative; width: 100vw; height: 100vh; background: #000; display: flex; justify-content: center; align-items: center; }
         
         iframe, video { width: 100%; height: 100%; border: none; background: #000; position: absolute; top: 0; left: 0; z-index: 1; }
         
-        /* LÁTHATATLAN SMART TV ÜVEGFAL (FAL) */
         .tv-mouse-tracker {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 99999; /* A lejátszók felett, de a vízjel és a sáv alatt */
+            z-index: 99999;
             background: rgba(0,0,0,0.01);
             pointer-events: auto;
         }
 
-        /* MATEMATIKAI ALAPÚ LOGÓ */
         .tv-watermark { 
             position: absolute; 
             opacity: 0.9; 
@@ -36,7 +33,6 @@
             height: auto !important;
         }
 
-        /* REJTHETŐ ALSÓ SMART SÁV */
         .info-bar { 
             position: absolute; 
             bottom: -220px; 
@@ -91,9 +87,19 @@
         .epg-track-title { color: #fff; font-weight: bold; }
         
         .no-stream-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; color: #8a99ad; font-size: 20px; font-weight: bold; background: #0f1115; z-index: 5; }
+
+        /* ÚJ STÍLUS: UNLOCK OVERLAY (INDÍTÓ SÁV) */
+        .unlock-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #0f1115; z-index: 200001; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px; }
+        .unlock-btn { background: var(--accent-color); color: white; border: none; padding: 18px 40px; font-size: 20px; font-weight: bold; border-radius: 12px; cursor: pointer; box-shadow: 0 0 30px rgba(83, 109, 254, 0.4); transition: 0.2s; }
+        .unlock-btn:hover { background: #3d5afe; transform: scale(1.05); }
     </style>
 </head>
 <body>
+
+<div id="unlockOverlay" class="unlock-overlay">
+    <div style="font-size: 28px; font-weight: bold; color: #fff; letter-spacing: 2px;">CINEMASTER TV</div>
+    <button class="unlock-btn" onclick="startTvWithAudio()">ÉLŐ ADÁS INDÍTÁSA CORREGÁLT HANGGAL 🔊</button>
+</div>
 
 <div class="tv-container" id="mainTvContainer">
     <div id="noStreamOverlay" class="no-stream-overlay">📡 Csatorna betöltése...</div>
@@ -161,10 +167,23 @@ let lastRenderedUrl = '';
 let currentLogoConfig = null;
 let idleTimer;
 let isEpgOpen = false;
+let userUnlocked = false; // Figyeli, történt-e már kattintás
 
-// --- IDLE TIMER LOGIKA (AUTOMATA ELREJTÉS + DINAMIKUS PAJZS) ---
+// --- ÚJ FUNKCIÓ: AZ ELSŐ HANGOS INDÍTÁS ---
+function startTvWithAudio() {
+    userUnlocked = true;
+    document.getElementById('unlockOverlay').style.display = 'none'; // Eltüntetjük a falat
+    
+    // Kényszerítjük a videót, hogy hangosan induljon el
+    vid.muted = false;
+    vid.volume = 1.0;
+    
+    runTvEngine();
+    showControls();
+}
 
 function showControls() {
+    if (!userUnlocked) return; // Ne mutassa a sávot az indítás előtt
     mainInfoBar.classList.add('visible');
     if (tracker) tracker.style.pointerEvents = 'none';
     
@@ -274,6 +293,8 @@ function switchChannel(channelId) {
 }
 
 async function runTvEngine() {
+    if (!userUnlocked) return; // Ne fusson a háttérben, amíg nincs rákattintva!
+
     try {
         try {
             const logoResponse = await fetch(`${activeChannel}_logo.json?t=${new Date().getTime()}`, {
@@ -341,10 +362,6 @@ async function runTvEngine() {
                 const trackStart = parseLocalISO(currentTrack.start);
                 const currentOffset = (now.getTime() - trackStart.getTime()) / 1000;
                 
-                if (typeof btnPlayToggle !== 'undefined') btnPlayToggle.innerText = '⏸';
-                if (typeof isArchivePlaying !== 'undefined') isArchivePlaying = true;
-                
-                // 1. ARCHIVE.ORG EMBED KEZELÉSE (Csak ha NEM közvetlen .mp4 fájlról van szó!)
                 if (currentTrack.url.includes('archive.org') && !currentTrack.url.toLowerCase().endsWith('.mp4')) {
                     vid.pause();
                     vid.src = '';
@@ -359,7 +376,6 @@ async function runTvEngine() {
                     
                     if (archiveId) {
                         const startSeconds = Math.round(currentOffset);
-                        // Ha iframe fut, kénytelenek vagyunk mute=1-et küldeni, hogy elinduljon gomb nélkül
                         archiveIframe.src = `https://archive.org/embed/${archiveId}?start=${startSeconds}&autoplay=1&mute=1`;
                         archiveIframe.style.display = 'block';
                     } else {
@@ -368,7 +384,6 @@ async function runTvEngine() {
                         vid.style.display = 'block';
                     }
                 } 
-                // 2. KÖZVETLEN MP4 STREAM (Ez fut nálad!)
                 else {
                     archiveIframe.src = '';
                     archiveIframe.style.display = 'none';
@@ -381,27 +396,23 @@ async function runTvEngine() {
                             vid.currentTime = currentOffset;
                         }
                         
-                        // JAVÍTOTT UTÁNGYÁRTOTT INDÍTÓ LOGIKA HANGGAL:
-                        vid.muted = false; // Először megpróbáljuk tiszta hanggal
-                        vid.play().catch(() => {
-                            // Ha a TV letiltaná a hangos autoplay-t, elindítjuk némítva (hogy pörögjön a kép)...
+                        // MIVEL MÁR VAN FELHASZNÁLÓI INTERAKCIÓ, ENGEDNI FOGJA A HANGOT:
+                        vid.muted = false; 
+                        vid.volume = 1.0;
+                        vid.play().catch((e) => {
+                            console.log("Autoplay blokkolva, fallback némításra", e);
                             vid.muted = true;
-                            vid.play().then(() => {
-                                // ...és amint elindult a lejátszás, azonnal visszakapcsoljuk a hangot a háttérben!
-                                setTimeout(() => { vid.muted = false; }, 100);
-                            }).catch(()=>{});
+                            vid.play().catch(()=>{});
                         });
                     };
                 }
-            } else {
-                // IDŐALAPÚ KÉNYSZERÍTETT VÁLTÁS AKTÍV
             }
         } else {
             vid.pause();
             vid.src = '';
             vid.style.display = 'none';
             archiveIframe.src = '';
-            archiveIframe.style.none = 'none';
+            archiveIframe.style.display = 'none';
             
             overlay.style.display = 'flex';
             overlay.innerText = "📡 Jelenleg nincs adás ezen a csatornán.";
@@ -422,9 +433,8 @@ async function runTvEngine() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-    runTvEngine();
+    // Csak a 15 másodperces ellenőrzést hagyjuk meg, de a futást az indítógomb indítja el!
     setInterval(runTvEngine, 15000);
-    showControls();
 });
 </script>
 </body>
