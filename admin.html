@@ -449,17 +449,28 @@ function exportScheduleOnlyJSON() {
         return;
     }
     const chId = document.getElementById('channelId').value.trim() || "cinemaster";
+    const startInput = document.getElementById('streamStartDateTime').value;
     const statusLog = document.getElementById('statusConsoleLog');
+    
+    if (!startInput) {
+        alert("Kérlek, adj meg egy adásfolyam fix kezdő dátumot, hogy elmenthessem a napi műsort!");
+        return;
+    }
+
+    // Kinyerjük a dátum részt (YYYY-MM-DD) az inputból (pl. "2026-06-06T15:30" -> "2026-06-06")
+    const datePart = startInput.split('T')[0];
     const scheduleOutput = { schedule: catcastPlaylist };
     
     const blob = new Blob([JSON.stringify(scheduleOutput, null, 2)], {type : 'application/json'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); 
     a.href = url; 
-    a.download = chId + "_schedule.json"; 
+    
+    // MEGVÁLTOZTATOTT FÁJLNEV: pl. cinemaster_schedule_2026-06-06.json
+    a.download = `${chId}_schedule_${datePart}.json`; 
     a.click();
     
     statusLog.style.color = "#00e676";
-    statusLog.innerText = `✅ Műsorrend sikeresen elmentve: ${chId}_schedule.json`;
+    statusLog.innerText = `✅ Műsorrend sikeresen elmentve: ${chId}_schedule_${datePart}.json`;
 }
 </script>
