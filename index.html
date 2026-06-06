@@ -252,14 +252,16 @@ async function runTvEngine() {
             } else { watermark.style.display = 'none'; currentLogoConfig = null; }
         } catch (e) { watermark.style.display = 'none'; currentLogoConfig = null; }
 
-        // 2. TÖBB NAP MŰSORÁNAK AUTOMATIKUS ÖSSZEFŰZÉSE (Ma + a következő 6 nap)
+        // 2. TÖBB NAP MŰSORÁNAK AUTOMATIKUS ÖSSZEFŰZÉSE (Tegnap + Ma + a következő 5 nap)
         let kombináltMűsor = [];
-        const baseDate = new Date(); // A kiindulópont a mai nap
+        
+        // JAVÍTÁS: A kiindulópontot eltoljuk tegnapra (-24 óra), hogy az éjféli átnyúlások is beolvasásra kerüljenek!
+        const baseDate = new Date(new Date().getTime() - 24 * 60 * 60 * 1000); 
 
         // Segédfüggvény a dátum YYYY-MM-DD formátumra alakításához
         const formázDátum = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-        // Lefutunk egy 7-es ciklust (0 = ma, 1 = holnap, 2 = holnapután... egészen +6 napig)
+        // Lefutunk egy 7-es ciklust (0 = tegnap, 1 = ma, 2 = holnap... egészen +5 napig)
         for (let i = 0; i < 7; i++) {
             const vizsgáltDátum = new Date(baseDate.getTime() + i * 24 * 60 * 60 * 1000);
             const dátumStr = formázDátum(vizsgáltDátum);
@@ -275,39 +277,10 @@ async function runTvEngine() {
                     }
                 }
             } catch (fileError) {
-                // Ha a fájl nem létezik (mert pl. még nem terveztél arra a napra), csendben átugorjuk
+                // Ha a fájl nem létezik, csendben átugorjuk
                 console.log(`${dátumStr} műsorfájl még nincs készítve.`);
             }
         }
-
-        const now = new Date();
-        let currentTrack = null;
-
-        // Az EPG ablak kiürítése és újraépítése a teljes heti kombinált listából
-        epgRowsContainer.innerHTML = '';
-
-        kombináltMűsor.forEach(track => {
-            const trackStart = parseLocalISO(track.start);
-            const trackEnd = new Date(trackStart.getTime() + track.duration * 1000);
-            
-            // Csak a jelenleg futó és a jövőbeli műsorokat tesszük ki az EPG-re (a múltat elrejtjük)
-            if (trackEnd >= now) {
-                // Kiírjuk a napot is a kezdési idő elé, hogy látszódjon, ha egy film holnap vagy holnapután lesz
-                const napInfo = trackStart.toLocaleDateString('hu-HU', { month: 'short', day: 'numeric', weekday: 'short' });
-                const óraPerc = `${String(trackStart.getHours()).padStart(2, '0')}:${String(trackStart.getMinutes()).padStart(2, '0')}`;
-                
-                epgRowsContainer.innerHTML += `
-                    <div style="display:flex; align-items:center; padding:12px; border-bottom:1px solid #1f2633; font-size:18px;">
-                        <div style="color:#ffb300; min-width:140px; font-weight:bold; font-size:15px;">${napInfo} ${óraPerc}</div>
-                        <div style="color:white; font-weight:bold;">${track.title}</div>
-                    </div>`;
-            }
-
-            // Kiválasztjuk, hogy ebben a szent pillanatban melyik adásnak kell mennie
-            if (now >= trackStart && now < trackEnd) {
-                currentTrack = track;
-            }
-        });
 
         // 3. LEJÁTSZÁS KEZELÉSE (A bevált, jó hangú automatizmus)
         if (currentTrack) {
