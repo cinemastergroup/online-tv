@@ -238,7 +238,7 @@ async function runTvEngine() {
     if (!userUnlocked) return;
 
     try {
-        // 1. Logó kezelése (marad a megszokott módon)
+        // 1. Arculati logó beolvasása (maradt a jól működő verzió)
         try {
             const logoResponse = await fetch(`${activeChannel}_logo.json?t=${new Date().getTime()}`);
             if (logoResponse.ok) {
@@ -252,57 +252,64 @@ async function runTvEngine() {
             } else { watermark.style.display = 'none'; currentLogoConfig = null; }
         } catch (e) { watermark.style.display = 'none'; currentLogoConfig = null; }
 
-        // DÁTUMOK KISZÁMÍTÁSA A NAPI FÁJLOKHOZ
-        const most = new Date();
-        const tegnap = new Date(most.getTime() - 24 * 60 * 60 * 1000);
-
-        const formázDátum = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        
-        const maiDátumStr = formázDátum(most);      // pl. "2026-06-07"
-        const tegnapiDátumStr = formázDátum(tegnap);  // pl. "2026-06-06"
-
+        // 2. TÖBB NAP MŰSORÁNAK AUTOMATIKUS ÖSSZEFŰZÉSE (Ma + a következő 6 nap)
         let kombináltMűsor = [];
+        const baseDate = new Date(); // A kiindulópont a mai nap
 
-        // 2. TEGNAPI MŰSOR BEOLVASÁSA (Hátha még átnyúlik a mai napra hajnalban)
-        try {
-            const tegResponse = await fetch(`${activeChannel}_schedule_${tegnapiDátumStr}.json?t=${new Date().getTime()}`);
-            if (tegResponse.ok) {
-                const tegData = await tegResponse.json();
-                if (tegData.schedule) kombináltMűsor = kombináltMűsor.concat(tegData.schedule);
-            }
-        } catch(e) { console.log("Tegnapi műsorfájl nem található, sebaj."); }
+        // Segédfüggvény a dátum YYYY-MM-DD formátumra alakításához
+        const formázDátum = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-        // 3. MAI MŰSOR BEOLVASÁSA
-        try {
-            const maiResponse = await fetch(`${activeChannel}_schedule_${maiDátumStr}.json?t=${new Date().getTime()}`);
-            if (maiResponse.ok) {
-                const maiData = await maiResponse.json();
-                if (maiData.schedule) kombináltMűsor = kombináltMűsor.concat(maiData.schedule);
+        // Lefutunk egy 7-es ciklust (0 = ma, 1 = holnap, 2 = holnapután... egészen +6 napig)
+        for (let i = 0; i < 7; i++) {
+            const vizsgáltDátum = new Date(baseDate.getTime() + i * 24 * 60 * 60 * 1000);
+            const dátumStr = formázDátum(vizsgáltDátum);
+
+            try {
+                // Megpróbáljuk letölteni az adott napi fájlt
+                const response = await fetch(`${activeChannel}_schedule_${dátumStr}.json?t=${new Date().getTime()}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.schedule && Array.isArray(data.schedule)) {
+                        // Ha van benne műsor, hozzácsapjuk a nagy közös listához
+                        kombináltMűsor = kombináltMűsor.concat(data.schedule);
+                    }
+                }
+            } catch (fileError) {
+                // Ha a fájl nem létezik (mert pl. még nem terveztél arra a napra), csendben átugorjuk
+                console.log(`${dátumStr} műsorfájl még nincs készítve.`);
             }
-        } catch(e) { console.log("Mai műsorfájl nem található."); }
+        }
 
         const now = new Date();
         let currentTrack = null;
 
-        // Az EPG (műsorújság) ablak kiürítése és feltöltése a kombinált listából
+        // Az EPG ablak kiürítése és újraépítése a teljes heti kombinált listából
         epgRowsContainer.innerHTML = '';
 
         kombináltMűsor.forEach(track => {
             const trackStart = parseLocalISO(track.start);
             const trackEnd = new Date(trackStart.getTime() + track.duration * 1000);
             
-            // Csak a mai napon futó vagy jövőbeli műsorokat tesszük ki az EPG-re, hogy ne legyen túl hosszú
+            // Csak a jelenleg futó és a jövőbeli műsorokat tesszük ki az EPG-re (a múltat elrejtjük)
             if (trackEnd >= now) {
-                epgRowsContainer.innerHTML += `<div style="display:flex; padding:12px; border-bottom:1px solid #1f2633; font-size:18px;"><div style="color:#ffb300; min-width:80px; font-weight:bold;">${String(trackStart.getHours()).padStart(2, '0')}:${String(trackStart.getMinutes()).padStart(2, '0')}</div><div style="color:white; font-weight:bold;">${track.title}</div></div>`;
+                // Kiírjuk a napot is a kezdési idő elé, hogy látszódjon, ha egy film holnap vagy holnapután lesz
+                const napInfo = trackStart.toLocaleDateString('hu-HU', { month: 'short', day: 'numeric', weekday: 'short' });
+                const óraPerc = `${String(trackStart.getHours()).padStart(2, '0')}:${String(trackStart.getMinutes()).padStart(2, '0')}`;
+                
+                epgRowsContainer.innerHTML += `
+                    <div style="display:flex; align-items:center; padding:12px; border-bottom:1px solid #1f2633; font-size:18px;">
+                        <div style="color:#ffb300; min-width:140px; font-weight:bold; font-size:15px;">${napInfo} ${óraPerc}</div>
+                        <div style="color:white; font-weight:bold;">${track.title}</div>
+                    </div>`;
             }
 
-            // IDŐZÍTŐ LOGIKA: Ha időrendben haladunk, a későbbi (pl. mai 05:00-s) kezdés automatikusan felülírja a korábbit!
+            // Kiválasztjuk, hogy ebben a szent pillanatban melyik adásnak kell mennie
             if (now >= trackStart && now < trackEnd) {
                 currentTrack = track;
             }
         });
 
-        // 4. LEJÁTSZÁS KEZELÉSE (A Catcast-féle golyóálló verziód megtartva)
+        // 3. LEJÁTSZÁS KEZELÉSE (A bevált, jó hangú automatizmus)
         if (currentTrack) {
             overlay.style.display = 'none';
             lblShow.innerText = currentTrack.title;
@@ -357,7 +364,6 @@ async function runTvEngine() {
         overlay.style.display = 'flex'; overlay.innerText = "📡 Hiba a beolvasás során.";
     }
 }
-
 window.addEventListener('DOMContentLoaded', () => {
     setInterval(runTvEngine, 15000);
 });
