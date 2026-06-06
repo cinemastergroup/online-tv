@@ -8,23 +8,10 @@
         
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--bg-color); color: var(--text-color); font-family: 'Segoe UI', Tahoma, sans-serif; overflow: hidden; }
 
-        .tv-container { position: relative; width: 100vw; height: 100vh; background: #000; display: flex; justify-content: center; align-items: center; }
+        /* A LEJÁTSZÓ KONTÉNER */
+        .tv-container { position: relative; width: 100vw; height: 100vh; background: #000; display: flex; justify-content: center; align-items: center; cursor: pointer; }
         
-        iframe, video { width: 100%; height: 100%; border: none; background: #000; position: absolute; top: 0; left: 0; z-index: 1; }
-        
-        /* Biztosítjuk a natív vezérlők elérhetőségét */
-        video { z-index: 2; }
-
-        .tv-mouse-tracker {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 99999;
-            background: rgba(0,0,0,0.01);
-            pointer-events: auto;
-        }
+        iframe, video { width: 100%; height: 100%; border: none; background: #000; position: absolute; top: 0; left: 0; z-index: 1; display: none; }
 
         .tv-watermark { 
             position: absolute; 
@@ -36,15 +23,16 @@
             height: auto !important;
         }
 
-        /* MODIFIKÁCIÓ: Feljebb emeltük a sávot (bottom: 60px), hogy alatta a videó gyári gombjai (hangerő) elérhetők legyenek PC-n! */
+        /* ALSÓ REJTHETŐ SMART SÁV */
         .info-bar { 
             position: absolute; 
-            bottom: -280px; 
+            bottom: -250px; 
             left: 2%; 
             width: 96%; 
             background: var(--panel-color); 
             border: 1px solid var(--border-color); 
-            border-radius: 16px; 
+            border-bottom: none;
+            border-radius: 16px 16px 0 0; 
             padding: 20px; 
             box-sizing: border-box; 
             display: flex; 
@@ -53,18 +41,24 @@
             transition: bottom 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
             z-index: 100001; 
             backdrop-filter: blur(10px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.7);
+            cursor: default;
         }
         
-        /* Amikor látható, nem tapad le teljesen a képernyő aljára */
-        .info-bar.visible { bottom: 60px; }
+        .info-bar.visible { bottom: 0px; }
 
         .info-top-row { display: flex; align-items: center; justify-content: space-between; width: 100%; }
-        .info-left { display: flex; flex-direction: column; }
+        .info-left { display: flex; align-items: center; gap: 20px; }
+        .info-text { display: flex; flex-direction: column; }
         .badge-live { background: #ff1744; color: white; font-size: 10px; font-weight: bold; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; width: max-content; margin-bottom: 4px; }
         .show-title { font-size: 22px; font-weight: bold; color: #fff; }
         .time-info { font-size: 18px; font-weight: bold; color: #8a99ad; margin-left: 15px; }
         
+        /* SAJÁT HANGERŐ SZABÁLYZÓ BLOKK */
+        .volume-box { display: flex; align-items: center; gap: 10px; background: #1c212c; padding: 8px 15px; border-radius: 8px; border: 1px solid var(--border-color); }
+        .btn-mute { background: none; border: none; color: #fff; font-size: 18px; cursor: pointer; }
+        .volume-slider { width: 80px; accent-color: var(--accent-color); cursor: pointer; }
+
         .controls-right { display: flex; gap: 10px; }
         .btn-epg { background: #304ffe; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; transition: 0.2s; }
         .btn-epg:hover { background: #1a237e; box-shadow: 0 0 10px rgba(48, 79, 254, 0.5); }
@@ -90,7 +84,7 @@
         .epg-time { color: #ffb300; font-weight: bold; min-width: 90px; font-size: 19px; }
         .epg-track-title { color: #fff; font-weight: bold; }
         
-        .no-stream-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; color: #8a99ad; font-size: 20px; font-weight: bold; background: #0f1115; z-index: 5; }
+        .no-stream-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; color: #8a99ad; font-size: 20px; font-weight: bold; background: #0f1115; z-index: 5; pointer-events: none; }
 
         .unlock-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #0f1115; z-index: 200001; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px; }
         .unlock-btn { background: var(--accent-color); color: white; border: none; padding: 18px 40px; font-size: 20px; font-weight: bold; border-radius: 12px; cursor: pointer; box-shadow: 0 0 30px rgba(83, 109, 254, 0.4); transition: 0.2s; }
@@ -104,23 +98,28 @@
     <button class="unlock-btn" onclick="startTvWithAudio()">ÉLŐ ADÁS INDÍTÁSA 🔊</button>
 </div>
 
-<div class="tv-container" id="mainTvContainer">
+<div class="tv-container" id="mainTvContainer" onclick="showControls()">
     <div id="noStreamOverlay" class="no-stream-overlay">📡 Csatorna betöltése...</div>
     
-    <video id="tvEngine" controls autoplay></video>
+    <video id="tvEngine" autoplay></video>
     <iframe id="archiveEngine" allowfullscreen style="display: none;"></iframe>
-    
-    <div class="tv-mouse-tracker" id="tvMouseTracker"></div>
     
     <img id="tvWatermark" class="tv-watermark" alt="Logo">
 
-    <div class="info-bar" id="mainInfoBar">
+    <div class="info-bar" id="mainInfoBar" onclick="event.stopPropagation()">
         <div class="info-top-row">
             <div class="info-left">
-                <div class="badge-live">Élő adás</div>
-                <div style="display: flex; align-items: center;">
-                    <span class="show-title" id="lblShow">Betöltés...</span>
-                    <span class="time-info" id="lblTime">--:--</span>
+                <div class="info-text">
+                    <div class="badge-live">Élő adás</div>
+                    <div style="display: flex; align-items: center;">
+                        <span class="show-title" id="lblShow">Betöltés...</span>
+                        <span class="time-info" id="lblTime">--:--</span>
+                    </div>
+                </div>
+                
+                <div class="volume-box">
+                    <button class="btn-mute" id="btnMute" onclick="toggleMute()">🔊</button>
+                    <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="100" oninput="setVolume(this.value)">
                 </div>
             </div>
             
@@ -160,7 +159,8 @@ const epgModalOverlay = document.getElementById('epgModalOverlay');
 const epgRowsContainer = document.getElementById('epgRowsContainer');
 const epgModalTitle = document.getElementById('epgModalTitle');
 const mainInfoBar = document.getElementById('mainInfoBar');
-const tracker = document.getElementById('tvMouseTracker');
+const btnMute = document.getElementById('btnMute');
+const volumeSlider = document.getElementById('volumeSlider');
 
 const vid = document.getElementById('tvEngine');
 const archiveIframe = document.getElementById('archiveEngine');
@@ -183,12 +183,34 @@ function startTvWithAudio() {
     showControls();
 }
 
+// SAJÁT SZOFTVERES HANGERŐ VEZÉRLÉS LOGIKÁJA
+function setVolume(val) {
+    const volume = val / 100;
+    vid.volume = volume;
+    if (volume === 0) {
+        vid.muted = true;
+        btnMute.innerText = "🔇";
+    } else {
+        vid.muted = false;
+        btnMute.innerText = volume < 0.5 ? "🔉" : "🔊";
+    }
+}
+
+function toggleMute() {
+    if (vid.muted) {
+        vid.muted = false;
+        btnMute.innerText = vid.volume < 0.5 ? "🔉" : "🔊";
+        volumeSlider.value = vid.volume * 100;
+    } else {
+        vid.muted = true;
+        btnMute.innerText = "🔇";
+        volumeSlider.value = 0;
+    }
+}
+
 function showControls() {
     if (!userUnlocked) return;
     mainInfoBar.classList.add('visible');
-    
-    // Átmenetileg eltoljuk az üvegfalat, hogy az alsó üres sávban átengedje a kattintást a videóra
-    if (tracker) tracker.style.height = 'calc(100% - 60px)';
     
     clearTimeout(idleTimer);
     if (!isEpgOpen) {
@@ -199,27 +221,16 @@ function showControls() {
 function hideControls() {
     if (!isEpgOpen) {
         mainInfoBar.classList.remove('visible');
-        if (tracker) tracker.style.height = '100%';
     }
 }
 
-// Egér és ÉRINTÉS (Mobil/Tablet hiba javítása: kattintásra is felugrik!)
-if (tracker) {
-    tracker.addEventListener('mousemove', showControls);
-    tracker.addEventListener('click', showControls);
-    tracker.addEventListener('touchstart', showControls);
-}
-
-mainInfoBar.addEventListener('mousemove', showControls);
-mainInfoBar.addEventListener('click', (e) => {
-    e.stopPropagation();
-    showControls();
-});
-
+// Egérmozgásra PC-n és TV-n jön elő a sáv
+container.addEventListener('mousemove', showControls);
 window.addEventListener('keydown', showControls);
 
 vid.onended = function() {
-    console.log("Műsor vége! Azonnali váltás a következő adásra...");
+    console.log("Műsor vége! Váltás...");
+    lastRenderedUrl = '';
     runTvEngine();
 };
 
@@ -394,18 +405,9 @@ async function runTvEngine() {
                         if (currentOffset > 0 && currentOffset < vid.duration) {
                             vid.currentTime = currentOffset;
                         }
-                        
-                        vid.muted = false; 
-                        vid.volume = 1.0;
-                        
-                        vid.play().then(() => {
-                            vid.muted = false;
-                            vid.volume = 1.0;
-                        }).catch((e) => {
-                            console.log("Autoplay hiba, némított fallback indítás:", e);
-                            vid.muted = true;
-                            vid.play().catch(()=>{});
-                        });
+                        // Szoftveresen szinkronizáljuk a videó hangerejét a csúszka állásával
+                        setVolume(volumeSlider.value);
+                        vid.play().catch(() => {});
                     };
 
                     vid.src = currentTrack.url;
