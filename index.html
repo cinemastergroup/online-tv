@@ -181,8 +181,8 @@ function parseLocalISO(isoStr) {
 function toggleEpg(show) {
     isEpgOpen = show;
     if (show) {
-        const ma = new Date();
-        epgModalTitle.innerText = `Műsorújság (${ma.getFullYear()}-${String(ma.getMonth() + 1).padStart(2, '0')}-${String(ma.getDate()).padStart(2, '0')})`;
+        // Kiszedtük a dátum-hozzáfűzést, így csak a tiszta szöveg jelenik meg
+        epgModalTitle.innerText = "Műsorújság";
         epgModalOverlay.classList.add('active');
     } else {
         epgModalOverlay.classList.remove('active');
