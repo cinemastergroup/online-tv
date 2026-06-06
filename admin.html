@@ -384,7 +384,7 @@ function refreshTimeline() {
     });
     
     const endDateStr = timelinePointer.toLocaleDateString('hu-HU', { month: 'short', day: 'numeric', weekday: 'short' });
-    const endTimeStr = timelinePointer.toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' });
+    const endTimeStr = timelinePointer.toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     document.getElementById('streamEndTimeCounter').innerText = `${endDateStr} ${endTimeStr}`;
     document.getElementById('streamTotalDurationMinutes').innerText = `(Összesen: ${Math.round(totalSecs / 60)} perc)`;
 }
