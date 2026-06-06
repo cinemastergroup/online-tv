@@ -1,22 +1,10 @@
 {
   "schedule": [
     {
-      "title": "300",
-      "url": "https://archive.org/download/300_20260604/300.mp4",
-      "duration": 7000,
-      "start": "2026-06-05T22:30:00"
-    },
-    {
-      "title": "300",
-      "url": "https://archive.org/download/300_20260604/300.mp4",
-      "duration": 7000,
-      "start": "2026-06-06T00:26:40"
-    },
-    {
-      "title": "300",
-      "url": "https://archive.org/download/300_20260604/300.mp4",
-      "duration": 7000,
-      "start": "2026-06-06T02:23:20"
+      "title": "A BÁRÁNYOK HALLGATNAK",
+      "url": "https://archive.org/download/a-baranyok-hallgatnak_20260605/A%20BARANYOK%20HALLGATNAK.mp4",
+      "duration": 7112,
+      "start": "2026-06-06T11:30:00"
     }
   ]
 }
