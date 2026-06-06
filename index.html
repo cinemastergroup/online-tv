@@ -10,9 +10,9 @@
 
         .tv-container { position: relative; width: 100vw; height: 100vh; background: #000; display: flex; justify-content: center; align-items: center; }
         
-        iframe, video { width: 100%; height: 100%; border: none; background: #000; position: absolute; top: 0; left: 0; z-index: 1; display: none; }
+        /* TRÜKK: 99.9%-ra vettük a méretet, hogy a TV ne tudja hardveres rétegre kényszeríteni a videót a kód elé */
+        iframe, video { width: 99.9vw; height: 99.9vh; border: none; background: #000; position: absolute; top: 0; left: 0; z-index: 1; display: none; }
 
-        /* A továbbfejlesztett Smart TV üvegfal */
         .tv-mouse-tracker {
             position: absolute;
             top: 0;
@@ -90,7 +90,7 @@
 <div class="tv-container" id="mainTvContainer">
     <div id="noStreamOverlay" class="no-stream-overlay">📡 Csatorna betöltése...</div>
     
-    <video id="tvEngine" autoplay></video>
+    <video id="tvEngine" autoplay playsinline webkit-playsinline></video>
     <iframe id="archiveEngine" allowfullscreen style="display: none;"></iframe>
     
     <div class="tv-mouse-tracker" id="tvMouseTracker"></div>
@@ -163,7 +163,6 @@ function startTvWithAudio(e) {
     vid.muted = false;
     vid.volume = 1.0;
     
-    // Biztosítjuk a fókuszt a TV-nek
     window.focus();
     if(container) container.focus();
 
@@ -195,28 +194,21 @@ function hideControls() {
     }
 }
 
-// SMART TV OKOSÍTOTT ESEMÉNYFIGYELŐK
 if (tracker) {
-    // A pointerdown elkapja a TV kurzor kattintását, a sima egérkattintást és a mobil érintést is!
     tracker.addEventListener('pointerdown', function(e) {
         e.stopPropagation();
         toggleMenu();
     });
-    
-    // Egérmozgás PC-re és TV kurzorra
     tracker.addEventListener('mousemove', function(e) {
         showControls();
     });
 }
 
-// BÁRMILYEN távirányító gombnyomásra (nyilak, OK, vissza) azonnal felugrik a sáv!
 window.addEventListener('keydown', function(e) {
-    console.log("Távirányító gombnyomás észlelve");
     showControls();
 });
 
 vid.onended = function() {
-    console.log("Műsor vége! Váltás...");
     lastRenderedUrl = '';
     runTvEngine();
 };
