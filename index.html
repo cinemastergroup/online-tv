@@ -8,14 +8,14 @@
         
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--bg-color); color: var(--text-color); font-family: 'Segoe UI', Tahoma, sans-serif; overflow-x: hidden; }
 
-        /* AZ ALAPÉRTELMEZETT ELRENDEZÉS (RUGALMAS DOBOZ) */
+        /* OLDALBURKOLÓ */
         .page-wrapper { display: flex; flex-direction: column; width: 100vw; height: 100vh; box-sizing: border-box; }
 
-        /* KÜLÖNÁLLÓ VIDEOABLAK (Majdnem teljes képernyős, helyet hagyva az alsó sávnak) */
+        /* VIDEÓ ABLAK (Helyet hagyva a megnövelt alsó sávnak) */
         .tv-container { 
             position: relative; 
             width: 100%; 
-            height: calc(100vh - 160px); /* 160px-et szabadon hagyunk alul a sávnak */
+            height: calc(100vh - 220px); /* 220px-re emelve a nagyobb sáv miatt */
             background: #000; 
             display: flex; 
             justify-content: center; 
@@ -35,46 +35,47 @@
             height: auto !important;
         }
 
-        /* KÜLÖNÁLLÓ ALSÓ SÁV: Nem takar rá a videóra, teljesen külön életet él az ablak alatt */
+        /* ALSÓ SÁV (Megemelt magasság a hatalmas gombokhoz) */
         .info-bar { 
             width: 100%;
-            height: 160px;
+            height: 220px;
             background: var(--panel-color); 
             border-top: 1px solid var(--border-color); 
-            padding: 15px 2%; 
+            padding: 20px 2%; 
             box-sizing: border-box; 
             display: flex; 
             flex-direction: column;
-            gap: 12px;
+            gap: 18px;
             z-index: 10;
         }
 
         .info-top-row { display: flex; align-items: center; justify-content: space-between; width: 100%; }
         .info-left { display: flex; flex-direction: column; }
-        .badge-live { background: #ff1744; color: white; font-size: 10px; font-weight: bold; padding: 3px 8px; border-radius: 4px; text-transform: uppercase; width: max-content; margin-bottom: 4px; }
-        .show-title { font-size: 20px; font-weight: bold; color: #fff; }
-        .time-info { font-size: 16px; font-weight: bold; color: #8a99ad; margin-left: 15px; }
+        .badge-live { background: #ff1744; color: white; font-size: 11px; font-weight: bold; padding: 4px 10px; border-radius: 4px; text-transform: uppercase; width: max-content; margin-bottom: 6px; }
+        .show-title { font-size: 24px; font-weight: bold; color: #fff; }
+        .time-info { font-size: 20px; font-weight: bold; color: #8a99ad; margin-left: 15px; }
         
-        .controls-right { display: flex; gap: 10px; }
-        .btn-epg { background: #304ffe; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px; transition: 0.2s; }
+        /* MEGNÖVELT VEZÉRLŐ GOMBOK (EPG, Teljes képernyő) */
+        .controls-right { display: flex; gap: 15px; }
+        .btn-epg { background: #304ffe; color: white; border: none; padding: 20px 35px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 18px; transition: 0.2s; }
         .btn-epg:hover { background: #1a237e; }
-        .btn-fs { background: #2e7d32; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px; transition: 0.2s; }
+        .btn-fs { background: #2e7d32; color: white; border: none; padding: 20px 35px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 18px; transition: 0.2s; }
         .btn-fs:hover { background: #1b5e20; }
 
-        .channel-selector { display: flex; gap: 8px; width: 100%; justify-content: flex-start; overflow-x: auto; padding-bottom: 5px; }
-        .channel-btn { background: #232936; color: #a4b3c6; border: 1px solid #2c3545; padding: 8px 18px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; white-space: nowrap; font-size: 13px; }
+        /* MEGNÖVELT CSATORNAVÁLTÓ GOMBOK */
+        .channel-selector { display: flex; gap: 12px; width: 100%; justify-content: flex-start; overflow-x: auto; padding-bottom: 8px; }
+        .channel-btn { background: #232936; color: #a4b3c6; border: 1px solid #2c3545; padding: 18px 30px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; white-space: nowrap; font-size: 18px; }
         .channel-btn:hover { background: #323a4b; color: #fff; }
-        .channel-btn.active { background: var(--accent-color); color: white; border-color: var(--accent-color); box-shadow: 0 0 10px rgba(83, 109, 254, 0.4); }
+        .channel-btn.active { background: var(--accent-color); color: white; border-color: var(--accent-color); box-shadow: 0 0 15px rgba(83, 109, 254, 0.4); }
 
         .epg-modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 2000000000 !important; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
         .epg-modal-overlay.active { opacity: 1; pointer-events: auto; display: flex; justify-content: center; align-items: center; }
         .epg-modal { width: 90%; max-width: 650px; background: #12161f; border: 1px solid var(--border-color); border-radius: 16px; padding: 25px; box-sizing: border-box; max-height: 80vh; display: flex; flex-direction: column; }
         
-        .no-stream-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; color: #8a99ad; font-size: 20px; font-weight: bold; background: #0f1115; z-index: 5; pointer-events: none; }
+        .no-stream-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; color: #8a99ad; font-size: 22px; font-weight: bold; background: #0f1115; z-index: 5; pointer-events: none; }
         .unlock-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #0f1115; z-index: 200001; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px; }
-        .unlock-btn { background: var(--accent-color); color: white; border: none; padding: 18px 40px; font-size: 20px; font-weight: bold; border-radius: 12px; cursor: pointer; }
+        .unlock-btn { background: var(--accent-color); color: white; border: none; padding: 22px 50px; font-size: 24px; font-weight: bold; border-radius: 14px; cursor: pointer; }
 
-        /* HA A VIDEÓT TELJES KÉPERNYŐSRE RAKJUK */
         :fullscreen .tv-container { width: 100vw; height: 100vh; }
         :-webkit-full-screen .tv-container { width: 100vw; height: 100vh; }
     </style>
@@ -82,7 +83,7 @@
 <body>
 
 <div id="unlockOverlay" class="unlock-overlay">
-    <div style="font-size: 28px; font-weight: bold; color: #fff; letter-spacing: 2px;">CINEMASTER TV</div>
+    <div style="font-size: 32px; font-weight: bold; color: #fff; letter-spacing: 2px; margin-bottom: 10px;">CINEMASTER TV</div>
     <button class="unlock-btn" onclick="startTvWithAudio(event)">ÉLŐ ADÁS INDÍTÁSA 🔊</button>
 </div>
 
@@ -125,8 +126,8 @@
     <div id="epgModalOverlay" class="epg-modal-overlay" onclick="toggleEpg(false)">
         <div class="epg-modal" onclick="event.stopPropagation()">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
-                <h3 id="epgModalTitle" style="margin:0; font-size:22px; color:white;">Műsorújság</h3>
-                <button style="background:#ff1744; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer;" onclick="toggleEpg(false)">Bezárás ✕</button>
+                <h3 id="epgModalTitle" style="margin:0; font-size:24px; color:white;">Műsorújság</h3>
+                <button style="background:#ff1744; color:white; border:none; padding:10px 20px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:16px;" onclick="toggleEpg(false)">Bezárás ✕</button>
             </div>
             <div id="epgRowsContainer" style="overflow-y:auto; flex-grow:1;"></div>
         </div>
@@ -187,7 +188,6 @@ function toggleEpg(show) {
     }
 }
 
-// TELJES KÉPERNYŐ LOGIKA: Csak a videóablakot (container) rakjuk ki logóstul!
 function toggleNativeFullscreen() {
     if (!document.fullscreenElement) {
         container.requestFullscreen().then(() => setTimeout(updateLogoScale, 100)).catch(err => console.log(err));
@@ -196,14 +196,11 @@ function toggleNativeFullscreen() {
     }
 }
 
-// VISSZA GOMB / ESCAPE FIGYELŐ: Automatikusan kezeli, ha a tévén megnyomják a "Vissza" nyilat
 document.addEventListener('fullscreenchange', () => {
     setTimeout(updateLogoScale, 100);
 });
 
-// TV TÁVIRÁNYÍTÓ VISSZA (BACK) GOMB KÉNYSZERÍTÉS (Bizonyos TV böngészőkhöz)
 window.addEventListener('keydown', function(e) {
-    // 27 = Escape (PC), 461 = LG Vissza, 10009 = Samsung Tizen Vissza gomb
     if ((e.keyCode === 27 || e.keyCode === 461 || e.keyCode === 10009) && document.fullscreenElement) {
         e.preventDefault();
         document.exitFullscreen();
@@ -253,78 +250,4 @@ async function runTvEngine() {
             } else { watermark.style.display = 'none'; currentLogoConfig = null; }
         } catch (e) { watermark.style.display = 'none'; currentLogoConfig = null; }
 
-        const response = await fetch(`${activeChannel}_schedule.json?t=${new Date().getTime()}`);
-        if (!response.ok) throw new Error("Üres");
-        
-        const config = await response.json();
-        const now = new Date();
-        let currentTrack = null;
-
-        epgRowsContainer.innerHTML = '';
-        config.schedule.forEach(track => {
-            const trackStart = parseLocalISO(track.start);
-            const trackEnd = new Date(trackStart.getTime() + track.duration * 1000);
-            epgRowsContainer.innerHTML += `<div style="display:flex; padding:10px; border-bottom:1px solid #1f2633;"><div style="color:#ffb300; min-width:70px; font-weight:bold;">${String(trackStart.getHours()).padStart(2, '0')}:${String(trackStart.getMinutes()).padStart(2, '0')}</div><div style="color:white;">${track.title}</div></div>`;
-            if (now >= trackStart && now < trackEnd) currentTrack = track;
-        });
-
-        if (currentTrack) {
-            overlay.style.display = 'none';
-            lblShow.innerText = currentTrack.title;
-            
-            const startTimestamp = parseLocalISO(currentTrack.start);
-            const endTimestamp = new Date(startTimestamp.getTime() + currentTrack.duration * 1000);
-            lblTime.innerText = `${String(startTimestamp.getHours()).padStart(2, '0')}:${String(startTimestamp.getMinutes()).padStart(2, '0')} - ${String(endTimestamp.getHours()).padStart(2, '0')}:${String(endTimestamp.getMinutes()).padStart(2, '0')}`;
-
-            if (currentTrack.url !== lastRenderedUrl) {
-                lastRenderedUrl = currentTrack.url;
-                const currentOffset = (now.getTime() - startTimestamp.getTime()) / 1000;
-                
-                if (currentTrack.url.includes('archive.org') && !currentTrack.url.toLowerCase().endsWith('.mp4')) {
-                    vid.pause(); vid.style.display = 'none';
-                    let archiveId = currentTrack.url.includes('/download/') ? currentTrack.url.split('/download/')[1].split('/')[0] : (currentTrack.url.includes('/details/') ? currentTrack.url.split('/details/')[1].split('/')[0] : '');
-                    if (archiveId) {
-                        archiveIframe.src = `https://archive.org/embed/${archiveId}?start=${Math.round(currentOffset)}&autoplay=1&mute=1`;
-                        archiveIframe.style.display = 'block';
-                    }
-                } else {
-                    archiveIframe.style.display = 'none';
-                    vid.style.display = 'block';
-                    vid.src = currentTrack.url;
-                    
-                    vid.onloadedmetadata = function() {
-                        if (currentOffset > 0 && currentOffset < vid.duration) {
-                            vid.currentTime = currentOffset;
-                        }
-                        vid.muted = false; 
-                        vid.volume = 1.0;
-                        vid.play().catch(() => {
-                            vid.muted = true;
-                            vid.play().then(() => {
-                                setTimeout(() => { vid.muted = false; vid.volume = 1.0; }, 200);
-                            });
-                        });
-                    };
-                }
-            } else {
-                if (vid.style.display === 'block' && vid.muted) {
-                    vid.muted = false;
-                    vid.volume = 1.0;
-                }
-            }
-        } else {
-            vid.pause(); vid.style.display = 'none'; archiveIframe.style.display = 'none';
-            overlay.style.display = 'flex'; overlay.innerText = "📡 Jelenleg nincs adás.";
-        }
-    } catch (error) {
-        vid.pause(); vid.style.display = 'none'; archiveIframe.style.display = 'none';
-        overlay.style.display = 'flex'; overlay.innerText = "📡 Hiba a beolvasás során.";
-    }
-}
-
-window.addEventListener('DOMContentLoaded', () => {
-    setInterval(runTvEngine, 15000);
-});
-</script>
-</body>
-</html>
+        const response = await fetch(`${active
