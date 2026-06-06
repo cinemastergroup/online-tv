@@ -12,14 +12,14 @@
         
         iframe, video { width: 100%; height: 100%; border: none; background: #000; position: absolute; top: 0; left: 0; z-index: 1; display: none; }
 
-        /* JAVÍTÁS: Újra itt a Smart TV Üvegfal! Elkapja a TV kurzorát és kattintását a videó elől */
+        /* A továbbfejlesztett Smart TV üvegfal */
         .tv-mouse-tracker {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 9999; /* A videó felett, de az info-bar alatt */
+            z-index: 9999;
             background: rgba(0,0,0,0.01);
             pointer-events: auto;
         }
@@ -93,7 +93,7 @@
     <video id="tvEngine" autoplay></video>
     <iframe id="archiveEngine" allowfullscreen style="display: none;"></iframe>
     
-    <div class="tv-mouse-tracker" id="tvMouseTracker" onclick="toggleMenuViaTracker(event)"></div>
+    <div class="tv-mouse-tracker" id="tvMouseTracker"></div>
     
     <img id="tvWatermark" class="tv-watermark" alt="Logo">
 
@@ -163,13 +163,15 @@ function startTvWithAudio(e) {
     vid.muted = false;
     vid.volume = 1.0;
     
+    // Biztosítjuk a fókuszt a TV-nek
+    window.focus();
+    if(container) container.focus();
+
     runTvEngine();
     showControls();
 }
 
-// Az üvegfal kattintáskezelője (Tévén és mobilon is tökéletes)
-function toggleMenuViaTracker(e) {
-    e.stopPropagation();
+function toggleMenu() {
     if (!userUnlocked) return;
     if (mainInfoBar.classList.contains('visible')) {
         hideControls();
@@ -193,11 +195,25 @@ function hideControls() {
     }
 }
 
-// TV kurzor és PC egérmozgás rákötése az üvegfalra
+// SMART TV OKOSÍTOTT ESEMÉNYFIGYELŐK
 if (tracker) {
-    tracker.addEventListener('mousemove', showControls);
+    // A pointerdown elkapja a TV kurzor kattintását, a sima egérkattintást és a mobil érintést is!
+    tracker.addEventListener('pointerdown', function(e) {
+        e.stopPropagation();
+        toggleMenu();
+    });
+    
+    // Egérmozgás PC-re és TV kurzorra
+    tracker.addEventListener('mousemove', function(e) {
+        showControls();
+    });
 }
-window.addEventListener('keydown', showControls);
+
+// BÁRMILYEN távirányító gombnyomásra (nyilak, OK, vissza) azonnal felugrik a sáv!
+window.addEventListener('keydown', function(e) {
+    console.log("Távirányító gombnyomás észlelve");
+    showControls();
+});
 
 vid.onended = function() {
     console.log("Műsor vége! Váltás...");
@@ -234,7 +250,6 @@ function toggleNativeFullscreen() {
 
 document.addEventListener('fullscreenchange', () => setTimeout(updateLogoScale, 100));
 
-// Matematikai alapú logó méretezés megtartva
 function updateLogoScale() {
     if (!currentLogoConfig || !currentLogoConfig.url) return;
     const finalSizePx = container.clientWidth * (currentLogoConfig.size / 440);
@@ -313,10 +328,8 @@ async function runTvEngine() {
                         archiveIframe.style.display = 'block';
                     }
                 } else {
-                    archiveIframe.src = '';
                     archiveIframe.style.display = 'none';
                     vid.style.display = 'block';
-                    
                     vid.src = currentTrack.url;
                     
                     vid.onloadedmetadata = function() {
