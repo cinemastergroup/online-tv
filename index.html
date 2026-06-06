@@ -12,6 +12,9 @@
         
         iframe, video { width: 100%; height: 100%; border: none; background: #000; position: absolute; top: 0; left: 0; z-index: 1; }
         
+        /* Biztosítjuk a natív vezérlők elérhetőségét */
+        video { z-index: 2; }
+
         .tv-mouse-tracker {
             position: absolute;
             top: 0;
@@ -33,15 +36,15 @@
             height: auto !important;
         }
 
+        /* MODIFIKÁCIÓ: Feljebb emeltük a sávot (bottom: 60px), hogy alatta a videó gyári gombjai (hangerő) elérhetők legyenek PC-n! */
         .info-bar { 
             position: absolute; 
-            bottom: -220px; 
+            bottom: -280px; 
             left: 2%; 
             width: 96%; 
             background: var(--panel-color); 
             border: 1px solid var(--border-color); 
-            border-bottom: none;
-            border-radius: 16px 16px 0 0; 
+            border-radius: 16px; 
             padding: 20px; 
             box-sizing: border-box; 
             display: flex; 
@@ -50,10 +53,11 @@
             transition: bottom 0.4s cubic-bezier(0.4, 0, 0.2, 1); 
             z-index: 100001; 
             backdrop-filter: blur(10px);
-            box-shadow: 0 -10px 30px rgba(0,0,0,0.7);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
         }
         
-        .info-bar.visible { bottom: 0px; }
+        /* Amikor látható, nem tapad le teljesen a képernyő aljára */
+        .info-bar.visible { bottom: 60px; }
 
         .info-top-row { display: flex; align-items: center; justify-content: space-between; width: 100%; }
         .info-left { display: flex; flex-direction: column; }
@@ -103,7 +107,7 @@
 <div class="tv-container" id="mainTvContainer">
     <div id="noStreamOverlay" class="no-stream-overlay">📡 Csatorna betöltése...</div>
     
-    <video id="tvEngine" autoplay></video>
+    <video id="tvEngine" controls autoplay></video>
     <iframe id="archiveEngine" allowfullscreen style="display: none;"></iframe>
     
     <div class="tv-mouse-tracker" id="tvMouseTracker"></div>
@@ -172,7 +176,6 @@ function startTvWithAudio() {
     userUnlocked = true;
     document.getElementById('unlockOverlay').style.display = 'none';
     
-    // AZONNALI KÉNYSZERÍTETT AUDIO UNMUTE AZ INDÍTÁSKOR
     vid.muted = false;
     vid.volume = 1.0;
     
@@ -183,7 +186,9 @@ function startTvWithAudio() {
 function showControls() {
     if (!userUnlocked) return;
     mainInfoBar.classList.add('visible');
-    if (tracker) tracker.style.pointerEvents = 'none';
+    
+    // Átmenetileg eltoljuk az üvegfalat, hogy az alsó üres sávban átengedje a kattintást a videóra
+    if (tracker) tracker.style.height = 'calc(100% - 60px)';
     
     clearTimeout(idleTimer);
     if (!isEpgOpen) {
@@ -194,10 +199,11 @@ function showControls() {
 function hideControls() {
     if (!isEpgOpen) {
         mainInfoBar.classList.remove('visible');
-        if (tracker) tracker.style.pointerEvents = 'auto';
+        if (tracker) tracker.style.height = '100%';
     }
 }
 
+// Egér és ÉRINTÉS (Mobil/Tablet hiba javítása: kattintásra is felugrik!)
 if (tracker) {
     tracker.addEventListener('mousemove', showControls);
     tracker.addEventListener('click', showControls);
@@ -389,12 +395,10 @@ async function runTvEngine() {
                             vid.currentTime = currentOffset;
                         }
                         
-                        // KÉNYSZERÍTETT EXTRA HANGERŐ BEKAPCSOLÁS
                         vid.muted = false; 
                         vid.volume = 1.0;
                         
                         vid.play().then(() => {
-                            // Biztonsági dupla unmute indítás után
                             vid.muted = false;
                             vid.volume = 1.0;
                         }).catch((e) => {
