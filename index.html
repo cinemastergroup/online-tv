@@ -255,32 +255,56 @@ async function runTvEngine() {
         // 2. TÖBB NAP MŰSORÁNAK AUTOMATIKUS ÖSSZEFŰZÉSE (Tegnap + Ma + a következő 5 nap)
         let kombináltMűsor = [];
         
-        // JAVÍTÁS: A kiindulópontot eltoljuk tegnapra (-24 óra), hogy az éjféli átnyúlások is beolvasásra kerüljenek!
+        // A kiindulópontot eltoljuk tegnapra (-24 óra)
         const baseDate = new Date(new Date().getTime() - 24 * 60 * 60 * 1000); 
 
         // Segédfüggvény a dátum YYYY-MM-DD formátumra alakításához
         const formázDátum = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-        // Lefutunk egy 7-es ciklust (0 = tegnap, 1 = ma, 2 = holnap... egészen +5 napig)
+        // Lekérjük a tegnapi, mai és a következő 5 nap fájljait
         for (let i = 0; i < 7; i++) {
             const vizsgáltDátum = new Date(baseDate.getTime() + i * 24 * 60 * 60 * 1000);
             const dátumStr = formázDátum(vizsgáltDátum);
 
             try {
-                // Megpróbáljuk letölteni az adott napi fájlt
                 const response = await fetch(`${activeChannel}_schedule_${dátumStr}.json?t=${new Date().getTime()}`);
                 if (response.ok) {
                     const data = await response.json();
-                    if (data.schedule && Array.isArray(data.schedule)) {
-                        // Ha van benne műsor, hozzácsapjuk a nagy közös listához
+                    if (data && data.schedule && Array.isArray(data.schedule)) {
                         kombináltMűsor = kombináltMűsor.concat(data.schedule);
                     }
                 }
-            } catch (fileError) {
-                // Ha a fájl nem létezik, csendben átugorjuk
-                console.log(`${dátumStr} műsorfájl még nincs készítve.`);
+            } catch (innerError) {
+                // Ha a fájl nem létezik, csak kiírjuk a konzolra, de NEM engedjük, hogy összeomoljon a lejátszó
+                console.log(`Műsorfájl nem található vagy üres: ${dátumStr}_schedule.json`);
             }
         }
+
+        const now = new Date();
+        let currentTrack = null;
+
+        // Az EPG ablak kiürítése és újraépítése
+        epgRowsContainer.innerHTML = '';
+
+        kombináltMűsor.forEach(track => {
+            const trackStart = parseLocalISO(track.start);
+            const trackEnd = new Date(trackStart.getTime() + track.duration * 1000);
+            
+            if (trackEnd >= now) {
+                const napInfo = trackStart.toLocaleDateString('hu-HU', { month: 'short', day: 'numeric', weekday: 'short' });
+                const óraPerc = `${String(trackStart.getHours()).padStart(2, '0')}:${String(trackStart.getMinutes()).padStart(2, '0')}`;
+                
+                epgRowsContainer.innerHTML += `
+                    <div style="display:flex; align-items:center; padding:12px; border-bottom:1px solid #1f2633; font-size:18px;">
+                        <div style="color:#ffb300; min-width:140px; font-weight:bold; font-size:15px;">${napInfo} ${óraPerc}</div>
+                        <div style="color:white; font-weight:bold;">${track.title}</div>
+                    </div>`;
+            }
+
+            if (now >= trackStart && now < trackEnd) {
+                currentTrack = track;
+            }
+        });
 
         // 3. LEJÁTSZÁS KEZELÉSE (A bevált, jó hangú automatizmus)
         if (currentTrack) {
