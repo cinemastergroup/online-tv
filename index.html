@@ -8,14 +8,14 @@
         
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--bg-color); color: var(--text-color); font-family: 'Segoe UI', Tahoma, sans-serif; overflow-x: hidden; }
 
-        /* OLDALBURKOLÓ */
+        /* AZ ALAPÉRTELMEZETT ELRENDEZÉS (RUGALMAS DOBOZ) */
         .page-wrapper { display: flex; flex-direction: column; width: 100vw; height: 100vh; box-sizing: border-box; }
 
-        /* VIDEÓ ABLAK (Helyet hagyva a megnövelt alsó sávnak) */
+        /* KÜLÖNÁLLÓ VIDEOABLAK (Helyet hagyva a megnövelt alsó sávnak) */
         .tv-container { 
             position: relative; 
             width: 100%; 
-            height: calc(100vh - 220px); /* 220px-re emelve a nagyobb sáv miatt */
+            height: calc(100vh - 220px); /* 220px-et szabadon hagyunk alul a nagyobb sávnak */
             background: #000; 
             display: flex; 
             justify-content: center; 
@@ -35,7 +35,7 @@
             height: auto !important;
         }
 
-        /* ALSÓ SÁV (Megemelt magasság a hatalmas gombokhoz) */
+        /* KÜLÖNÁLLÓ ALSÓ SÁV: Magasság megnövelve a 2x nagyobb gombok miatt */
         .info-bar { 
             width: 100%;
             height: 220px;
@@ -55,14 +55,14 @@
         .show-title { font-size: 24px; font-weight: bold; color: #fff; }
         .time-info { font-size: 20px; font-weight: bold; color: #8a99ad; margin-left: 15px; }
         
-        /* MEGNÖVELT VEZÉRLŐ GOMBOK (EPG, Teljes képernyő) */
+        /* 2X MAGASABB VEZÉRLŐ GOMBOK */
         .controls-right { display: flex; gap: 15px; }
         .btn-epg { background: #304ffe; color: white; border: none; padding: 20px 35px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 18px; transition: 0.2s; }
         .btn-epg:hover { background: #1a237e; }
         .btn-fs { background: #2e7d32; color: white; border: none; padding: 20px 35px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 18px; transition: 0.2s; }
         .btn-fs:hover { background: #1b5e20; }
 
-        /* MEGNÖVELT CSATORNAVÁLTÓ GOMBOK */
+        /* 2X MAGASABB CSATORNAVÁLTÓ GOMBOK */
         .channel-selector { display: flex; gap: 12px; width: 100%; justify-content: flex-start; overflow-x: auto; padding-bottom: 8px; }
         .channel-btn { background: #232936; color: #a4b3c6; border: 1px solid #2c3545; padding: 18px 30px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; white-space: nowrap; font-size: 18px; }
         .channel-btn:hover { background: #323a4b; color: #fff; }
@@ -76,6 +76,7 @@
         .unlock-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #0f1115; z-index: 200001; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px; }
         .unlock-btn { background: var(--accent-color); color: white; border: none; padding: 22px 50px; font-size: 24px; font-weight: bold; border-radius: 14px; cursor: pointer; }
 
+        /* HA A VIDEÓT TELJES KÉPERNYŐSRE RAKJUK */
         :fullscreen .tv-container { width: 100vw; height: 100vh; }
         :-webkit-full-screen .tv-container { width: 100vw; height: 100vh; }
     </style>
@@ -250,4 +251,78 @@ async function runTvEngine() {
             } else { watermark.style.display = 'none'; currentLogoConfig = null; }
         } catch (e) { watermark.style.display = 'none'; currentLogoConfig = null; }
 
-        const response = await fetch(`${active
+        const response = await fetch(`${activeChannel}_schedule.json?t=${new Date().getTime()}`);
+        if (!response.ok) throw new Error("Üres");
+        
+        const config = await response.json();
+        const now = new Date();
+        let currentTrack = null;
+
+        epgRowsContainer.innerHTML = '';
+        config.schedule.forEach(track => {
+            const trackStart = parseLocalISO(track.start);
+            const trackEnd = new Date(trackStart.getTime() + track.duration * 1000);
+            epgRowsContainer.innerHTML += `<div style="display:flex; padding:12px; border-bottom:1px solid #1f2633; font-size:18px;"><div style="color:#ffb300; min-width:80px; font-weight:bold;">${String(trackStart.getHours()).padStart(2, '0')}:${String(trackStart.getMinutes()).padStart(2, '0')}</div><div style="color:white; font-weight:bold;">${track.title}</div></div>`;
+            if (now >= trackStart && now < trackEnd) currentTrack = track;
+        });
+
+        if (currentTrack) {
+            overlay.style.display = 'none';
+            lblShow.innerText = currentTrack.title;
+            
+            const startTimestamp = parseLocalISO(currentTrack.start);
+            const endTimestamp = new Date(startTimestamp.getTime() + currentTrack.duration * 1000);
+            lblTime.innerText = `${String(startTimestamp.getHours()).padStart(2, '0')}:${String(startTimestamp.getMinutes()).padStart(2, '0')} - ${String(endTimestamp.getHours()).padStart(2, '0')}:${String(endTimestamp.getMinutes()).padStart(2, '0')}`;
+
+            if (currentTrack.url !== lastRenderedUrl) {
+                lastRenderedUrl = currentTrack.url;
+                const currentOffset = (now.getTime() - startTimestamp.getTime()) / 1000;
+                
+                if (currentTrack.url.includes('archive.org') && !currentTrack.url.toLowerCase().endsWith('.mp4')) {
+                    vid.pause(); vid.style.display = 'none';
+                    let archiveId = currentTrack.url.includes('/download/') ? currentTrack.url.split('/download/')[1].split('/')[0] : (currentTrack.url.includes('/details/') ? currentTrack.url.split('/details/')[1].split('/')[0] : '');
+                    if (archiveId) {
+                        archiveIframe.src = `https://archive.org/embed/${archiveId}?start=${Math.round(currentOffset)}&autoplay=1&mute=1`;
+                        archiveIframe.style.display = 'block';
+                    }
+                } else {
+                    archiveIframe.style.display = 'none';
+                    vid.style.display = 'block';
+                    vid.src = currentTrack.url;
+                    
+                    vid.onloadedmetadata = function() {
+                        if (currentOffset > 0 && currentOffset < vid.duration) {
+                            vid.currentTime = currentOffset;
+                        }
+                        vid.muted = false; 
+                        vid.volume = 1.0;
+                        vid.play().catch(() => {
+                            vid.muted = true;
+                            vid.play().then(() => {
+                                setTimeout(() => { vid.muted = false; vid.volume = 1.0; }, 200);
+                            });
+                        });
+                    };
+                }
+            } else {
+                if (vid.style.display === 'block' && vid.muted) {
+                    vid.muted = false;
+                    vid.volume = 1.0;
+                }
+            }
+        } else {
+            vid.pause(); vid.style.display = 'none'; archiveIframe.style.display = 'none';
+            overlay.style.display = 'flex'; overlay.innerText = "📡 Jelenleg nincs adás.";
+        }
+    } catch (error) {
+        vid.pause(); vid.style.display = 'none'; archiveIframe.style.display = 'none';
+        overlay.style.display = 'flex'; overlay.innerText = "📡 Hiba a beolvasás során.";
+    }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    setInterval(runTvEngine, 15000);
+});
+</script>
+</body>
+</html>
