@@ -4,42 +4,49 @@
     <meta charset="UTF-8">
     <title>CineMaster Stream - Smart TV Live</title>
     <style>
-        :root { --bg-color: #090a0e; --panel-color: rgba(15, 18, 25, 0.85); --accent-color: #536dfe; --text-color: #e3e8f0; --border-color: rgba(38, 47, 61, 0.5); }
+        :root { --bg-color: #090a0e; --panel-color: #141821; --accent-color: #536dfe; --text-color: #e3e8f0; --border-color: #262f3d; }
         
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; color: var(--text-color); font-family: 'Segoe UI', Tahoma, sans-serif; overflow: hidden; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--bg-color); color: var(--text-color); font-family: 'Segoe UI', Tahoma, sans-serif; overflow-x: hidden; }
 
-        .tv-container { position: relative; width: 100vw; height: 100vh; background: #000; display: flex; justify-content: center; align-items: center; }
+        /* AZ ALAPÉRTELMEZETT ELRENDEZÉS (RUGALMAS DOBOZ) */
+        .page-wrapper { display: flex; flex-direction: column; width: 100vw; height: 100vh; box-sizing: border-box; }
+
+        /* KÜLÖNÁLLÓ VIDEOABLAK (Majdnem teljes képernyős, helyet hagyva az alsó sávnak) */
+        .tv-container { 
+            position: relative; 
+            width: 100%; 
+            height: calc(100vh - 160px); /* 160px-et szabadon hagyunk alul a sávnak */
+            background: #000; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            overflow: hidden;
+        }
         
-        /* A videó fixen kitölti a hátteret, z-index: 1 */
         iframe, video { width: 100%; height: 100%; border: none; background: #000; position: absolute; top: 0; left: 0; z-index: 1; display: none; }
 
         .tv-watermark { 
             position: absolute; 
-            opacity: 0.8; 
+            opacity: 0.9; 
             pointer-events: none; 
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.9)); 
-            z-index: 5 !important;
+            z-index: 999 !important;
             display: block; 
             height: auto !important;
         }
 
-        /* FIX ALSÓ PANEL: Mindig látható (z-index: 9999), így a TV nem tudja eltakarni vagy blokkolni */
+        /* KÜLÖNÁLLÓ ALSÓ SÁV: Nem takar rá a videóra, teljesen külön életet él az ablak alatt */
         .info-bar { 
-            position: absolute; 
-            bottom: 15px; 
-            left: 2%; 
-            width: 96%; 
+            width: 100%;
+            height: 160px;
             background: var(--panel-color); 
-            border: 1px solid var(--border-color); 
-            border-radius: 12px; 
-            padding: 15px; 
+            border-top: 1px solid var(--border-color); 
+            padding: 15px 2%; 
             box-sizing: border-box; 
             display: flex; 
             flex-direction: column;
             gap: 12px;
-            z-index: 9999; 
-            backdrop-filter: blur(8px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            z-index: 10;
         }
 
         .info-top-row { display: flex; align-items: center; justify-content: space-between; width: 100%; }
@@ -49,23 +56,27 @@
         .time-info { font-size: 16px; font-weight: bold; color: #8a99ad; margin-left: 15px; }
         
         .controls-right { display: flex; gap: 10px; }
-        .btn-epg { background: #304ffe; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px; }
+        .btn-epg { background: #304ffe; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px; transition: 0.2s; }
         .btn-epg:hover { background: #1a237e; }
-        .btn-fs { background: #2e7d32; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px; }
+        .btn-fs { background: #2e7d32; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px; transition: 0.2s; }
         .btn-fs:hover { background: #1b5e20; }
 
-        .channel-selector { display: flex; gap: 8px; width: 100%; justify-content: flex-start; overflow-x: auto; }
-        .channel-btn { background: rgba(35, 41, 54, 0.7); color: #a4b3c6; border: 1px solid rgba(44, 53, 69, 0.7); padding: 8px 18px; border-radius: 6px; font-weight: bold; cursor: pointer; white-space: nowrap; font-size: 13px; transition: 0.2s; }
-        .channel-btn:hover { background: rgba(50, 58, 75, 0.9); color: #fff; }
+        .channel-selector { display: flex; gap: 8px; width: 100%; justify-content: flex-start; overflow-x: auto; padding-bottom: 5px; }
+        .channel-btn { background: #232936; color: #a4b3c6; border: 1px solid #2c3545; padding: 8px 18px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; white-space: nowrap; font-size: 13px; }
+        .channel-btn:hover { background: #323a4b; color: #fff; }
         .channel-btn.active { background: var(--accent-color); color: white; border-color: var(--accent-color); box-shadow: 0 0 10px rgba(83, 109, 254, 0.4); }
 
         .epg-modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 2000000000 !important; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
         .epg-modal-overlay.active { opacity: 1; pointer-events: auto; display: flex; justify-content: center; align-items: center; }
-        .epg-modal { width: 90%; max-width: 650px; background: #12161f; border: 1px solid #262f3d; border-radius: 16px; padding: 25px; box-sizing: border-box; max-height: 80vh; display: flex; flex-direction: column; }
+        .epg-modal { width: 90%; max-width: 650px; background: #12161f; border: 1px solid var(--border-color); border-radius: 16px; padding: 25px; box-sizing: border-box; max-height: 80vh; display: flex; flex-direction: column; }
         
-        .no-stream-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; color: #8a99ad; font-size: 20px; font-weight: bold; background: #0f1115; z-index: 2; pointer-events: none; }
+        .no-stream-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; color: #8a99ad; font-size: 20px; font-weight: bold; background: #0f1115; z-index: 5; pointer-events: none; }
         .unlock-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #0f1115; z-index: 200001; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px; }
         .unlock-btn { background: var(--accent-color); color: white; border: none; padding: 18px 40px; font-size: 20px; font-weight: bold; border-radius: 12px; cursor: pointer; }
+
+        /* HA A VIDEÓT TELJES KÉPERNYŐSRE RAKJUK */
+        :fullscreen .tv-container { width: 100vw; height: 100vh; }
+        :-webkit-full-screen .tv-container { width: 100vw; height: 100vh; }
     </style>
 </head>
 <body>
@@ -75,13 +86,16 @@
     <button class="unlock-btn" onclick="startTvWithAudio(event)">ÉLŐ ADÁS INDÍTÁSA 🔊</button>
 </div>
 
-<div class="tv-container" id="mainTvContainer">
-    <div id="noStreamOverlay" class="no-stream-overlay">📡 Csatorna betöltése...</div>
-    
-    <video id="tvEngine" autoplay playsinline webkit-playsinline></video>
-    <iframe id="archiveEngine" allowfullscreen style="display: none;"></iframe>
-    
-    <img id="tvWatermark" class="tv-watermark" alt="Logo">
+<div class="page-wrapper" id="pageWrapper">
+
+    <div class="tv-container" id="mainTvContainer">
+        <div id="noStreamOverlay" class="no-stream-overlay">📡 Csatorna betöltése...</div>
+        
+        <video id="tvEngine" autoplay></video>
+        <iframe id="archiveEngine" allowfullscreen style="display: none;"></iframe>
+        
+        <img id="tvWatermark" class="tv-watermark" alt="Logo">
+    </div>
 
     <div class="info-bar" id="mainInfoBar">
         <div class="info-top-row">
@@ -117,9 +131,11 @@
             <div id="epgRowsContainer" style="overflow-y:auto; flex-grow:1;"></div>
         </div>
     </div>
+
 </div>
 
 <script>
+const pageWrapper = document.getElementById('pageWrapper');
 const container = document.getElementById('mainTvContainer');
 const overlay = document.getElementById('noStreamOverlay');
 const watermark = document.getElementById('tvWatermark');
@@ -171,6 +187,7 @@ function toggleEpg(show) {
     }
 }
 
+// TELJES KÉPERNYŐ LOGIKA: Csak a videóablakot (container) rakjuk ki logóstul!
 function toggleNativeFullscreen() {
     if (!document.fullscreenElement) {
         container.requestFullscreen().then(() => setTimeout(updateLogoScale, 100)).catch(err => console.log(err));
@@ -179,7 +196,19 @@ function toggleNativeFullscreen() {
     }
 }
 
-document.addEventListener('fullscreenchange', () => setTimeout(updateLogoScale, 100));
+// VISSZA GOMB / ESCAPE FIGYELŐ: Automatikusan kezeli, ha a tévén megnyomják a "Vissza" nyilat
+document.addEventListener('fullscreenchange', () => {
+    setTimeout(updateLogoScale, 100);
+});
+
+// TV TÁVIRÁNYÍTÓ VISSZA (BACK) GOMB KÉNYSZERÍTÉS (Bizonyos TV böngészőkhöz)
+window.addEventListener('keydown', function(e) {
+    // 27 = Escape (PC), 461 = LG Vissza, 10009 = Samsung Tizen Vissza gomb
+    if ((e.keyCode === 27 || e.keyCode === 461 || e.keyCode === 10009) && document.fullscreenElement) {
+        e.preventDefault();
+        document.exitFullscreen();
+    }
+});
 
 function updateLogoScale() {
     if (!currentLogoConfig || !currentLogoConfig.url) return;
