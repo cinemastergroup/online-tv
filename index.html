@@ -315,6 +315,7 @@ async function runTvEngine() {
         });
 
         // 3. LEJÁTSZÁS KEZELÉSE ÉS BEÁGYAZÁSOK
+        // 3. LEJÁTSZÁS KEZELÉSE ÉS BEÁGYAZÁSOK
         if (currentTrack) {
             overlay.style.display = 'none'; 
             lblShow.innerText = currentTrack.title;
@@ -322,7 +323,7 @@ async function runTvEngine() {
             const trackStart = parseLocalISO(currentTrack.start);
             const trackEnd = new Date(trackStart.getTime() + currentTrack.duration * 1000);
             
-            // IDŐSÁV KIÍRÁSA (ÓRA:PERC FORMÁTUMBAN)
+            // IDŐSÁV KIÍRÁSA
             const startHours = String(trackStart.getHours()).padStart(2, '0');
             const startMinutes = String(trackStart.getMinutes()).padStart(2, '0');
             const endHours = String(trackEnd.getHours()).padStart(2, '0');
@@ -337,7 +338,32 @@ async function runTvEngine() {
                 vid.style.display = 'none';
                 
                 let embedFrame = document.getElementById('embedFrame');
-                if (!embedFrame) {
+                
+                // --- A SOROMPÓ (ZÁR) LOGIKA ---
+                // CSAK AKKOR nyúlunk az iframe-hez, ha még egyáltalán nem létezik, VAGY ha teljesen új filmre váltottunk!
+                if (!embedFrame || lastRenderedUrl !== currentTrack.url) {
+                    
+                    lastRenderedUrl = currentTrack.url; // Elmentjük, hogy ez a film már fut!
+                    
+                    if (embedFrame) {
+                        embedFrame.remove(); // Ha volt régi iframe, töröljük
+                    }
+
+                    // Kiszámoljuk a pontos kezdő másodpercet
+                    const elapsedSeconds = Math.floor((new Date() - trackStart) / 1000);
+
+                    // Átalakítjuk embed formátumra, ha kell
+                    let targetUrl = currentTrack.url;
+                    if (targetUrl.includes('ok.ru/video/')) {
+                        targetUrl = targetUrl.replace('ok.ru/video/', 'ok.ru/videoembed/');
+                    }
+
+                    // Hozzáfűzzük az indítási időt
+                    const finalSrc = targetUrl.includes('?') 
+                        ? `${targetUrl}&autoplay=1&start=${elapsedSeconds}` 
+                        : `${targetUrl}?autoplay=1&start=${elapsedSeconds}`;
+
+                    // Újraépítjük az iframe-et
                     embedFrame = document.createElement('iframe');
                     embedFrame.id = 'embedFrame';
                     embedFrame.style.position = 'absolute';
@@ -348,47 +374,20 @@ async function runTvEngine() {
                     embedFrame.style.border = 'none';
                     embedFrame.style.zIndex = '2';
                     embedFrame.allow = "autoplay; encrypted-media; fullscreen";
+                    embedFrame.src = finalSrc;
+                    
                     container.appendChild(embedFrame);
+                    console.log("Iframe friss indítással létrehozva:", elapsedSeconds, "mp-nél.");
+                } else {
+                    // Ha ugyanaz a film fut, 15 másodpercenként NEM csinálunk semmit, hagyjuk lejátszódni!
+                    console.log("A film már fut, szinkron békén hagyva.");
                 }
-
-                const elapsedSeconds = Math.floor((now - trackStart) / 1000);
-
-                let targetUrl = currentTrack.url;
-                if (targetUrl.includes('ok.ru/video/')) {
-                    targetUrl = targetUrl.replace('ok.ru/video/', 'ok.ru/videoembed/');
-                }
-
-                if (targetUrl.includes('ok.ru') && !targetUrl.includes('autoplay=')) {
-                    targetUrl += targetUrl.includes('?') ? `&autoplay=1&start=${elapsedSeconds}` : `?autoplay=1&start=${elapsedSeconds}`;
-                }
-
-                if (embedFrame.src !== targetUrl) {
-                    embedFrame.src = targetUrl;
-                    embedFrame.style.display = 'block';
-
-                    // JAVÍTÁS: Az Android box idő-kényszerítése most már teljesen biztonságos, hatókörön belüli változókkal!
-                    const userAgentLower = navigator.userAgent.toLowerCase();
-                    if (userAgentLower.includes('android') || userAgentLower.includes('tv') || userAgentLower.includes('puffin')) {
-                        setTimeout(() => {
-                            const latestNow = new Date();
-                            const latestElapsed = Math.floor((latestNow - trackStart) / 1000);
-                            
-                            let androidUrl = currentTrack.url;
-                            if (androidUrl.includes('ok.ru/video/')) {
-                                androidUrl = androidUrl.replace('ok.ru/video/', 'ok.ru/videoembed/');
-                            }
-                            
-                            embedFrame.src = `${androidUrl}?autoplay=1&start=${latestElapsed}`;
-                            console.log("Android Box szinkronizálva:", latestElapsed, "mp");
-                        }, 1500);
-                    }
-                }
+                
             } else {
+                // HAGYOMÁNYOS MÓD: Közvetlen MP4 lejátszás (Backblaze, stb.)
+                lastRenderedUrl = ''; // Reseteljük az iframe emlékezetet
                 let embedFrame = document.getElementById('embedFrame');
-                if (embedFrame) {
-                    embedFrame.src = '';
-                    embedFrame.style.display = 'none';
-                }
+                if (embedFrame) embedFrame.remove();
 
                 vid.style.display = 'block';
                 const currentPos = Math.floor((now - trackStart) / 1000);
@@ -419,14 +418,13 @@ async function runTvEngine() {
                 }
             }
         } else {
+            // HA NINCS ADÁS AZ IDŐSÁVBAN
+            lastRenderedUrl = '';
             vid.pause(); 
             vid.style.display = 'none'; 
             
             let embedFrame = document.getElementById('embedFrame');
-            if (embedFrame) {
-                embedFrame.src = '';
-                embedFrame.style.display = 'none';
-            }
+            if (embedFrame) embedFrame.remove();
             
             archiveIframe.src = '';
             archiveIframe.style.display = 'none';
