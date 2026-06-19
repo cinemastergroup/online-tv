@@ -44,7 +44,7 @@
             height: auto !important;
         }
 
-        /* KÜLÖNÁLLÓ ALSÓ SÁV: Magasság megnövelve a 2x nagyobb gombok miatt */
+        /* KÜLÖNÁLLÓ ALSÓ SÁV */
         .info-bar { 
             width: 100%;
             height: 220px;
@@ -64,14 +64,14 @@
         .show-title { font-size: 24px; font-weight: bold; color: #fff; }
         .time-info { font-size: 20px; font-weight: bold; color: #8a99ad; margin-left: 15px; }
         
-        /* 2X MAGASABB VEZÉRLŐ GOMBOK */
+        /* VEZÉRLŐ GOMBOK */
         .controls-right { display: flex; gap: 15px; }
         .btn-epg { background: #304ffe; color: white; border: none; padding: 20px 35px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 18px; transition: 0.2s; }
         .btn-epg:hover { background: #1a237e; }
         .btn-fs { background: #2e7d32; color: white; border: none; padding: 20px 35px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 18px; transition: 0.2s; }
         .btn-fs:hover { background: #1b5e20; }
 
-        /* 2X MAGASABB CSATORNAVÁLTÓ GOMBOK */
+        /* CSATORNAVÁLTÓ GOMBOK */
         .channel-selector { display: flex; gap: 12px; width: 100%; justify-content: flex-start; overflow-x: auto; padding-bottom: 8px; }
         .channel-btn { background: #232936; color: #a4b3c6; border: 1px solid #2c3545; padding: 18px 30px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; white-space: nowrap; font-size: 18px; }
         .channel-btn:hover { background: #323a4b; color: #fff; }
@@ -85,7 +85,6 @@
         .unlock-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #0f1115; z-index: 200001; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px; }
         .unlock-btn { background: var(--accent-color); color: white; border: none; padding: 22px 50px; font-size: 24px; font-weight: bold; border-radius: 14px; cursor: pointer; }
 
-        /* HA A VIDEÓT TELJES KÉPERNYŐSRE RAKJUK */
         :fullscreen .tv-container { width: 100vw; height: 100vh; }
         :-webkit-full-screen .tv-container { width: 100vw; height: 100vh; }
     </style>
@@ -315,7 +314,6 @@ async function runTvEngine() {
         });
 
         // 3. LEJÁTSZÁS KEZELÉSE ÉS BEÁGYAZÁSOK
-        // 3. LEJÁTSZÁS KEZELÉSE ÉS BEÁGYAZÁSOK
         if (currentTrack) {
             overlay.style.display = 'none'; 
             lblShow.innerText = currentTrack.title;
@@ -339,31 +337,34 @@ async function runTvEngine() {
                 
                 let embedFrame = document.getElementById('embedFrame');
                 
-                // --- A SOROMPÓ (ZÁR) LOGIKA ---
-                // CSAK AKKOR nyúlunk az iframe-hez, ha még egyáltalán nem létezik, VAGY ha teljesen új filmre váltottunk!
+                // --- A FIXÁLT SOROMPÓ LOGIKA ---
+                // Csak akkor hozunk létre vagy módosítunk iframe-et, ha még nincs, VAGY ha új videóra váltottunk!
                 if (!embedFrame || lastRenderedUrl !== currentTrack.url) {
                     
-                    lastRenderedUrl = currentTrack.url; // Elmentjük, hogy ez a film már fut!
+                    lastRenderedUrl = currentTrack.url;
                     
                     if (embedFrame) {
-                        embedFrame.remove(); // Ha volt régi iframe, töröljük
+                        embedFrame.remove();
                     }
 
-                    // Kiszámoljuk a pontos kezdő másodpercet
-                    const elapsedSeconds = Math.floor((new Date() - trackStart) / 1000);
+                    // GOLYÓÁLLÓ IDŐSZÁMÍTÁS: A biztos 'now.getTime()' használatával, így sosem lesz belőle NaN!
+                    let elapsedSeconds = Math.floor((now.getTime() - trackStart.getTime()) / 1000);
+                    if (isNaN(elapsedSeconds) || elapsedSeconds < 0) {
+                        elapsedSeconds = 0;
+                    }
 
-                    // Átalakítjuk embed formátumra, ha kell
+                    // Tiszta embed formátum kikényszerítése
                     let targetUrl = currentTrack.url;
                     if (targetUrl.includes('ok.ru/video/')) {
                         targetUrl = targetUrl.replace('ok.ru/video/', 'ok.ru/videoembed/');
                     }
 
-                    // Hozzáfűzzük az indítási időt
+                    // Paraméterek hozzáfűzése
                     const finalSrc = targetUrl.includes('?') 
                         ? `${targetUrl}&autoplay=1&start=${elapsedSeconds}` 
                         : `${targetUrl}?autoplay=1&start=${elapsedSeconds}`;
 
-                    // Újraépítjük az iframe-et
+                    // Újraépítés
                     embedFrame = document.createElement('iframe');
                     embedFrame.id = 'embedFrame';
                     embedFrame.style.position = 'absolute';
@@ -377,15 +378,18 @@ async function runTvEngine() {
                     embedFrame.src = finalSrc;
                     
                     container.appendChild(embedFrame);
-                    console.log("Iframe friss indítással létrehozva:", elapsedSeconds, "mp-nél.");
+                    embedFrame.style.display = 'block';
+                    console.log("Iframe sikeresen betöltve a pozícióról:", elapsedSeconds, "mp");
                 } else {
-                    // Ha ugyanaz a film fut, 15 másodpercenként NEM csinálunk semmit, hagyjuk lejátszódni!
-                    console.log("A film már fut, szinkron békén hagyva.");
+                    // Ha 15 másodperc múlva újra fut a hurok, és ugyanaz a film megy, láthatóan hagyjuk, és nem bántjuk!
+                    if (embedFrame) {
+                        embedFrame.style.display = 'block';
+                    }
                 }
                 
             } else {
-                // HAGYOMÁNYOS MÓD: Közvetlen MP4 lejátszás (Backblaze, stb.)
-                lastRenderedUrl = ''; // Reseteljük az iframe emlékezetet
+                // HAGYOMÁNYOS MÓD: Közvetlen MP4 lejátszás
+                lastRenderedUrl = '';
                 let embedFrame = document.getElementById('embedFrame');
                 if (embedFrame) embedFrame.remove();
 
@@ -418,7 +422,6 @@ async function runTvEngine() {
                 }
             }
         } else {
-            // HA NINCS ADÁS AZ IDŐSÁVBAN
             lastRenderedUrl = '';
             vid.pause(); 
             vid.style.display = 'none'; 
@@ -440,10 +443,7 @@ async function runTvEngine() {
         vid.style.display = 'none'; 
         
         let embedFrame = document.getElementById('embedFrame');
-        if (embedFrame) {
-            embedFrame.src = '';
-            embedFrame.style.display = 'none';
-        }
+        if (embedFrame) embedFrame.remove();
         
         overlay.style.display = 'flex'; 
         overlay.innerText = "📡 Hiba a beolvasás során.";
