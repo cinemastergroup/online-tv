@@ -24,16 +24,15 @@
         }
         
         iframe, video { width: 100%; height: 100%; border: none; background: #000; position: absolute; top: 0; left: 0; z-index: 1; display: none; }
+
+        /* ÓRIÁSI FINOMHANGOLÁS: A gombok és az OK.ru menü levágása az Android Boxon is */
         #embedFrame { 
             z-index: 2; 
-            width: 104% !important; 
-            height: 108% !important; 
-            top: -4% !important; 
-            left: -2% !important; 
+            width: 106% !important; 
+            height: 112% !important; 
+            top: -6% !important; 
+            left: -3% !important; 
         }
-
-        /* Külön z-index az OK.ru dinamikus iframe-nek, hogy biztosan látszódjon */
-        #embedFrame { z-index: 2; }
 
         .tv-watermark { 
             position: absolute; 
@@ -268,7 +267,7 @@ async function runTvEngine() {
             } else { watermark.style.display = 'none'; currentLogoConfig = null; }
         } catch (e) { watermark.style.display = 'none'; currentLogoConfig = null; }
 
-        // 2. TÖBB NAP MŰSORÁNAK AUTOMATIKUS ÖSSZEFŰZÉSE (Tegnap + Ma + a következő 5 nap)
+        // 2. TÖBB NAP MŰSORÁNAK AUTOMATIKUS ÖSSZEFŰZÉSE
         let kombináltMűsor = [];
         const baseDate = new Date(new Date().getTime() - 24 * 60 * 60 * 1000); 
         const formázDátum = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -315,7 +314,7 @@ async function runTvEngine() {
             }
         });
 
-        // 3. LEJÁTSZÁS KEZELÉSE ÉS BEÁGYAZÁSOK (Archive, OK.ru, Backblaze)
+        // 3. LEJÁTSZÁS KEZELÉSE ÉS BEÁGYAZÁSOK
         if (currentTrack) {
             overlay.style.display = 'none'; 
             lblShow.innerText = currentTrack.title;
@@ -323,13 +322,11 @@ async function runTvEngine() {
             const trackStart = parseLocalISO(currentTrack.start);
             const trackEnd = new Date(trackStart.getTime() + currentTrack.duration * 1000);
             
-            // Kezdési és befejezési időpont formázása (Óra:Perc)
+            // IDŐSÁV KIÍRÁSA (ÓRA:PERC FORMÁTUMBAN)
             const startHours = String(trackStart.getHours()).padStart(2, '0');
             const startMinutes = String(trackStart.getMinutes()).padStart(2, '0');
             const endHours = String(trackEnd.getHours()).padStart(2, '0');
             const endMinutes = String(trackEnd.getMinutes()).padStart(2, '0');
-            
-            // Kiírás módosítása a kért formátumra
             lblTime.innerText = `${startHours}:${startMinutes} - ${endHours}:${endMinutes}`;
 
             const isEmbed = (currentTrack.url.includes('archive.org') && !currentTrack.url.toLowerCase().endsWith('.mp4')) || 
@@ -349,43 +346,42 @@ async function runTvEngine() {
                     embedFrame.style.width = '100%';
                     embedFrame.style.height = '100%';
                     embedFrame.style.border = 'none';
-                    embedFrame.style.zIndex = '2'; // Magasabb réteg a videónál
+                    embedFrame.style.zIndex = '2';
                     embedFrame.allow = "autoplay; encrypted-media; fullscreen";
                     container.appendChild(embedFrame);
                 }
 
-                // URL Átalakítás: Ha véletlenül nem embed formátumban lenne az OK.ru link
+                const elapsedSeconds = Math.floor((now - trackStart) / 1000);
+
                 let targetUrl = currentTrack.url;
                 if (targetUrl.includes('ok.ru/video/')) {
                     targetUrl = targetUrl.replace('ok.ru/video/', 'ok.ru/videoembed/');
                 }
 
-                // Autoplay kikényszerítése
                 if (targetUrl.includes('ok.ru') && !targetUrl.includes('autoplay=')) {
-                    targetUrl += targetUrl.includes('?') ? '&autoplay=1' : '?autoplay=1';
+                    targetUrl += targetUrl.includes('?') ? `&autoplay=1&start=${elapsedSeconds}` : `?autoplay=1&start=${elapsedSeconds}`;
                 }
 
                 if (embedFrame.src !== targetUrl) {
-                embedFrame.src = targetUrl;
-                embedFrame.style.display = 'block';
-            
-                // ANDROID BOX TRÜKK: Ha Androidos a böngésző, megvárjuk, amíg az iframe elkezd éledezni, 
-                // majd 1.5 másodperc múlva újra ráküldjük a pontos időpontot, így a box kénytelen lesz oda ugrani!
-                if (navigator.userAgent.toLowerCase().includes('android') || navigator.userAgent.toLowerCase().includes('tv')) {
-                    setTimeout(() => {
-                        // Újraszámoljuk a pontos másodpercet, mert eltelt 1.5 másodperc a betöltéssel!
-                        const latestNow = new Date();
-                        const latestElapsed = Math.floor((latestNow - trackStart) / 1000);
-                        
-                        let androidUrl = currentTrack.url;
-                        if (androidUrl.includes('ok.ru/video/')) {
-                            androidUrl = androidUrl.replace('ok.ru/video/', 'ok.ru/videoembed/');
-                        }
-                        
-                        // Frissítjük az iframe-et a legfrissebb időponttal
-                        embedFrame.src = `${androidUrl}?autoplay=1&start=${latestElapsed}`;
-                        console.log("Android Box idő-szinkron kényszerítve:", latestElapsed, "mp");
-                    }, 1500); // 1.5 másodperc halasztás, hogy a box felébredjen
+                    embedFrame.src = targetUrl;
+                    embedFrame.style.display = 'block';
+
+                    // JAVÍTÁS: Az Android box idő-kényszerítése most már teljesen biztonságos, hatókörön belüli változókkal!
+                    const userAgentLower = navigator.userAgent.toLowerCase();
+                    if (userAgentLower.includes('android') || userAgentLower.includes('tv') || userAgentLower.includes('puffin')) {
+                        setTimeout(() => {
+                            const latestNow = new Date();
+                            const latestElapsed = Math.floor((latestNow - trackStart) / 1000);
+                            
+                            let androidUrl = currentTrack.url;
+                            if (androidUrl.includes('ok.ru/video/')) {
+                                androidUrl = androidUrl.replace('ok.ru/video/', 'ok.ru/videoembed/');
+                            }
+                            
+                            embedFrame.src = `${androidUrl}?autoplay=1&start=${latestElapsed}`;
+                            console.log("Android Box szinkronizálva:", latestElapsed, "mp");
+                        }, 1500);
+                    }
                 }
             } else {
                 let embedFrame = document.getElementById('embedFrame');
@@ -456,10 +452,9 @@ async function runTvEngine() {
     }
 }
 
-// JAVÍTÁS: Az oldal megnyitásakor AZONNAL meghívjuk a motort, nem várunk 15 másodpercet!
 window.addEventListener('DOMContentLoaded', () => {
-    runTvEngine(); // Azonnali indítás betöltéskor
-    setInterval(runTvEngine, 15000); // 15 másodperces szinkronizáció megtartása
+    runTvEngine(); 
+    setInterval(runTvEngine, 15000); 
 });
 </script>
 </body>
