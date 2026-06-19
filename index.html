@@ -315,9 +315,15 @@ async function runTvEngine() {
             
             const trackStart = parseLocalISO(currentTrack.start);
             const trackEnd = new Date(trackStart.getTime() + currentTrack.duration * 1000);
-            const diffMs = trackEnd - now;
-            const diffMin = Math.max(0, Math.floor(diffMs / 1000 / 60));
-            lblTime.innerText = `${diffMin} perc van hátra`;
+            
+            // Kezdési és befejezési időpont formázása (Óra:Perc)
+            const startHours = String(trackStart.getHours()).padStart(2, '0');
+            const startMinutes = String(trackStart.getMinutes()).padStart(2, '0');
+            const endHours = String(trackEnd.getHours()).padStart(2, '0');
+            const endMinutes = String(trackEnd.getMinutes()).padStart(2, '0');
+            
+            // Kiírás módosítása a kért formátumra
+            lblTime.innerText = `${startHours}:${startMinutes} - ${endHours}:${endMinutes}`;
 
             const isEmbed = (currentTrack.url.includes('archive.org') && !currentTrack.url.toLowerCase().endsWith('.mp4')) || 
                             currentTrack.url.includes('ok.ru');
