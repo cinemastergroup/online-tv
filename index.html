@@ -340,6 +340,27 @@ async function runTvEngine() {
                 
                 let embedFrame = document.getElementById('embedFrame');
                 
+                // Golyóálló időszámítás számmá alakítva (A SOROMPÓN KÍVÜLRE EMELVE)
+                let elapsedSeconds = Math.floor((now.getTime() - trackStart.getTime()) / 1000);
+                if (isNaN(elapsedSeconds) || elapsedSeconds < 0) {
+                    elapsedSeconds = 0;
+                }
+
+                // --- ANTI-SPOILER TRÜKK: MINDEN KÖRBEN ELLENŐRIZZÜK ---
+                // Ha a filmből már kevesebb mint 4 másodperc van hátra, azonnal leoltjuk a képet.
+                // Az overlay üres szöveget kap, így tiszta fekete blackout képünk lesz, ajánlott videók nélkül!
+                if (elapsedSeconds >= (currentTrack.duration - 4)) {
+                    if (embedFrame) {
+                        embedFrame.style.display = 'none';
+                    }
+                    overlay.style.display = 'flex'; 
+                    overlay.innerText = ""; 
+                    lastRenderedUrl = ''; 
+                    isIframeLoaded = false; 
+                    console.log("Műsor vége észlelve, kép lekapcsolva a tiszta feketeségért.");
+                    return;
+                }
+
                 // AZ OKOSÍTOTT BEÉPÍTETT SOROMPÓ:
                 // Csak akkor építjük újra, ha még nem létezik, ha nincs lezárva, VAGY ha az URL megváltozott (új film indult)!
                 if (!isIframeLoaded || !embedFrame || lastRenderedUrl !== currentTrack.url) {
@@ -349,24 +370,6 @@ async function runTvEngine() {
                     
                     if (embedFrame) {
                         embedFrame.remove();
-                    }
-
-                    // Golyóálló időszámítás számmá alakítva
-                    let elapsedSeconds = Math.floor((now.getTime() - trackStart.getTime()) / 1000);
-                    if (isNaN(elapsedSeconds) || elapsedSeconds < 0) {
-                        elapsedSeconds = 0;
-                    }
-
-                    // --- ANTI-SPOILER TRÜKK: TISZTA FEKETE KÉPERNYŐ A FILMEK KÖZÖTT ---
-                    // Ha a filmből már kevesebb mint 3 másodperc van hátra, elrejtjük az OK.ru-t,
-                    // így az ajánlott videók egy elrejtett rétegben futnak le. A néző csak tiszta feketeséget lát!
-                    if (elapsedSeconds >= (currentTrack.duration - 3)) {
-                        if (embedFrame) {
-                            embedFrame.style.display = 'none';
-                        }
-                        overlay.style.display = 'flex'; 
-                        overlay.innerText = ""; // Teljesen üresen hagyjuk, így csak a fekete háttér látszik!
-                        return;
                     }
 
                     // URL megtisztítása az elavult paraméterektől
@@ -400,7 +403,7 @@ async function runTvEngine() {
                     embedFrame.style.display = 'block';
                     console.log("Műsor sikeresen elindítva a jó pozícióról:", elapsedSeconds, "mp");
                 } else {
-                    // Ha ugyanaz a film megy, a 15 másodperces ciklusban BÉKÉN HAGYJUK a lejátszót.
+                    // Ha ugyanaz a film megy, a ciklusban BÉKÉN HAGYJUK a lejátszót.
                     // Ez biztosítja, hogy lehessen tekerni, és ne töltsön újra!
                     if (embedFrame) {
                         embedFrame.style.display = 'block';
