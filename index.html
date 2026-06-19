@@ -163,6 +163,7 @@ let lastRenderedUrl = '';
 let currentLogoConfig = null;
 let isEpgOpen = false;
 let userUnlocked = false;
+let isIframeLoaded = false; // AZ ÚJ LOGIKAI ZÁR/SOROMPÓ
 
 function startTvWithAudio(e) {
     e.stopPropagation();
@@ -177,6 +178,7 @@ function startTvWithAudio(e) {
 
 vid.onended = function() {
     lastRenderedUrl = '';
+    isIframeLoaded = false; // Reseteljük, ha magától véget ér egy mp4 fájl
     runTvEngine();
 };
 
@@ -228,6 +230,7 @@ window.addEventListener('resize', () => setTimeout(updateLogoScale, 50));
 function switchChannel(channelId) {
     activeChannel = channelId;
     lastRenderedUrl = '';
+    isIframeLoaded = false; // RESETELJÜK A SOROMPÓT CSATORNAVÁLTÁSKOR
     vid.pause();
     vid.removeAttribute('src');
     vid.load();
@@ -321,7 +324,7 @@ async function runTvEngine() {
             const trackStart = parseLocalISO(currentTrack.start);
             const trackEnd = new Date(trackStart.getTime() + currentTrack.duration * 1000);
             
-            // IDŐSÁV KIÍRÁSA
+            // IDŐSÁV KIÍRÁSA (Óra:Perc - Óra:Perc formátumban)
             const startHours = String(trackStart.getHours()).padStart(2, '0');
             const startMinutes = String(trackStart.getMinutes()).padStart(2, '0');
             const endHours = String(trackEnd.getHours()).padStart(2, '0');
@@ -337,37 +340,38 @@ async function runTvEngine() {
                 
                 let embedFrame = document.getElementById('embedFrame');
                 
-                // --- A FIXÁLT SOROMPÓ LOGIKA ---
-                // Csak akkor hozunk létre vagy módosítunk iframe-et, ha még nincs, VAGY ha új videóra váltottunk!
-                if (!embedFrame || lastRenderedUrl !== currentTrack.url) {
+                // AZ OKOSÍTOTT BEÉPÍTETT SOROMPÓ:
+                // Csak akkor építjük újra, ha még nem létezik, ha nincs lezárva, VAGY ha az URL megváltozott (új film indult)!
+                if (!isIframeLoaded || !embedFrame || lastRenderedUrl !== currentTrack.url) {
                     
-                    lastRenderedUrl = currentTrack.url;
+                    isIframeLoaded = true; // Azonnal lezárjuk a kaput
+                    lastRenderedUrl = currentTrack.url; // Elmentjük a jelenlegi videót
                     
                     if (embedFrame) {
                         embedFrame.remove();
                     }
 
-                    // GOLYÓÁLLÓ IDŐSZÁMÍTÁS: A biztos 'now.getTime()' használatával, így sosem lesz belőle NaN!
+                    // Biztonságos másodperc számítás számmá alakítva
                     let elapsedSeconds = Math.floor((now.getTime() - trackStart.getTime()) / 1000);
                     if (isNaN(elapsedSeconds) || elapsedSeconds < 0) {
                         elapsedSeconds = 0;
                     }
 
-                    // Tiszta embed formátum kikényszerítése
+                    // URL megtisztítása az elavult paraméterektől
                     let targetUrl = currentTrack.url;
+                    if (targetUrl.includes('?')) {
+                        targetUrl = targetUrl.split('?')[0];
+                    }
+
+                    // Átalakítás beágyazott embed formátumra
                     if (targetUrl.includes('ok.ru/video/')) {
                         targetUrl = targetUrl.replace('ok.ru/video/', 'ok.ru/videoembed/');
                     }
 
-                    // Megtisztítjuk az URL-t a korábbi esetleges paraméterektől, hogy tiszta alappal dolgozzunk
-                    if (targetUrl.includes('?')) {
-                        targetUrl = targetUrl.split('?')[0];
-                    }
-                    
-                    // Az OK.ru számára a legstabilabb formátum: először az autoplay, utána a start másodperc
-                    const finalSrc = `${targetUrl}?autoplay=1&start=${elapsedSeconds}`;
+                    // OK.ru kompatibilis 'fromTime' paraméter használata a 'start' helyett
+                    const finalSrc = `${targetUrl}?autoplay=1&fromTime=${elapsedSeconds}`;
 
-                    // Újraépítés
+                    // Iframe létrehozása
                     embedFrame = document.createElement('iframe');
                     embedFrame.id = 'embedFrame';
                     embedFrame.style.position = 'absolute';
@@ -382,9 +386,10 @@ async function runTvEngine() {
                     
                     container.appendChild(embedFrame);
                     embedFrame.style.display = 'block';
-                    console.log("Iframe sikeresen betöltve a pozícióról:", elapsedSeconds, "mp");
+                    console.log("Műsor sikeresen elindítva a jó pozícióról:", elapsedSeconds, "mp");
                 } else {
-                    // Ha 15 másodperc múlva újra fut a hurok, és ugyanaz a film megy, láthatóan hagyjuk, és nem bántjuk!
+                    // Ha ugyanaz a film megy, a 15 másodperces ciklusban BÉKÉN HAGYJUK a lejátszót.
+                    // Ez biztosítja, hogy lehessen tekerni, és ne töltsön újra!
                     if (embedFrame) {
                         embedFrame.style.display = 'block';
                     }
@@ -393,6 +398,7 @@ async function runTvEngine() {
             } else {
                 // HAGYOMÁNYOS MÓD: Közvetlen MP4 lejátszás
                 lastRenderedUrl = '';
+                isIframeLoaded = false; 
                 let embedFrame = document.getElementById('embedFrame');
                 if (embedFrame) embedFrame.remove();
 
@@ -425,7 +431,9 @@ async function runTvEngine() {
                 }
             }
         } else {
+            // HA NINCS ADÁS AZ IDŐSÁVBAN
             lastRenderedUrl = '';
+            isIframeLoaded = false; // Kinyitjuk a sorompót, hogy várja a következő adást
             vid.pause(); 
             vid.style.display = 'none'; 
             
