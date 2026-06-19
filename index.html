@@ -366,8 +366,26 @@ async function runTvEngine() {
                 }
 
                 if (embedFrame.src !== targetUrl) {
-                    embedFrame.src = targetUrl;
-                    embedFrame.style.display = 'block';
+                embedFrame.src = targetUrl;
+                embedFrame.style.display = 'block';
+            
+                // ANDROID BOX TRÜKK: Ha Androidos a böngésző, megvárjuk, amíg az iframe elkezd éledezni, 
+                // majd 1.5 másodperc múlva újra ráküldjük a pontos időpontot, így a box kénytelen lesz oda ugrani!
+                if (navigator.userAgent.toLowerCase().includes('android') || navigator.userAgent.toLowerCase().includes('tv')) {
+                    setTimeout(() => {
+                        // Újraszámoljuk a pontos másodpercet, mert eltelt 1.5 másodperc a betöltéssel!
+                        const latestNow = new Date();
+                        const latestElapsed = Math.floor((latestNow - trackStart) / 1000);
+                        
+                        let androidUrl = currentTrack.url;
+                        if (androidUrl.includes('ok.ru/video/')) {
+                            androidUrl = androidUrl.replace('ok.ru/video/', 'ok.ru/videoembed/');
+                        }
+                        
+                        // Frissítjük az iframe-et a legfrissebb időponttal
+                        embedFrame.src = `${androidUrl}?autoplay=1&start=${latestElapsed}`;
+                        console.log("Android Box idő-szinkron kényszerítve:", latestElapsed, "mp");
+                    }, 1500); // 1.5 másodperc halasztás, hogy a box felébredjen
                 }
             } else {
                 let embedFrame = document.getElementById('embedFrame');
