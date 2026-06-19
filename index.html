@@ -359,10 +359,13 @@ async function runTvEngine() {
                         targetUrl = targetUrl.replace('ok.ru/video/', 'ok.ru/videoembed/');
                     }
 
-                    // Paraméterek hozzáfűzése
-                    const finalSrc = targetUrl.includes('?') 
-                        ? `${targetUrl}&autoplay=1&start=${elapsedSeconds}` 
-                        : `${targetUrl}?autoplay=1&start=${elapsedSeconds}`;
+                    // Megtisztítjuk az URL-t a korábbi esetleges paraméterektől, hogy tiszta alappal dolgozzunk
+                    if (targetUrl.includes('?')) {
+                        targetUrl = targetUrl.split('?')[0];
+                    }
+                    
+                    // Az OK.ru számára a legstabilabb formátum: először az autoplay, utána a start másodperc
+                    const finalSrc = `${targetUrl}?autoplay=1&start=${elapsedSeconds}`;
 
                     // Újraépítés
                     embedFrame = document.createElement('iframe');
