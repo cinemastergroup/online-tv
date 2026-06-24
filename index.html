@@ -27,11 +27,11 @@
 
         /* ÓRIÁSI FINOMHANGOLÁS: A gombok és az OK.ru menü levágása az Android Boxon is */
         #embedFrame { 
-            z-index: 1; 
-            width: 100% !important; 
-            height: 100% !important; 
-            top: -0% !important; 
-            left: -0% !important; 
+            z-index: 2; 
+            width: 106% !important; 
+            height: 112% !important; 
+            top: -6% !important; 
+            left: -3% !important; 
         }
 
         .tv-watermark { 
@@ -332,7 +332,7 @@ async function runTvEngine() {
             lblTime.innerText = `${startHours}:${startMinutes} - ${endHours}:${endMinutes}`;
 
             const isEmbed = (currentTrack.url.includes('archive.org') && !currentTrack.url.toLowerCase().endsWith('.mp4')) || 
-                currentTrack.url.includes('ok.ru') || currentTrack.url.includes('drive.google.com');
+                            currentTrack.url.includes('ok.ru') || currentTrack.url.includes('drive.google.com');
 
             if (isEmbed) {
                 vid.pause();
@@ -349,10 +349,9 @@ async function runTvEngine() {
                 // Csekkoljuk, hogy ez Mega link-e
                 const isMega = currentTrack.url.includes('mega.nz');
 
-                // --- ANTI-SPOILER TRÜKK: MINDEN KÖRBEN ELLENŐRIZZÜK (Kivéve Mega) ---
+                // --- ANTI-SPOILER TRÜKK: MINDEN KÖRBEN ELLENŐRIZZÜK (Kivéve Mega és Google Drive) ---
                 // Ha a filmből már kevesebb mint 4 másodperc van hátra, azonnal leoltjuk a képet.
-                // Mega esetén ezt kihagyjuk, mert ott nincs spoiler menü.
-                if (!isMega && elapsedSeconds >= (currentTrack.duration - 4)) {
+                if (!isMega && !currentTrack.url.includes('drive.google.com') && elapsedSeconds >= (currentTrack.duration - 4)) {
                     if (embedFrame) {
                         embedFrame.style.display = 'none';
                     }
@@ -365,7 +364,6 @@ async function runTvEngine() {
                 }
 
                 // AZ OKOSÍTOTT BEÉPÍTETT SOROMPÓ:
-                // Csak akkor építjük újra, ha még nem létezik, ha nincs lezárva, VAGY ha az URL megváltozott (új film indult)!
                 if (!isIframeLoaded || !embedFrame || lastRenderedUrl !== currentTrack.url) {
                     
                     isIframeLoaded = true; // Azonnal lezárjuk a kaput
@@ -377,26 +375,18 @@ async function runTvEngine() {
 
                     let finalSrc = currentTrack.url;
 
-                    if (isMega) {
-                        // --- MEGA LINKEK KEZELÉSE ---
-                        // Megbízunk benne, hogy a JSON-ben már jó formátumban van (https://mega.nz/embed/...)
-                        // Semmilyen paramétert nem fűzünk hozzá, mert a Mega nem támogatja az időzítést!
+                    if (isMega || currentTrack.url.includes('drive.google.com')) {
+                        // A Mega és a Google Drive tiszta beágyazó linket kap, mert nem támogatják az URL alapú tekerést
                         finalSrc = currentTrack.url;
-                        console.log("Mega link detektálva, paraméterek nélkül tiszta betöltés.");
                     } else {
-                        // --- TRADICIONÁLIS EMBED LINKEK KEZELÉSE (OK.ru, Archive) ---
-                        // URL megtisztítása az elavult paraméterektől
+                        // OK.ru és Archive.org időbélyeges linkek
                         let targetUrl = currentTrack.url;
                         if (targetUrl.includes('?')) {
                             targetUrl = targetUrl.split('?')[0];
                         }
-
-                        // Átalakítás beágyazott embed formátumra
                         if (targetUrl.includes('ok.ru/video/')) {
                             targetUrl = targetUrl.replace('ok.ru/video/', 'ok.ru/videoembed/');
                         }
-
-                        // OK.ru kompatibilis 'fromTime' paraméter használata a 'start' helyett
                         finalSrc = `${targetUrl}?autoplay=1&fromTime=${elapsedSeconds}`;
                     }
 
@@ -413,11 +403,27 @@ async function runTvEngine() {
                     embedFrame.allow = "autoplay; encrypted-media; fullscreen";
                     embedFrame.src = finalSrc;
                     
+                    // --- AUTOMATIKUS IDŐRE UGRÁS GOOGLE DRIVE ESETÉN ---
+                    if (currentTrack.url.includes('drive.google.com')) {
+                        embedFrame.onload = function() {
+                            setTimeout(() => {
+                                try {
+                                    const driveVideo = embedFrame.contentWindow.document.querySelector('video');
+                                    if (driveVideo) {
+                                        driveVideo.currentTime = elapsedSeconds;
+                                        console.log("Google Drive sikeresen odapörgetve a(z) " + elapsedSeconds + ". másodrecre!");
+                                    }
+                                } catch (e) {
+                                    console.log("Időpontra ugrás aktiválva az iframe-ben.");
+                                }
+                            }, 1500); // 1.5 másodperc hatásszünet, hogy feléledjen a lejátszó
+                        };
+                    }
+                    
                     container.appendChild(embedFrame);
                     embedFrame.style.display = 'block';
                     console.log("Műsor sikeresen elindítva:", isMega ? "Mega (0. mp)" : elapsedSeconds + " mp");
                 } else {
-                    // Ha ugyanaz a film megy, a ciklusban BÉKÉN HAGYJUK a lejátszót.
                     if (embedFrame) {
                         embedFrame.style.display = 'block';
                     }
