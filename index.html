@@ -332,7 +332,7 @@ async function runTvEngine() {
             lblTime.innerText = `${startHours}:${startMinutes} - ${endHours}:${endMinutes}`;
 
             const isEmbed = (currentTrack.url.includes('archive.org') && !currentTrack.url.toLowerCase().endsWith('.mp4')) || 
-                            currentTrack.url.includes('ok.ru') || currentTrack.url.includes('mega.nz');
+                currentTrack.url.includes('ok.ru') || currentTrack.url.includes('drive.google.com');
 
             if (isEmbed) {
                 vid.pause();
