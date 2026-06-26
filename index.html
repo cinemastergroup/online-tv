@@ -8,14 +8,12 @@
         
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--bg-color); color: var(--text-color); font-family: 'Segoe UI', Tahoma, sans-serif; overflow-x: hidden; }
 
-        /* AZ ALAPÉRTELMEZETT ELRENDEZÉS (RUGALMAS DOBOZ) */
         .page-wrapper { display: flex; flex-direction: column; width: 100vw; height: 100vh; box-sizing: border-box; }
 
-        /* KÜLÖNÁLLÓ VIDEOABLAK (Helyet hagyva a megnövelt alsó sávnak) */
         .tv-container { 
             position: relative; 
             width: 100%; 
-            height: calc(100vh - 220px); /* 220px-et szabadon hagyunk alul a nagyobb sávnak */
+            height: calc(100vh - 220px); 
             background: #000; 
             display: flex; 
             justify-content: center; 
@@ -25,7 +23,6 @@
         
         iframe, video { width: 100%; height: 100%; border: none; background: #000; position: absolute; top: 0; left: 0; z-index: 1; display: none; }
 
-        /* ÓRIÁSI FINOMHANGOLÁS: A gombok és az OK.ru menü levágása az Android Boxon is */
         #embedFrame { 
             z-index: 2; 
             width: 106% !important; 
@@ -44,7 +41,6 @@
             height: auto !important;
         }
 
-        /* KÜLÖNÁLLÓ ALSÓ SÁV */
         .info-bar { 
             width: 100%;
             height: 220px;
@@ -64,14 +60,12 @@
         .show-title { font-size: 24px; font-weight: bold; color: #fff; }
         .time-info { font-size: 20px; font-weight: bold; color: #8a99ad; margin-left: 15px; }
         
-        /* VEZÉRLŐ GOMBOK */
         .controls-right { display: flex; gap: 15px; }
         .btn-epg { background: #304ffe; color: white; border: none; padding: 20px 35px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 18px; transition: 0.2s; }
         .btn-epg:hover { background: #1a237e; }
         .btn-fs { background: #2e7d32; color: white; border: none; padding: 20px 35px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 18px; transition: 0.2s; }
         .btn-fs:hover { background: #1b5e20; }
 
-        /* CSATORNAVÁLTÓ GOMBOK */
         .channel-selector { display: flex; gap: 12px; width: 100%; justify-content: flex-start; overflow-x: auto; padding-bottom: 8px; }
         .channel-btn { background: #232936; color: #a4b3c6; border: 1px solid #2c3545; padding: 18px 30px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; white-space: nowrap; font-size: 18px; }
         .channel-btn:hover { background: #323a4b; color: #fff; }
@@ -163,7 +157,8 @@ let lastRenderedUrl = '';
 let currentLogoConfig = null;
 let isEpgOpen = false;
 let userUnlocked = false;
-let isIframeLoaded = false; // AZ ÚJ LOGIKAI ZÁR/SOROMPÓ
+let isIframeLoaded = false;
+let vIdCurrentlyFetching = '';
 
 function startTvWithAudio(e) {
     e.stopPropagation();
@@ -178,7 +173,7 @@ function startTvWithAudio(e) {
 
 vid.onended = function() {
     lastRenderedUrl = '';
-    isIframeLoaded = false; // Reseteljük, ha magától véget ér egy mp4 fájl
+    isIframeLoaded = false;
     runTvEngine();
 };
 
@@ -230,7 +225,8 @@ window.addEventListener('resize', () => setTimeout(updateLogoScale, 50));
 function switchChannel(channelId) {
     activeChannel = channelId;
     lastRenderedUrl = '';
-    isIframeLoaded = false; // RESETELJÜK A SOROMPÓT CSATORNAVÁLTÁSKOR
+    isIframeLoaded = false;
+    vIdCurrentlyFetching = '';
     vid.pause();
     vid.removeAttribute('src');
     vid.load();
@@ -251,11 +247,40 @@ function switchChannel(channelId) {
     runTvEngine();
 }
 
+// ÚJ: Háttérben futó Videa MP4 Link-Kinyerő Motor
+async function fetchVideaDirectLink(videaUrl) {
+    try {
+        let vId = '';
+        if (videaUrl.includes('v=')) {
+            vId = videaUrl.split('v=')[1].split('&')[0];
+        } else {
+            let parts = videaUrl.split('/');
+            vId = parts[parts.length - 1].split('-')[0];
+        }
+        if (!vId) return null;
+        
+        // Lekérjük a Videa belső lejátszó konfigurációs fájlját
+        const res = await fetch(`https://videa.hu/videoplugin_get_source?v=${vId}`);
+        if (!res.ok) return null;
+        const text = await res.text();
+        
+        // Kikeressük a tiszta mp4 forrást a válaszból
+        const match = text.match(/src="([^"]+hd_720p\.mp4[^"]*)"/i) || text.match(/src="([^"]+\.mp4[^"]*)"/i);
+        if (match && match[1]) {
+            let directUrl = match[1].replace(/&amp;/g, '&');
+            if (directUrl.startsWith('//')) directUrl = 'https:' + directUrl;
+            return directUrl;
+        }
+    } catch (e) {
+        console.error("Hiba a Videa link kinyerése közben:", e);
+    }
+    return null;
+}
+
 async function runTvEngine() {
     if (!userUnlocked) return;
 
     try {
-        // 1. Arculati logó beolvasása
         try {
             const logoResponse = await fetch(`${activeChannel}_logo.json?t=${new Date().getTime()}`);
             if (logoResponse.ok) {
@@ -269,7 +294,6 @@ async function runTvEngine() {
             } else { watermark.style.display = 'none'; currentLogoConfig = null; }
         } catch (e) { watermark.style.display = 'none'; currentLogoConfig = null; }
 
-        // 2. TÖBB NAP MŰSORÁNAK AUTOMATIKUS ÖSSZEFŰZÉSE
         let kombináltMűsor = [];
         const baseDate = new Date(new Date().getTime() - 24 * 60 * 60 * 1000); 
         const formázDátum = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -287,7 +311,7 @@ async function runTvEngine() {
                     }
                 }
             } catch (innerError) {
-                console.log(`Műsorfájl nem található vagy üres: ${dátumStr}_schedule.json`);
+                console.log(`Műsorfájl nem található: ${dátumStr}_schedule.json`);
             }
         }
 
@@ -316,7 +340,6 @@ async function runTvEngine() {
             }
         });
 
-        // 3. LEJÁTSZÁS KEZELÉSE ÉS BEÁGYAZÁSOK
         if (currentTrack) {
             overlay.style.display = 'none'; 
             lblShow.innerText = currentTrack.title;
@@ -324,113 +347,89 @@ async function runTvEngine() {
             const trackStart = parseLocalISO(currentTrack.start);
             const trackEnd = new Date(trackStart.getTime() + currentTrack.duration * 1000);
             
-            // IDŐSÁV KIÍRÁSA (Óra:Perc - Óra:Perc formátumban)
             const startHours = String(trackStart.getHours()).padStart(2, '0');
             const startMinutes = String(trackStart.getMinutes()).padStart(2, '0');
             const endHours = String(trackEnd.getHours()).padStart(2, '0');
             const endMinutes = String(trackEnd.getMinutes()).padStart(2, '0');
             lblTime.innerText = `${startHours}:${startMinutes} - ${endHours}:${endMinutes}`;
 
-            const isEmbed = (currentTrack.url.includes('archive.org') && !currentTrack.url.toLowerCase().endsWith('.mp4')) || 
-                            currentTrack.url.includes('ok.ru') || currentTrack.url.includes('drive.google.com');
+            // ELLENŐRIZZÜK, HOGY VIDEA LINK-E
+            if (currentTrack.url.includes('videa.hu')) {
+                if (vIdCurrentlyFetching !== currentTrack.url) {
+                    vIdCurrentlyFetching = currentTrack.url;
+                    overlay.style.display = 'flex';
+                    overlay.innerText = "📡 Videa adatfolyam dekódolása...";
+                    
+                    const directMp4Url = await fetchVideaDirectLink(currentTrack.url);
+                    overlay.style.display = 'none';
+                    
+                    if (directMp4Url) {
+                        currentTrack.url = directMp4Url; // Kicseréljük a Videa linket a háttérben kinyert tiszta MP4-re
+                    } else {
+                        overlay.style.display = 'flex';
+                        overlay.innerText = "❌ Hiba: Videa stream sikertelen.";
+                        return;
+                    }
+                } else {
+                    // Ha már folyamatban van vagy elakadt, megvárjuk a következő ciklust
+                    return;
+                }
+            }
+
+            const isEmbed = (currentTrack.url.includes('archive.org') && !currentTrack.url.toLowerCase().endsWith('.mp4')) || currentTrack.url.includes('ok.ru');
 
             if (isEmbed) {
                 vid.pause();
                 vid.style.display = 'none';
                 
                 let embedFrame = document.getElementById('embedFrame');
-                
-                // Golyóálló időszámítás számmá alakítva (A SOROMPÓN KÍVÜLRE EMELVE)
                 let elapsedSeconds = Math.floor((now.getTime() - trackStart.getTime()) / 1000);
-                if (isNaN(elapsedSeconds) || elapsedSeconds < 0) {
-                    elapsedSeconds = 0;
-                }
+                if (isNaN(elapsedSeconds) || elapsedSeconds < 0) elapsedSeconds = 0;
 
-                // Csekkoljuk, hogy ez Mega link-e
                 const isMega = currentTrack.url.includes('mega.nz');
 
-                // --- ANTI-SPOILER TRÜKK: MINDEN KÖRBEN ELLENŐRIZZÜK (Kivéve Mega és Google Drive) ---
-                // Ha a filmből már kevesebb mint 4 másodperc van hátra, azonnal leoltjuk a képet.
-                if (!isMega && !currentTrack.url.includes('drive.google.com') && elapsedSeconds >= (currentTrack.duration - 4)) {
-                    if (embedFrame) {
-                        embedFrame.style.display = 'none';
-                    }
+                if (!isMega && elapsedSeconds >= (currentTrack.duration - 4)) {
+                    if (embedFrame) embedFrame.style.display = 'none';
                     overlay.style.display = 'flex'; 
                     overlay.innerText = ""; 
                     lastRenderedUrl = ''; 
                     isIframeLoaded = false; 
-                    console.log("Műsor vége észlelve, kép lekapcsolva a tiszta feketeségért.");
                     return;
                 }
 
-                // AZ OKOSÍTOTT BEÉPÍTETT SOROMPÓ:
                 if (!isIframeLoaded || !embedFrame || lastRenderedUrl !== currentTrack.url) {
+                    isIframeLoaded = true;
+                    lastRenderedUrl = currentTrack.url;
                     
-                    isIframeLoaded = true; // Azonnal lezárjuk a kaput
-                    lastRenderedUrl = currentTrack.url; // Elmentjük a jelenlegi videót
-                    
-                    if (embedFrame) {
-                        embedFrame.remove();
-                    }
+                    if (embedFrame) embedFrame.remove();
 
                     let finalSrc = currentTrack.url;
 
-                    if (isMega || currentTrack.url.includes('drive.google.com')) {
-                        // A Mega és a Google Drive tiszta beágyazó linket kap, mert nem támogatják az URL alapú tekerést
+                    if (isMega) {
                         finalSrc = currentTrack.url;
                     } else {
-                        // OK.ru és Archive.org időbélyeges linkek
                         let targetUrl = currentTrack.url;
-                        if (targetUrl.includes('?')) {
-                            targetUrl = targetUrl.split('?')[0];
-                        }
-                        if (targetUrl.includes('ok.ru/video/')) {
-                            targetUrl = targetUrl.replace('ok.ru/video/', 'ok.ru/videoembed/');
-                        }
+                        if (targetUrl.includes('?')) targetUrl = targetUrl.split('?')[0];
+                        if (targetUrl.includes('ok.ru/video/')) targetUrl = targetUrl.replace('ok.ru/video/', 'ok.ru/videoembed/');
                         finalSrc = `${targetUrl}?autoplay=1&fromTime=${elapsedSeconds}`;
                     }
 
-                    // Iframe létrehozása
                     embedFrame = document.createElement('iframe');
                     embedFrame.id = 'embedFrame';
                     embedFrame.style.position = 'absolute';
-                    embedFrame.style.top = '0';
-                    embedFrame.style.left = '0';
-                    embedFrame.style.width = '100%';
-                    embedFrame.style.height = '100%';
-                    embedFrame.style.border = 'none';
-                    embedFrame.style.zIndex = '2';
+                    embedFrame.style.top = '0'; embedFrame.style.left = '0'; embedFrame.style.width = '100%'; embedFrame.style.height = '100%';
+                    embedFrame.style.border = 'none'; embedFrame.style.zIndex = '2';
                     embedFrame.allow = "autoplay; encrypted-media; fullscreen";
                     embedFrame.src = finalSrc;
                     
-                    // --- AUTOMATIKUS IDŐRE UGRÁS GOOGLE DRIVE ESETÉN ---
-                    if (currentTrack.url.includes('drive.google.com')) {
-                        embedFrame.onload = function() {
-                            setTimeout(() => {
-                                try {
-                                    const driveVideo = embedFrame.contentWindow.document.querySelector('video');
-                                    if (driveVideo) {
-                                        driveVideo.currentTime = elapsedSeconds;
-                                        console.log("Google Drive sikeresen odapörgetve a(z) " + elapsedSeconds + ". másodrecre!");
-                                    }
-                                } catch (e) {
-                                    console.log("Időpontra ugrás aktiválva az iframe-ben.");
-                                }
-                            }, 1500); // 1.5 másodperc hatásszünet, hogy feléledjen a lejátszó
-                        };
-                    }
-                    
                     container.appendChild(embedFrame);
                     embedFrame.style.display = 'block';
-                    console.log("Műsor sikeresen elindítva:", isMega ? "Mega (0. mp)" : elapsedSeconds + " mp");
                 } else {
-                    if (embedFrame) {
-                        embedFrame.style.display = 'block';
-                    }
+                    if (embedFrame) embedFrame.style.display = 'block';
                 }
                 
             } else {
-                // HAGYOMÁNYOS MÓD: Közvetlen MP4 lejátszás
+                // HAGYOMÁNYOS / DEKÓDOLT MÓD: Közvetlen MP4 lejátszás (Ide érkezik a kinyert Videa is!)
                 lastRenderedUrl = '';
                 isIframeLoaded = false; 
                 let embedFrame = document.getElementById('embedFrame');
@@ -465,9 +464,9 @@ async function runTvEngine() {
                 }
             }
         } else {
-            // HA NINCS ADÁS AZ IDŐSÁVBAN
             lastRenderedUrl = '';
             isIframeLoaded = false; 
+            vIdCurrentlyFetching = '';
             vid.pause(); 
             vid.style.display = 'none'; 
             
@@ -486,10 +485,8 @@ async function runTvEngine() {
         console.log(error);
         vid.pause(); 
         vid.style.display = 'none'; 
-        
         let embedFrame = document.getElementById('embedFrame');
         if (embedFrame) embedFrame.remove();
-        
         overlay.style.display = 'flex'; 
         overlay.innerText = "📡 Hiba a beolvasás során.";
     }
