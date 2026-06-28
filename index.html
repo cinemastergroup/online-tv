@@ -34,7 +34,7 @@
             left: -3% !important; 
         }
 
-        /* A csatornalogó z-indexe a legmagasabb lett, hogy a szalag mögötte fusson el */
+        /* A csatornalogó z-indexe a legmagasabb, hogy a szalag mögötte fusson el */
         .tv-watermark { 
             position: absolute; 
             opacity: 0.9; 
@@ -45,44 +45,45 @@
             height: auto !important;
         }
 
-        /* PROGRAMOZOTT MŰSORCÍM SZALAG (Jobbról beúszó, logó mögé csúszó) */
+        /* FRISSÍTETT: PROGRAMOZOTT MŰSORCÍM SZALAG (Csak a kép 70%-áig tart, nem fut ki balra) */
         .show-notifier-band {
             position: absolute;
             top: 70px; 
-            right: -100%; 
+            right: -100%; /* Alapból jobbra kint vár */
             left: auto;
-            width: 100%;
+            width: 70%; /* ÚJ: Nem 100%, így bal oldalon nem takarja el a logó alatti üres részt */
             height: 60px;
             background: rgba(20, 24, 33, 0.85); 
             backdrop-filter: blur(8px); 
             border-bottom: 2px solid var(--accent-color); 
+            border-bottom-left-radius: 8px; /* Egy kis finom kerekítés a bal végére, ha már ott véget ér */
             z-index: 1000 !important; 
             display: flex;
             align-items: center;
             padding: 0 30px;
             box-sizing: border-box;
             transition: right 0.5s ease-in-out; 
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            box-shadow: -4px 4px 20px rgba(0,0,0,0.5);
             pointer-events: none; 
         }
         .show-notifier-band.active {
-            right: 0; 
+            right: 0; /* Jobbról beúszik fixen a jobb szélre tapadva */
         }
         
-        /* "MOST: " SZÖVEG STÍLUSA */
+        /* FRISSÍTETT: "MOST: " SZÖVEG STÍLUSA (+2px-es növelés) */
         .notifier-live-text {
             color: #ff1744; 
-            font-size: 20px;
+            font-size: 22px; /* ÚJ: 20px-ről növelve */
             font-weight: 900;
             text-transform: uppercase;
-            margin-right: 8px;
+            margin-right: 10px;
             letter-spacing: 1px;
             text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
         
-        /* MŰSOR CÍME (Csupa nagybetűsítés) */
+        /* FRISSÍTETT: MŰSOR CÍME (Csupa nagybetűsítés és +2px-es növelés) */
         .notifier-title {
-            font-size: 20px;
+            font-size: 22px; /* ÚJ: 20px-ről növelve */
             font-weight: bold;
             color: #ffffff;
             text-shadow: 0 2px 4px rgba(0,0,0,0.5);
@@ -129,7 +130,7 @@
         .epg-modal-overlay.active { opacity: 1; pointer-events: auto; display: flex; justify-content: center; align-items: center; }
         .epg-modal { width: 90%; max-width: 650px; background: #12161f; border: 1px solid var(--border-color); border-radius: 16px; padding: 25px; box-sizing: border-box; max-height: 80vh; display: flex; flex-direction: column; }
         
-        /* FONTOS JAVÍTÁS: Az overlay letisztítása, hogy se szöveg, se pöttyök ne legyenek rajta */
+        /* AZ INZERT/BLACKOUT RÉTEG */
         .no-stream-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; color: transparent; background: #000000; z-index: 995; pointer-events: none; }
         
         .unlock-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #0f1115; z-index: 200001; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px; }
@@ -223,7 +224,6 @@ let isEpgOpen = false;
 let userUnlocked = false;
 let isIframeLoaded = false; 
 
-// ÚJ: Blokkoló változó, ami kikényszeríti a fekete inzertet váltáskor
 let forceBlackoutActive = false;
 
 function startTvWithAudio(e) {
@@ -240,7 +240,7 @@ function startTvWithAudio(e) {
 vid.onended = function() {
     lastRenderedUrl = '';
     isIframeLoaded = false; 
-    triggerBlackoutIncert(); // Műsor végén is aktiváljuk a fekete inzertet
+    triggerBlackoutIncert(); 
     runTvEngine();
 };
 
@@ -289,13 +289,12 @@ function updateLogoScale() {
 
 window.addEventListener('resize', () => setTimeout(updateLogoScale, 50));
 
-// ÚJ FÜGGVÉNY: Elindít egy fix 2.5 másodperces vak sötétséget
 function triggerBlackoutIncert() {
     forceBlackoutActive = true;
     overlay.style.display = 'flex';
     setTimeout(() => {
         forceBlackoutActive = false;
-    }, 2500); // 2500 milliszekundum = 2,5 másodperces sötét takarás
+    }, 2500); 
 }
 
 function switchChannel(channelId) {
@@ -303,7 +302,7 @@ function switchChannel(channelId) {
     lastRenderedUrl = '';
     isIframeLoaded = false; 
     
-    triggerBlackoutIncert(); // Csatornaváltáskor is azonnal leoltjuk a lámpát
+    triggerBlackoutIncert(); 
     
     vid.pause();
     vid.removeAttribute('src');
@@ -389,7 +388,6 @@ async function runTvEngine() {
         });
 
         if (currentTrack) {
-            // HA A KÉNYSZERÍTETT FEKETE INZERT AKTÍV, NEM ENGEDJÜK LEVENNI A TAKARÁST
             if (!forceBlackoutActive) {
                 overlay.style.display = 'none'; 
             }
@@ -448,7 +446,7 @@ async function runTvEngine() {
                     isIframeLoaded = true; 
                     lastRenderedUrl = currentTrack.url; 
                     
-                    triggerBlackoutIncert(); // Új beágyazott műsor indításakor elsötétítünk
+                    triggerBlackoutIncert(); 
                     
                     if (embedFrame) {
                         embedFrame.remove();
@@ -496,7 +494,7 @@ async function runTvEngine() {
                     vid.load();
                     vid.currentTime = secondsInTrack;
                     
-                    triggerBlackoutIncert(); // Új MP4 fájl behívásakor elsötétítünk
+                    triggerBlackoutIncert(); 
                     
                     vid.muted = false;
                     vid.volume = 1.0; 
@@ -535,7 +533,7 @@ async function runTvEngine() {
             lblShow.innerText = "Betöltés...";
             lblTime.innerText = "--:--";
             overlay.style.display = 'flex'; 
-            overlay.innerText = ""; // Töröltük a szöveget az overlayről
+            overlay.innerText = ""; 
         }
     } catch (error) {
         console.log(error);
