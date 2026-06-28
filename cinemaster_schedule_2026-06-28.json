@@ -1,0 +1,22 @@
+{
+  "schedule": [
+    {
+      "title": "CM_Ajánló01",
+      "url": "https://ok.ru/videoembed/15017987541672",
+      "duration": 82,
+      "start": "2026-06-28T22:27:00"
+    },
+    {
+      "title": "CM_Ajánló04",
+      "url": "https://ok.ru/videoembed/15017992063656",
+      "duration": 122,
+      "start": "2026-06-28T22:28:22"
+    },
+    {
+      "title": "A SKORPIÓKIRÁLY",
+      "url": "https://ok.ru/videoembed/15734030076454",
+      "duration": 5489,
+      "start": "2026-06-28T22:30:24"
+    }
+  ]
+}
