@@ -45,22 +45,24 @@
             height: auto !important;
         }
 
-        /* FRISSÍTETT: DINAMIKUSAN SKÁLÁZÓDÓ MŰSORCÍM SZALAG (Laptopra és 4K TV-re is tűpontos) */
+        /* JAVÍTVA: PONTOSAN A LOGÓVAL EGY VONALBA REGGELT SZALAG */
         .show-notifier-band {
             position: absolute;
-            top: 8.5vh; /* ÚJ: Fix 70px helyett a képernyőmagasság 8.5%-a (pont egy sávnyival lejjebb) */
+            top: 5%; /* ÚJ: Pontosan a logó magassági vonalára igazítva (5%-ra), így gépen és TV-n is egybeesnek! */
             right: -100%; /* Alapból jobbra kint vár */
             left: auto;
-            width: 70%; /* Maradt a 70%-os szélesség, hogy balra ne fusson ki a logóig */
-            height: 6.5vh; /* ÚJ: Fix 60px helyett a képernyőmagasság 6.5%-a */
+            width: 70%; 
+            height: 11%; /* ÚJ: Százalékos magasság, hogy a logó kényelmesen beleférjen a sávba */
+            min-height: 50px; /* Biztonsági minimum laptopra */
+            max-height: 70px; /* Biztonsági maximum 4K TV-re */
             background: rgba(20, 24, 33, 0.85); 
             backdrop-filter: blur(8px); 
-            border-bottom: 0.25vh solid var(--accent-color); /* ÚJ: Dinamikus kék csík vastagság */
+            border-bottom: 3px solid var(--accent-color); 
             border-bottom-left-radius: 8px; 
-            z-index: 1000 !important; 
+            z-index: 1000 !important; /* Eggyel alacsonyabb mint a watermark (1001), így a logó mögé csúszik be */
             display: flex;
             align-items: center;
-            padding: 0 2vw; /* ÚJ: Dinamikus belső margó */
+            padding: 0 30px;
             box-sizing: border-box;
             transition: right 0.5s ease-in-out; 
             box-shadow: -4px 4px 20px rgba(0,0,0,0.5);
@@ -70,20 +72,21 @@
             right: 0; 
         }
         
-        /* FRISSÍTETT: "MOST: " SZÖVEG STÍLUSA (Dinamikus betűméret) */
+        /* DINAMIKUS BETŰMÉRETEK A TORZULÁS ELLEN */
         .notifier-live-text {
             color: #ff1744; 
-            font-size: 1.45vw; /* ÚJ: Képernyőszélesség-alapú méretezés a torzulás ellen */
+            font-size: 1.45vw; 
+            min-font-size: 16px;
             font-weight: 900;
             text-transform: uppercase;
-            margin-right: 0.8vw;
+            margin-right: 10px;
             letter-spacing: 1px;
             text-shadow: 0 2px 4px rgba(0,0,0,0.5);
         }
         
-        /* FRISSÍTETT: MŰSOR CÍME (Dinamikus betűméret) */
         .notifier-title {
-            font-size: 1.45vw; /* ÚJ: Képernyőszélesség-alapú méretezés a torzulás ellen */
+            font-size: 1.45vw; 
+            min-font-size: 16px;
             font-weight: bold;
             color: #ffffff;
             text-shadow: 0 2px 4px rgba(0,0,0,0.5);
@@ -183,7 +186,6 @@
             <button class="channel-btn active" onclick="switchChannel('cinemaster')">CineMaster</button>
             <button class="channel-btn" onclick="switchChannel('cinemaster2')">CineMaster 2</button>
             <button class="channel-btn" onclick="switchChannel('retrotv')">RetroTV</button>
-            <button class="channel-btn" onclick="switchChannel('horrorchannel')">Horror Channel</button>
             <button class="channel-btn" onclick="switchChannel('besthitstv')">Best Hits TV</button>
         </div>
     </div>
@@ -250,6 +252,14 @@ function parseLocalISO(isoStr) {
     return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]), parseInt(parts[3]), parseInt(parts[4]), parseInt(parts[5]) || 0);
 }
 
+// Biztosítjuk, hogy a betűméretek is reszponzívak legyenek
+function updateFontSizes() {
+    const baseWidth = container.clientWidth;
+    const computedFontSize = Math.max(15, baseWidth * 0.0145);
+    const textEls = document.querySelectorAll('.notifier-live-text, .notifier-title');
+    textEls.forEach(el => { if(el) el.style.fontSize = computedFontSize + 'px'; });
+}
+
 function toggleEpg(show) {
     isEpgOpen = show;
     if (show) {
@@ -269,7 +279,7 @@ function toggleNativeFullscreen() {
 }
 
 document.addEventListener('fullscreenchange', () => {
-    setTimeout(updateLogoScale, 100);
+    setTimeout(() => { updateLogoScale(); updateFontSizes(); }, 100);
 });
 
 window.addEventListener('keydown', function(e) {
@@ -287,7 +297,7 @@ function updateLogoScale() {
     watermark.style.left = currentLogoConfig.leftPercent + '%';
 }
 
-window.addEventListener('resize', () => setTimeout(updateLogoScale, 50));
+window.addEventListener('resize', () => setTimeout(() => { updateLogoScale(); updateFontSizes(); }, 50));
 
 function triggerBlackoutIncert() {
     forceBlackoutActive = true;
@@ -337,6 +347,7 @@ async function runTvEngine() {
                     watermark.src = logoConfig.logo.url;
                     watermark.style.display = 'block';
                     updateLogoScale();
+                    updateFontSizes(); 
                 }
             } else { watermark.style.display = 'none'; currentLogoConfig = null; }
         } catch (e) { watermark.style.display = 'none'; currentLogoConfig = null; }
@@ -408,7 +419,6 @@ async function runTvEngine() {
                 secondsInTrack = 0;
             }
 
-            // AJÁNLÓ SZŰRÉS ÉS IDŐZÍTÉS KÉZBEN TARTÁSA
             if (!currentTrack.title.toLowerCase().includes('ajánló')) {
                 if (secondsInTrack >= 10 && secondsInTrack <= 25) {
                     notifierTitle.innerText = currentTrack.title;
@@ -481,7 +491,6 @@ async function runTvEngine() {
                 }
                 
             } else {
-                // HAGYOMÁNYOS MÓD: Közvetlen MP4 lejátszás
                 lastRenderedUrl = '';
                 isIframeLoaded = false; 
                 let embedFrame = document.getElementById('embedFrame');
