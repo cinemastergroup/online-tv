@@ -45,21 +45,21 @@
             height: auto !important;
         }
 
-        /* JAVÍTVA: PONTOSAN A LOGÓVAL EGY VONALBA REGGELT SZALAG */
+        /* FRISSÍTETT: VÉKONYÍTOTT MŰSORCÍM SZALAG (Pontosan a logó vonalában) */
         .show-notifier-band {
             position: absolute;
-            top: 5%; /* ÚJ: Pontosan a logó magassági vonalára igazítva (5%-ra), így gépen és TV-n is egybeesnek! */
-            right: -100%; /* Alapból jobbra kint vár */
+            top: 5%; /* Maradt pontosan a logó magassági vonalán */
+            right: -100%; 
             left: auto;
             width: 70%; 
-            height: 11%; /* ÚJ: Százalékos magasság, hogy a logó kényelmesen beleférjen a sávba */
-            min-height: 50px; /* Biztonsági minimum laptopra */
-            max-height: 70px; /* Biztonsági maximum 4K TV-re */
+            height: 8.5%; /* ÚJ: 11%-ról vékonyítva 8.5%-ra */
+            min-height: 42px; /* Biztonsági minimum laptopra */
+            max-height: 54px; /* ÚJ: Biztonsági maximum korlátozva 54px-re, hogy vékony maradjon */
             background: rgba(20, 24, 33, 0.85); 
             backdrop-filter: blur(8px); 
             border-bottom: 3px solid var(--accent-color); 
             border-bottom-left-radius: 8px; 
-            z-index: 1000 !important; /* Eggyel alacsonyabb mint a watermark (1001), így a logó mögé csúszik be */
+            z-index: 1000 !important; 
             display: flex;
             align-items: center;
             padding: 0 30px;
@@ -72,11 +72,11 @@
             right: 0; 
         }
         
-        /* DINAMIKUS BETŰMÉRETEK A TORZULÁS ELLEN */
+        /* FRISSÍTETT: MEGNÖVELT BETŰMÉRETEK */
         .notifier-live-text {
             color: #ff1744; 
-            font-size: 1.45vw; 
-            min-font-size: 16px;
+            font-size: 1.65vw; /* ÚJ: 1.45vw-ről nagyítva */
+            min-font-size: 18px; /* ÚJ: 16px-ről emelve */
             font-weight: 900;
             text-transform: uppercase;
             margin-right: 10px;
@@ -85,8 +85,8 @@
         }
         
         .notifier-title {
-            font-size: 1.45vw; 
-            min-font-size: 16px;
+            font-size: 1.65vw; /* ÚJ: 1.45vw-ről nagyítva */
+            min-font-size: 18px; /* ÚJ: 16px-ről emelve */
             font-weight: bold;
             color: #ffffff;
             text-shadow: 0 2px 4px rgba(0,0,0,0.5);
@@ -252,10 +252,10 @@ function parseLocalISO(isoStr) {
     return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]), parseInt(parts[3]), parseInt(parts[4]), parseInt(parts[5]) || 0);
 }
 
-// Biztosítjuk, hogy a betűméretek is reszponzívak legyenek
+// Dinamikus betűméret-frissítő (Új arányokhoz igazítva)
 function updateFontSizes() {
     const baseWidth = container.clientWidth;
-    const computedFontSize = Math.max(15, baseWidth * 0.0145);
+    const computedFontSize = Math.max(18, baseWidth * 0.0165); // Megemelt szorzó és minimum
     const textEls = document.querySelectorAll('.notifier-live-text, .notifier-title');
     textEls.forEach(el => { if(el) el.style.fontSize = computedFontSize + 'px'; });
 }
