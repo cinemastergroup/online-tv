@@ -45,16 +45,16 @@
             height: auto !important;
         }
 
-        /* FRISSÍTETT: VÉKONYÍTOTT MŰSORCÍM SZALAG (Pontosan a logó vonalában) */
+        /* FRISSÍTETT: 30%-AL LEJJEBB TOLT MŰSORCÍM SZALAG */
         .show-notifier-band {
             position: absolute;
-            top: 5%; /* Maradt pontosan a logó magassági vonalán */
+            top: 7.5%; /* ÚJ: 5%-ról lejjebb tolva 7.5%-ra a sáv arányos süllyesztéséhez */
             right: -100%; 
             left: auto;
             width: 70%; 
-            height: 8.5%; /* ÚJ: 11%-ról vékonyítva 8.5%-ra */
-            min-height: 42px; /* Biztonsági minimum laptopra */
-            max-height: 54px; /* ÚJ: Biztonsági maximum korlátozva 54px-re, hogy vékony maradjon */
+            height: 8.5%; 
+            min-height: 42px; 
+            max-height: 54px; 
             background: rgba(20, 24, 33, 0.85); 
             backdrop-filter: blur(8px); 
             border-bottom: 3px solid var(--accent-color); 
@@ -72,11 +72,10 @@
             right: 0; 
         }
         
-        /* FRISSÍTETT: MEGNÖVELT BETŰMÉRETEK */
         .notifier-live-text {
             color: #ff1744; 
-            font-size: 1.65vw; /* ÚJ: 1.45vw-ről nagyítva */
-            min-font-size: 18px; /* ÚJ: 16px-ről emelve */
+            font-size: 1.65vw; 
+            min-font-size: 18px; 
             font-weight: 900;
             text-transform: uppercase;
             margin-right: 10px;
@@ -85,8 +84,8 @@
         }
         
         .notifier-title {
-            font-size: 1.65vw; /* ÚJ: 1.45vw-ről nagyítva */
-            min-font-size: 18px; /* ÚJ: 16px-ről emelve */
+            font-size: 1.65vw; 
+            min-font-size: 18px; 
             font-weight: bold;
             color: #ffffff;
             text-shadow: 0 2px 4px rgba(0,0,0,0.5);
@@ -252,10 +251,9 @@ function parseLocalISO(isoStr) {
     return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]), parseInt(parts[3]), parseInt(parts[4]), parseInt(parts[5]) || 0);
 }
 
-// Dinamikus betűméret-frissítő (Új arányokhoz igazítva)
 function updateFontSizes() {
     const baseWidth = container.clientWidth;
-    const computedFontSize = Math.max(18, baseWidth * 0.0165); // Megemelt szorzó és minimum
+    const computedFontSize = Math.max(18, baseWidth * 0.0165); 
     const textEls = document.querySelectorAll('.notifier-live-text, .notifier-title');
     textEls.forEach(el => { if(el) el.style.fontSize = computedFontSize + 'px'; });
 }
