@@ -26,7 +26,6 @@
         .card-url { font-size: 11px; color: #627288; word-break: break-all; }
         .card-duration { font-size: 12px; background: #11141a; padding: 4px 8px; border-radius: 4px; color: #a4b3c6; }
         
-        /* ÚJ GOMBOZAT ÉS TÁROLÓ STÍLUSA */
         .btn-action-holder { display: flex; align-items: center; gap: 8px; margin-left: 15px; }
         .btn-clone-track { background: #00e676; color: #000; border: none; padding: 6px 12px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 12px; transition: 0.2s; }
         .btn-clone-track:hover { background: #00c853; }
@@ -41,9 +40,11 @@
         .btn-create:hover { background: #263238; }
         .btn-load { background: #ff9100; color: #000; font-weight: bold; }
         .btn-load:hover { background: #ff6d00; }
+        .btn-db-save { background: #9c27b0; color: white; }
+        .btn-db-save:hover { background: #7b1fa2; }
         
         input[type="range"] { padding: 0; height: 10px; background: #11141a; border: none; cursor: pointer; }
-        .status-msg { margin-top: 8px; font-size: 13px; font-weight: bold; text-align: center; white-space: pre-line; }
+        .status-msg { margin-top: 8px; font-size: 13px; font-weight: bold; text-shadow: 0 1px 2px #000; text-align: center; white-space: pre-line; }
         .section-divider { border: 0; height: 1px; background: var(--border-color); margin: 25px 0; }
     </style>
 </head>
@@ -64,6 +65,35 @@
                 </div>
             </div>
             <button class="btn-create" onclick="createNewChannelConfig()">Csatorna regisztráció (channels.json)</button>
+        </div>
+
+        <div class="panel">
+            <h2>🗂️ Műsorok / Filmek Adatbázisa (filmekDB)</h2>
+            <div style="padding: 12px; background: #1a1f2c; border-radius: 8px; border: 1px solid #ff9100; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; gap: 15px;">
+                <div style="flex-grow: 1;">
+                    <label style="color: #ff9100;">Meglévő filmekDB beolvasása:</label>
+                    <input type="file" id="dbFileSelector" accept=".json" style="padding: 5px; font-size: 12px; background: transparent; border: none;">
+                </div>
+                <button class="btn-load" style="width: auto; white-space: nowrap;" onclick="importFilmekDB()">Adatbázis Beolvasása 📂</button>
+            </div>
+
+            <div class="form-group" style="margin-bottom:12px">
+                <label>Film / Műsor címe</label>
+                <input type="text" id="dbTitle" placeholder="pl. Harry Potter és a Bölcsek Köve">
+            </div>
+            <div class="form-group" style="margin-bottom:12px">
+                <label>OK.ru link vagy közvetlen (.mp4) URL</label>
+                <input type="text" id="dbUrl" placeholder="https://ok.ru/video/... vagy https://...">
+            </div>
+            <div class="form-group" style="margin-bottom:15px">
+                <label>Játékidő (ÓÓ:PP:MM vagy PP:MM)</label>
+                <input type="text" id="dbDuration" placeholder="pl. 02:32:15 vagy 95:08">
+            </div>
+            <div class="input-row">
+                <button onclick="addFilmToDB()">Film hozzáadása a DB-hez ➕</button>
+                <button class="btn-db-save" onclick="exportFilmekDB()">adatbázis mentése (filmekDB.json) 💾</button>
+            </div>
+            <div id="dbStatusLog" class="status-msg" style="color: #8a99ad;">Adatbázis állapota: üres.</div>
         </div>
 
         <div class="panel">
@@ -112,7 +142,7 @@
                 <label style="color: #ff9100;">Folytatni szeretnél egy korábbi tervezést?</label>
                 <input type="file" id="importFileSelector" accept=".json" style="padding: 5px; font-size: 12px; background: transparent; border: none;">
             </div>
-            <button class="btn-load" style="width: auto; white-space: nowrap;" onclick="importScheduleJSON()">Fájl Beolvasása 📂</button>
+            <button class="btn-load" style="width: auto; white-space: nowrap;" onclick="importScheduleJSON()">Műsorfájl Beolvasása 📂</button>
         </div>
 
         <div style="padding: 15px; background: #11141a; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px;">
@@ -127,22 +157,13 @@
 
         <hr class="section-divider">
 
-        <div class="form-group" style="margin-bottom:15px">
-            <label>Videó / Műsor címe</label>
-            <input type="text" id="vTitle" placeholder="pl. Esti nagyfilm: 300">
-        </div>
-        
-        <div class="form-group" style="margin-bottom:15px">
-            <label>OK.ru link vagy közvetlen (.mp4) URL</label>
-            <input type="text" id="vUrl" placeholder="https://ok.ru/video/... vagy https://...">
-        </div>
-
         <div class="form-group" style="margin-bottom:20px">
-            <label style="color: #00b0ff;">Manuális Játékidő (CSAK ha a film még nincs a durations.json-ben! Formátum: ÓÓ:PP:MM vagy PP:MM)</label>
-            <input type="text" id="vManualDuration" placeholder="pl. 01:42:15 vagy 95:30" style="border-color: #00b0ff;">
+            <label style="color: #536dfe;">Műsor / Film kiválasztása az adatbázisból (Írj a szűréshez)</label>
+            <input type="text" id="scheduleFilmSelector" list="dbFilmsDatalist" placeholder="Kezdd el gépelni a film vagy adás címét...">
+            <datalist id="dbFilmsDatalist"></datalist>
         </div>
 
-        <button id="addBlockBtn" onclick="pushToTimelineIntelligent()">Műsorblokk beszúrása a listába ↓</button>
+        <button id="addBlockBtn" onclick="addSelectedFilmToTimeline()">Műsorblokk beszúrása a listába ↓</button>
         <div id="statusConsoleLog" class="status-msg" style="color: #8a99ad;">Rendszer kész.</div>
         
         <div class="catcast-timeline" id="timelineContainer"></div>
@@ -155,7 +176,9 @@
 let catcastPlaylist = [];
 let logoConfig = { url: "https://upload.wikimedia.org/wikipedia/commons/a/ab/Logo_TV_2015.png", size: 60, topPercent: 5, leftPercent: 5 };
 let masterChannelList = [];
-let globalDurations = {};
+
+// AZ ÚJ FILM ADATBÁZIS GLOBÁLIS TÁROLÓJA (Objektum alapú, így a kulcs a Film Címe)
+let filmekDB = {};
 
 function createNewChannelConfig() {
     const name = document.getElementById('newChannelName').value.trim();
@@ -179,37 +202,17 @@ function changeLogoSize() {
     logoConfig.size = parseInt(size); 
 }
 
-// ÚJ FUNKCIÓ: Kiválasztott műsorszám egy gombnyomásos klónozása a lista legvégére
-function cloneTrackInTimeline(index) {
-    const sourceTrack = catcastPlaylist[index];
-    if (!sourceTrack) return;
-    
-    catcastPlaylist.push({
-        title: sourceTrack.title,
-        url: sourceTrack.url,
-        duration: sourceTrack.duration
-    });
-    
-    const statusLog = document.getElementById('statusConsoleLog');
-    statusLog.style.color = "#00e676";
-    statusLog.innerText = `➕ "${sourceTrack.title}" sikeresen duplikálva a lista végére!`;
-    
-    refreshTimeline();
-}
-
+// DRAG & DROP LOGÓ KEZELŐ
 const logoImg = document.getElementById('channelLogoImg');
 const containerBox = document.getElementById('videoBoxContainer');
 let isDragging = false; let startX, startY, initialTop, initialLeft;
 
 logoImg.addEventListener('mousedown', (e) => { 
     isDragging = true; 
-    startX = e.clientX; 
-    startY = e.clientY; 
-    initialTop = logoImg.offsetTop; 
-    initialLeft = logoImg.offsetLeft; 
+    startX = e.clientX; startY = e.clientY; 
+    initialTop = logoImg.offsetTop; initialLeft = logoImg.offsetLeft; 
     e.preventDefault(); 
 });
-
 document.addEventListener('mousemove', (e) => {
     if (!isDragging) return;
     const deltaX = e.clientX - startX; const deltaY = e.clientY - startY;
@@ -222,91 +225,152 @@ document.addEventListener('mousemove', (e) => {
 });
 document.addEventListener('mouseup', () => { isDragging = false; });
 
-async function loadGlobalDurations() {
-    try {
-        const response = await fetch(`durations.json?t=${new Date().getTime()}`);
-        if (response.ok) {
-            globalDurations = await response.json();
-            console.log("Central durations loaded:", globalDurations);
-        }
-    } catch (e) {
-        console.log("Nem sikerült betölteni a durations.json-t, üresen indul.", e);
-    }
+// Műsorszám klónozása a lista végére
+function cloneTrackInTimeline(index) {
+    const sourceTrack = catcastPlaylist[index];
+    if (!sourceTrack) return;
+    catcastPlaylist.push({ title: sourceTrack.title, url: sourceTrack.url, duration: sourceTrack.duration });
+    document.getElementById('statusConsoleLog').style.color = "#00e676";
+    document.getElementById('statusConsoleLog').innerText = `➕ "${sourceTrack.title}" sikeresen duplikálva a lista végére!`;
+    refreshTimeline();
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-    loadGlobalDurations();
-});
+// --- ÚJ SZKRIZTEK A FILMEKDB ADATBÁZIS KEZELÉSÉHEZ ---
 
-async function pushToTimelineIntelligent() {
-    const rawTitle = document.getElementById('vTitle').value.trim();
-    const title = rawTitle.toUpperCase(); 
-    let url = document.getElementById('vUrl').value.trim(); 
-    const manualDurationInput = document.getElementById('vManualDuration') ? document.getElementById('vManualDuration').value.trim() : "";
-    const startInput = document.getElementById('streamStartDateTime').value;
-    const statusLog = document.getElementById('statusConsoleLog');
+function addFilmToDB() {
+    const title = document.getElementById('dbTitle').value.trim();
+    let url = document.getElementById('vUrl').value.trim();
+    const durationInput = document.getElementById('dbDuration').value.trim();
+    const dbLog = document.getElementById('dbStatusLog');
 
-    if (!startInput || !rawTitle || !url) {
-        statusLog.style.color = "#ff3d00";
-        statusLog.innerText = "⚠️ Hiányzó adatok a beszúráshoz!";
+    if (!title || !url || !durationInput) {
+        alert("Kérlek töltsd ki az adatbázis összes mezőjét (Cím, Link, Idő)!");
         return;
     }
 
-    // AUTOMATIKUS JAVÍTÁS AZ ADATBEVITELNÉL
+    // AUTOMATIKUS OK.RU EMBED JAVÍTÁS AZ ADATBÁZISBA MENTÉSKOR
     if (url.includes('ok.ru/video/')) {
         url = url.replace('ok.ru/video/', 'ok.ru/videoembed/');
     }
 
-    statusLog.style.color = "#ff9100";
-    statusLog.innerText = "⏳ Játékidő ellenőrzése az adatbázisban...";
-
+    // Idő átkonvertálása másodpercekre (ÓÓ:PP:MM vagy PP:MM)
+    const parts = durationInput.split(':').map(Number);
     let durationInSeconds = 0;
-    let foundDuration = false;
-
-    if (globalDurations[title]) {
-        durationInSeconds = parseInt(globalDurations[title]);
-        foundDuration = true;
-    } 
-    else if (manualDurationInput) {
-        const parts = manualDurationInput.split(':').map(Number);
-        if (parts.length === 3) { 
-            durationInSeconds = (parts[0] * 3600) + (parts[1] * 60) + parts[2];
-        } else if (parts.length === 2) { 
-            durationInSeconds = (parts[0] * 60) + parts[1];
-        } else if (!isNaN(parts[0]) && parts[0] > 0) {
-            durationInSeconds = parts[0];
-        }
-        
-        if (durationInSeconds > 0) {
-            foundDuration = true;
-            globalDurations[title] = durationInSeconds;
-            console.log(`Új film mentve a helyi memóriába: ${title} -> ${durationInSeconds} mp`);
-        }
+    if (parts.length === 3) {
+        durationInSeconds = (parts[0] * 3600) + (parts[1] * 60) + parts[2];
+    } else if (parts.length === 2) {
+        durationInSeconds = (parts[0] * 60) + parts[1];
     }
 
-    if (!foundDuration) {
-        statusLog.style.color = "#ff3d00";
-        statusLog.innerText = `❌ HIBA: A(z) "${rawTitle}" hossza nincs a durations.json-ben!\nKérlek írd be a pontos hosszt (ÓÓ:PP:MM) a kék manuális mezőbe!`;
-        return; 
+    if (isNaN(durationInSeconds) || durationInSeconds <= 0) {
+        alert("Hibás időformátum! Kérlek így add meg: ÓÓ:PP:MM vagy PP:MM");
+        return;
     }
 
-    catcastPlaylist.push({ title: rawTitle, url, duration: durationInSeconds });
-    
+    // Mentés az adatbázisba (kulcs a film címe lesz)
+    globalDurations[title] = { url: url, duration: durationInSeconds };
+
     document.getElementById('vTitle').value = '';
     document.getElementById('vUrl').value = '';
-    if (document.getElementById('vManualDuration')) document.getElementById('vManualDuration').value = '';
+    document.getElementById('logoUrlInput').focus(); // Fókusz elvétele a kényelemért
+
+    changeLogoSrc(); // Logo frissítés biztonság kedvéért
     
+    document.getElementById('logoUrlInput').value = logoConfig.url; // Visszaállítjuk az arculatot
+
+    statusLogUpdateAndRender();
+    dbLog.style.color = "#00e676";
+    dbLog.innerText = `✅ "${title}" sikeresen hozzáadva/frissítve a helyi adatbázisban!`;
+}
+
+function statusLogUpdateAndRender() {
+    const datalist = document.getElementById('dbFilmsDatalist');
+    datalist.innerHTML = '';
+
+    // ABC sorrendbe rendezzük a kulcsokat (címeket)
+    const sortedTitles = Object.keys(globalDurations).sort((a, b) => a.localeCompare(b, 'hu'));
+
+    sortedTitles.forEach(title => {
+        const option = document.createElement('option');
+        option.value = title;
+        datalist.appendChild(option);
+    });
+
+    const dbLog = document.getElementById('dbStatusLog');
+    dbLog.style.color = "#00b0ff";
+    dbLog.innerText = `Adatbázis betöltve. Jelenleg ${sortedTitles.length} db műsor van a memóriában.`;
+}
+
+function importFilmekDB() {
+    const fileSelector = document.getElementById('dbFileSelector');
+    if (fileSelector.files.length === 0) {
+        alert("Kérlek, előbb válaszd ki a lementett filmekDB.json fájlt!");
+        return;
+    }
+    const file = fileSelector.files[0];
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            globalDurations = JSON.parse(e.target.result);
+            statusLogUpdateAndRender();
+        } catch (err) {
+            alert("Hiba történt az adatbázis fájl beolvasásakor!");
+        }
+    };
+    reader.readAsText(file);
+}
+
+function exportFilmekDB() {
+    if (Object.keys(globalDurations).length === 0) {
+        alert("Az adatbázis üres, nincs mit elmenteni!");
+        return;
+    }
+    const blob = new Blob([JSON.stringify(globalDurations, null, 2)], {type : 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = "filmekDB.json"; a.click();
+}
+
+// --- ÚJ JAVÍTOTT MŰSORREND-HOZZÁADÓ FUNKCIÓ A LISTÁBÓL ---
+
+function addSelectedFilmToTimeline() {
+    const selectedTitle = document.getElementById('scheduleFilmSelector').value.trim();
+    const startInput = document.getElementById('streamStartDateTime').value;
+    const statusLog = document.getElementById('statusConsoleLog');
+
+    if (!startInput) {
+        statusLog.style.color = "#ff3d00";
+        statusLog.innerText = "⚠️ Kérlek, előbb adj meg egy adásfolyam fix kezdő időpontot felül!";
+        return;
+    }
+
+    if (!selectedTitle || !globalDurations[selectedTitle]) {
+        statusLog.style.color = "#ff3d00";
+        statusLog.innerText = "⚠️ Kiválasztott műsor nem található az adatbázisban! Ellenőrizd a címet.";
+        return;
+    }
+
+    // Adatok kiszedése a DB-ből
+    const filmData = globalDurations[selectedTitle];
+
+    // Bekerül a lejátszási listába pontosan abban a formátumban, ahogy az index.html várja
+    catcastPlaylist.push({
+        title: selectedTitle,
+        url: filmData.url,
+        duration: filmData.duration
+    });
+
+    document.getElementById('scheduleFilmSelector').value = ''; // Mező kiürítése a következőhöz
     statusLog.style.color = "#00e676";
-    statusLog.innerText = `✅ "${rawTitle}" sikeresen hozzáadva!\nIdőtartam: ${Math.floor(durationInSeconds / 60)} perc.`;
-    
+    statusLog.innerText = `✅ "${selectedTitle}" hozzáadva az idővonalhoz!`;
+
     refreshTimeline();
 }
 
 function removeTrackFromTimeline(index) {
     catcastPlaylist.splice(index, 1);
-    const statusLog = document.getElementById('statusConsoleLog');
-    statusLog.style.color = "#ff9100";
-    statusLog.innerText = "🗑️ Műsorszám eltávolítva. Az időterv újraszámolva.";
+    document.getElementById('statusConsoleLog').style.color = "#ff9100";
+    document.getElementById('statusConsoleLog').innerText = "🗑️ Műsorszám eltávolítva. Az időterv újraszámolva.";
     refreshTimeline();
 }
 
@@ -349,7 +413,6 @@ function refreshTimeline() {
         const displayMin = Math.floor(track.duration / 60);
         const displaySec = track.duration % 60;
         
-        // HOZZÁADVA: Action holder doboz, benne a zöld (+) és a piros (X) gombokkal egymás mellett
         container.innerHTML += `
             <div class="timeline-card">
                 <div class="card-time">
@@ -378,15 +441,12 @@ function refreshTimeline() {
 function importScheduleJSON() {
     const fileSelector = document.getElementById('importFileSelector');
     const statusLog = document.getElementById('statusConsoleLog');
-    
     if (fileSelector.files.length === 0) {
         alert("Kérlek, előbb válaszd ki a lementett .json műsorfájlt!");
         return;
     }
-    
     const file = fileSelector.files[0];
     const reader = new FileReader();
-    
     reader.onload = function(e) {
         try {
             const data = JSON.parse(e.target.result);
@@ -399,12 +459,8 @@ function importScheduleJSON() {
                 statusLog.style.color = "#00e676";
                 statusLog.innerText = `Sikeresen beolvasva: ${file.name}.`;
                 refreshTimeline();
-            } else {
-                alert("Ez a fájl nem tartalmaz érvényes műsorrendet!");
-            }
-        } catch (err) {
-            alert("Hiba történt a JSON fájl feldolgozása során!");
-        }
+            } else { alert("Ez a fájl nem tartalmaz érvényes műsorrendet!"); }
+        } catch (err) { alert("Hiba történt a JSON fájl feldolgozása során!"); }
     };
     reader.readAsText(file);
 }
@@ -429,12 +485,10 @@ function exportScheduleOnlyJSON() {
     const chId = document.getElementById('channelId').value.trim() || "cinemaster";
     const startInput = document.getElementById('streamStartDateTime').value;
     const statusLog = document.getElementById('statusConsoleLog');
-    
     if (!startInput) {
         alert("Kérlek, adj meg egy adásfolyam fix kezdő dátumot, hogy elmenthessem a napi műsort!");
         return;
     }
-
     const datePart = startInput.split('T')[0];
     const scheduleOutput = { schedule: catcastPlaylist };
     const blob = new Blob([JSON.stringify(scheduleOutput, null, 2)], {type : 'application/json'});
