@@ -177,7 +177,6 @@ let catcastPlaylist = [];
 let logoConfig = { url: "https://upload.wikimedia.org/wikipedia/commons/a/ab/Logo_TV_2015.png", size: 60, topPercent: 5, leftPercent: 5 };
 let masterChannelList = [];
 
-// Az adatbázis globális tárolója
 let globalDurations = {};
 
 function createNewChannelConfig() {
@@ -202,7 +201,6 @@ function changeLogoSize() {
     logoConfig.size = parseInt(size); 
 }
 
-// DRAG & DROP LOGÓ KEZELŐ
 const logoImg = document.getElementById('channelLogoImg');
 const containerBox = document.getElementById('videoBoxContainer');
 let isDragging = false; let startX, startY, initialTop, initialLeft;
@@ -266,17 +264,16 @@ function addFilmToDB() {
 
     globalDurations[title] = { url: url, duration: durationInSeconds };
 
-    // JAVÍTVA: A helyes mező-ID-k ürítése a rögzítés után
     document.getElementById('dbTitle').value = '';
     document.getElementById('dbUrl').value = '';
     document.getElementById('dbDuration').value = '';
 
-    statusLogUpdateAndRender(); // Újraépíti a legördülő listát az új elemmel együtt
+    statusLogUpdateAndRender();
     dbLog.style.color = "#00e676";
     dbLog.innerText = `✅ "${title}" sikeresen hozzáadva/frissítve a helyi adatbázisban!`;
 }
 
-// Segédfüggvény az ÓÓ:PP:MM kijelzéshez
+// FRISSÍTETT: Másodpercek átalakítása ÓÓ:PP:MM formátumra a kijelzéshez
 function formatSecondsToHMS(totalSeconds) {
     const hrs = Math.floor(totalSeconds / 3600);
     const mins = Math.floor((totalSeconds % 3600) / 60);
@@ -284,7 +281,7 @@ function formatSecondsToHMS(totalSeconds) {
     return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 }
 
-// JAVÍTVA: A datalist szekció teljes, hiba nélküli renderelése magyar ABC-ben
+// MÓDOSÍTOTT RENDERELÉS: Zárójeles időbélyeggel bővítve a datalist-ben
 function statusLogUpdateAndRender() {
     const datalist = document.getElementById('dbFilmsDatalist');
     datalist.innerHTML = '';
@@ -296,7 +293,7 @@ function statusLogUpdateAndRender() {
         const formattedTime = formatSecondsToHMS(filmData.duration);
         
         const option = document.createElement('option');
-        // A listában a cím és a zárójeles időbélyeg jelenik meg
+        // Értékként átadjuk a Címet és a hozzá fűzött formázott időt
         option.value = `${title} (${formattedTime})`;
         datalist.appendChild(option);
     });
@@ -317,7 +314,7 @@ function importFilmekDB() {
     reader.onload = function(e) {
         try {
             globalDurations = JSON.parse(e.target.result);
-            statusLogUpdateAndRender(); // Sikeres beolvasáskor azonnal legördül a lista
+            statusLogUpdateAndRender();
         } catch (err) {
             alert("Hiba történt az adatbázis fájl beolvasásakor!");
         }
@@ -356,7 +353,8 @@ function addSelectedFilmToTimeline() {
         return;
     }
 
-    // Levágjuk a zárójeles formázott időt a végéről, hogy megtaláljuk az adatbázis kulcsát
+    // REGEX TRÜKK: Levágjuk a zárójeles időt a végéről, hogy visszakapjuk a tiszta címet
+    // Pl. "HARRY POTTER (02:32:15)" -> "HARRY POTTER"
     let selectedTitle = rawSelectedValue.replace(/\s*\(\d{2}:\d{2}:\d{2}\)\s*$/, '');
 
     if (!globalDurations[selectedTitle]) {
@@ -368,7 +366,7 @@ function addSelectedFilmToTimeline() {
     const filmData = globalDurations[selectedTitle];
 
     catcastPlaylist.push({
-        title: selectedTitle, 
+        title: selectedTitle, // A tiszta, menthető cím megy be a JSON-be
         url: filmData.url,
         duration: filmData.duration
     });
