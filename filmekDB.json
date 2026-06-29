@@ -1,30 +1,530 @@
 {
-  ".RTV_Ajánló06": {
-    "url": "https://ok.ru/videoembed/15018382527144",
-    "duration": 183
+  ".RTV_Ajánló16": {
+    "url": "https://ok.ru/videoembed/15018394913448",
+    "duration": 450
   },
-  "FEKETÉK FEHÉREN": {
-    "url": "https://ok.ru/videoembed/5434468731537",
-    "duration": 6524
+  ".RTV_Ajánló17": {
+    "url": "https://ok.ru/videoembed/15018396551848",
+    "duration": 496
   },
-  "CUKORFALAT": {
-    "url": "https://ok.ru/videoembed/15589883251236",
-    "duration": 6250
+  ".RTV_Ajánló18S": {
+    "url": "https://ok.ru/videoembed/15018397993640",
+    "duration": 543
   },
-  "ÁLOMCSAPDA": {
-    "url": "https://ok.ru/videoembed/15589886200356",
-    "duration": 8028
+  ".MŰSORSZÜNET": {
+    "url": "https://ok.ru/videoembed/15018312927912",
+    "duration": 3601
   },
-  "A KAKTUSZ VIRÁGA": {
-    "url": "https://ok.ru/videoembed/15585010518564",
-    "duration": 6230
+  ".CM_Ajánló01": {
+    "url": "https://ok.ru/videoembed/15017987541672",
+    "duration": 82
   },
-  "BÍBOR FOLYÓK": {
-    "url": "https://ok.ru/videoembed/15715927394854",
-    "duration": 6348
+  ".CM_Ajánló02": {
+    "url": "https://ok.ru/videoembed/15017989507752",
+    "duration": 80
   },
-  ".ADÁSSZÜNET": {
-    "url": "https://ok.ru/videoembed/15018399500968",
-    "duration": 3600
+  ".CM_Ajánló03": {
+    "url": "https://ok.ru/videoembed/15017990687400",
+    "duration": 100
+  },
+  ".CM_Ajánló04": {
+    "url": "https://ok.ru/videoembed/15017992063656",
+    "duration": 122
+  },
+  ".CM_Ajánló05": {
+    "url": "https://ok.ru/videoembed/15017993767592",
+    "duration": 147
+  },
+  ".CM_Ajánló06": {
+    "url": "https://ok.ru/videoembed/15017995274920",
+    "duration": 187
+  },
+  ".CM_Ajánló07": {
+    "url": "https://ok.ru/videoembed/15018001107624",
+    "duration": 207
+  },
+  ".CM_Ajánló08": {
+    "url": "https://ok.ru/videoembed/15018003204776",
+    "duration": 205
+  },
+  ".CM_Ajánló09": {
+    "url": "https://ok.ru/videoembed/15018018671272",
+    "duration": 211
+  },
+  ".CM_Ajánló10": {
+    "url": "https://ok.ru/videoembed/15018021030568",
+    "duration": 243
+  },
+  ".CM_Ajánló11": {
+    "url": "https://ok.ru/videoembed/15018023324328",
+    "duration": 265
+  },
+  ".CM_Ajánló12": {
+    "url": "https://ok.ru/videoembed/15018027649704",
+    "duration": 298
+  },
+  ".CM_Ajánló13": {
+    "url": "https://ok.ru/videoembed/15018029681320",
+    "duration": 338
+  },
+  ".CM_Ajánló14": {
+    "url": "https://ok.ru/videoembed/15018032433832",
+    "duration": 363
+  },
+  ".CM_Ajánló15": {
+    "url": "https://ok.ru/videoembed/15018034203304",
+    "duration": 389
+  },
+  ".CM_Ajánló16": {
+    "url": "https://ok.ru/videoembed/15018036693672",
+    "duration": 426
+  },
+  ".CM_Ajánló17": {
+    "url": "https://ok.ru/videoembed/15018038201000",
+    "duration": 454
+  },
+  ".CM_Ajánló18": {
+    "url": "https://ok.ru/videoembed/15018039642792",
+    "duration": 485
+  },
+  ".CM_Ajánló19": {
+    "url": "https://ok.ru/videoembed/15018043312808",
+    "duration": 508
+  },
+  ".CM_Ajánló20": {
+    "url": "https://ok.ru/videoembed/15018044557992",
+    "duration": 549
+  },
+  ".CM2_Ajánló01": {
+    "url": "https://ok.ru/videoembed/15018333244072",
+    "duration": 85
+  },
+  ".CM2_Ajánló02": {
+    "url": "https://ok.ru/videoembed/15018334358184",
+    "duration": 82
+  },
+  ".CM2_Ajánló03": {
+    "url": "https://ok.ru/videoembed/15018335210152",
+    "duration": 103
+  },
+  ".CM2_Ajánló04": {
+    "url": "https://ok.ru/videoembed/15018335931048",
+    "duration": 121
+  },
+  ".CM2_Ajánló05": {
+    "url": "https://ok.ru/videoembed/15018336717480",
+    "duration": 155
+  },
+  ".CM2_Ajánló06": {
+    "url": "https://ok.ru/videoembed/15018337831592",
+    "duration": 184
+  },
+  ".CM2_Ajánló07": {
+    "url": "https://ok.ru/videoembed/15018339207848",
+    "duration": 209
+  },
+  ".CM2_Ajánló08": {
+    "url": "https://ok.ru/videoembed/15018340321960",
+    "duration": 242
+  },
+  ".CM2_Ajánló09": {
+    "url": "https://ok.ru/videoembed/15018341567144",
+    "duration": 279
+  },
+  ".CM2_Ajánló10": {
+    "url": "https://ok.ru/videoembed/15018342943400",
+    "duration": 306
+  },
+  ".CM2_Ajánló11": {
+    "url": "https://ok.ru/videoembed/15018344123048",
+    "duration": 324
+  },
+  ".CM2_Ajánló12": {
+    "url": "https://ok.ru/videoembed/15018345237160",
+    "duration": 359
+  },
+  ".CM2_Ajánló13": {
+    "url": "https://ok.ru/videoembed/15018346416808",
+    "duration": 387
+  },
+  ".CM2_Ajánló14": {
+    "url": "https://ok.ru/videoembed/15018347727528",
+    "duration": 423
+  },
+  ".CM2_Ajánló15": {
+    "url": "https://ok.ru/videoembed/15018349038248",
+    "duration": 450
+  },
+  ".CM2_Ajánló16": {
+    "url": "https://ok.ru/videoembed/15018353101480",
+    "duration": 489
+  },
+  ".CM2_Ajánló17": {
+    "url": "https://ok.ru/videoembed/15018354084520",
+    "duration": 506
+  },
+  ".CM2_Ajánló18": {
+    "url": "https://ok.ru/videoembed/15018355591848",
+    "duration": 541
+  },
+  "A 16-OS SZINT": {
+    "url": "https://ok.ru/videoembed/15018409396904",
+    "duration": 6124
+  },
+  "HÍVATLANOK 3 - UTOLSÓ FEJEZET": {
+    "url": "https://ok.ru/videoembed/14057182595795",
+    "duration": 5475
+  },
+  "HALÁLSÍP": {
+    "url": "https://ok.ru/videoembed/14468889578195",
+    "duration": 6014
+  },
+  "SZEPLŐTLEN": {
+    "url": "https://ok.ru/videoembed/11221650901715",
+    "duration": 5333
+  },
+  "BOHÓCRÉM KARÁCSONYA": {
+    "url": "https://ok.ru/videoembed/11201830652627",
+    "duration": 7495
+  },
+  "FEKETE TELEFON 2": {
+    "url": "https://ok.ru/videoembed/10879643814611",
+    "duration": 6833
+  },
+  "AKI BÚJT...": {
+    "url": "https://ok.ru/videoembed/10879502125779",
+    "duration": 5723
+  },
+  "FRANKENSTEIN (2025)": {
+    "url": "https://ok.ru/videoembed/10600383646419",
+    "duration": 9146
+  },
+  "A VISSZATÉRŐ": {
+    "url": "https://ok.ru/videoembed/10354145430227",
+    "duration": 9381
+  },
+  "HOZD VISSZA ŐT": {
+    "url": "https://ok.ru/videoembed/10303283268307",
+    "duration": 6240
+  },
+  "A HALÁLKÁRTYA": {
+    "url": "https://ok.ru/videoembed/15572267567652",
+    "duration": 5532
+  },
+  "FELELSZ VAGY MERSZ?": {
+    "url": "https://ok.ru/videoembed/15572275431972",
+    "duration": 6034
+  },
+  "aMItől FÉLSZ": {
+    "url": "https://ok.ru/videoembed/15565749881380",
+    "duration": 5070
+  },
+  "ERETNEK": {
+    "url": "https://ok.ru/videoembed/15565668485668",
+    "duration": 6670
+  },
+  "MÁS VILÁG": {
+    "url": "https://ok.ru/videoembed/15519920949796",
+    "duration": 6000
+  },
+  "EGYSZERŰEN BONYOLULT": {
+    "url": "https://ok.ru/videoembed/15864851204646",
+    "duration": 7216
+  },
+  "SKORPIÓKIRÁLY": {
+    "url": "https://ok.ru/videoembed/15734030076454",
+    "duration": 5489
+  },
+  "FATEROK MOTORON": {
+    "url": "https://ok.ru/videoembed/15486679386662",
+    "duration": 5979
+  },
+  "NAGYFATER ELSZABADUL": {
+    "url": "https://ok.ru/videoembed/14922169780774",
+    "duration": 6125
+  },
+  "MENNYÉ MÁ!": {
+    "url": "https://ok.ru/videoembed/14771608816166",
+    "duration": 5244
+  },
+  "KETTŐN ÁLL A VÁSÁR": {
+    "url": "https://ok.ru/videoembed/14734143261222",
+    "duration": 6062
+  },
+  "VAKLÁRMA": {
+    "url": "https://ok.ru/videoembed/14547515607590",
+    "duration": 6126
+  },
+  "DZSUNGELBŐL DZSUNGELBE": {
+    "url": "https://ok.ru/videoembed/14405527341606",
+    "duration": 6034
+  },
+  "A SZOMSZÉD NŐJE MINDIG ZÖLDEBB": {
+    "url": "https://ok.ru/videoembed/14266239814182",
+    "duration": 6210
+  },
+  "MÉG ZÖLDEBB A SZOMSZÉD NŐJE": {
+    "url": "https://ok.ru/videoembed/14266239879718",
+    "duration": 6064
+  },
+  "TITANIC": {
+    "url": "https://ok.ru/videoembed/13937933290022",
+    "duration": 11696
+  },
+  "A KEMÉNYFEJŰ": {
+    "url": "https://ok.ru/videoembed/13559170599462",
+    "duration": 5582
+  },
+  "MOBIL": {
+    "url": "https://ok.ru/videoembed/13109966408230",
+    "duration": 5640
+  },
+  "NYAKIGLOVE": {
+    "url": "https://ok.ru/videoembed/12822868462118",
+    "duration": 5174
+  },
+  "BÚJÓCSKA": {
+    "url": "https://ok.ru/videoembed/12803997960742",
+    "duration": 6052
+  },
+  "A TÖKÖS, A TÖRÖK, AZ ŐR MEG A NŐ": {
+    "url": "https://ok.ru/videoembed/11722391816742",
+    "duration": 6238
+  },
+  "MADE IN HUNGÁRIA": {
+    "url": "https://ok.ru/videoembed/11722380610086",
+    "duration": 6558
+  },
+  "A MASZK": {
+    "url": "https://ok.ru/videoembed/11406882834982",
+    "duration": 6076
+  },
+  "CSALÁDI VAKÁCIÓ": {
+    "url": "https://ok.ru/videoembed/10679802661414",
+    "duration": 5900
+  },
+  "EURÓPAI VAKÁCIÓ": {
+    "url": "https://ok.ru/videoembed/10679805413926",
+    "duration": 5642
+  },
+  "NEKEM 8": {
+    "url": "https://ok.ru/videoembed/9919196760614",
+    "duration": 5876
+  },
+  "FLUBBER, A SZÓRAKOZOTT PROFESSZOR": {
+    "url": "https://ok.ru/videoembed/9798978243110",
+    "duration": 5638
+  },
+  "MY GIRL - AZ ELSŐ SZERELEM": {
+    "url": "https://ok.ru/videoembed/9798978177574",
+    "duration": 6135
+  },
+  "SZÜLETETT FELESÉGEK, VII/1.": {
+    "url": "https://ok.ru/videoembed/9711827552806",
+    "duration": 2482
+  },
+  "SZÜLETETT FELESÉGEK, VII/2.": {
+    "url": "https://ok.ru/videoembed/9711828142630",
+    "duration": 2479
+  },
+  "SZÜLETETT FELESÉGEK, VII/3.": {
+    "url": "https://ok.ru/videoembed/9711828666918",
+    "duration": 2467
+  },
+  "SZÜLETETT FELESÉGEK, VII/4.": {
+    "url": "https://ok.ru/videoembed/9711828666918",
+    "duration": 2479
+  },
+  "SZÜLETETT FELESÉGEK, VII/5.": {
+    "url": "https://ok.ru/videoembed/9711829322278",
+    "duration": 2476
+  },
+  "SZÜLETETT FELESÉGEK, VII/6.": {
+    "url": "https://ok.ru/videoembed/9711829649958",
+    "duration": 2482
+  },
+  "HIRTELEN 30": {
+    "url": "https://ok.ru/videoembed/9628152498726",
+    "duration": 5870
+  },
+  "PRÓBATÉTEL": {
+    "url": "https://ok.ru/videoembed/9606924601894",
+    "duration": 5698
+  },
+  "HATODIK ÉRZÉK": {
+    "url": "https://ok.ru/videoembed/10047001070225",
+    "duration": 6444
+  },
+  "A MENEKÜLŐ EMBER (1987)": {
+    "url": "https://ok.ru/videoembed/9925556570769",
+    "duration": 6050
+  },
+  "INDUL A BAKZTERHÁZ": {
+    "url": "https://ok.ru/videoembed/9803351394961",
+    "duration": 3970
+  },
+  "SEGÍTSÉG, FELNŐTTEM!": {
+    "url": "https://ok.ru/videoembed/7962523863697",
+    "duration": 6253
+  },
+  "SZUPERHEKUS KUTYABŐRBEN": {
+    "url": "https://ok.ru/videoembed/7904940657297",
+    "duration": 5170
+  },
+  "A SERIFF ÉS AZ IDEGENEK": {
+    "url": "https://ok.ru/videoembed/7358340270737",
+    "duration": 6430
+  },
+  "SZIKLÁK SZEME": {
+    "url": "https://ok.ru/videoembed/6048134662801",
+    "duration": 6506
+  },
+  "A POKOLBÓL": {
+    "url": "https://ok.ru/videoembed/5398054111889",
+    "duration": 7332
+  },
+  "HÁZ AZ ERDŐ MÉLYÉN": {
+    "url": "https://ok.ru/videoembed/5238427421329",
+    "duration": 5698
+  },
+  "SCHINDLER LISTÁJA": {
+    "url": "https://ok.ru/videoembed/4477478636177",
+    "duration": 11707
+  },
+  "CONAN, A BARBÁR": {
+    "url": "https://ok.ru/videoembed/4435106794129",
+    "duration": 7832
+  },
+  "OVIZSARU": {
+    "url": "https://ok.ru/videoembed/4432343403153",
+    "duration": 6674
+  },
+  "IKREK": {
+    "url": "https://ok.ru/videoembed/4432167111313",
+    "duration": 6416
+  },
+  "A SEBHELYESARCÚ": {
+    "url": "https://ok.ru/videoembed/4366251068049",
+    "duration": 10200
+  },
+  "SEBHELYEK": {
+    "url": "https://ok.ru/videoembed/4357846600337",
+    "duration": 6082
+  },
+  "CONSTANTINE, A DÉMONVADÁSZ": {
+    "url": "https://ok.ru/videoembed/4200648346257",
+    "duration": 7247
+  },
+  "A LÉGY": {
+    "url": "https://ok.ru/videoembed/4180448774801",
+    "duration": 5739
+  },
+  "AZ 50 ELSŐ RANDI": {
+    "url": "https://ok.ru/videoembed/4127818975889",
+    "duration": 5944
+  },
+  "NEMZETBIZTONSÁG BT.": {
+    "url": "https://ok.ru/videoembed/4127746296465",
+    "duration": 5300
+  },
+  "A MÚMIA": {
+    "url": "https://ok.ru/videoembed/3994785286801",
+    "duration": 7486
+  },
+  "A MÚMIA VISZATÉR": {
+    "url": "https://ok.ru/videoembed/3995055950481",
+    "duration": 7772
+  },
+  "A MÚMIA 3 - A SÁRKÁNYCSÁSZÁR SÍRJA": {
+    "url": "https://ok.ru/videoembed/3995246791313",
+    "duration": 6699
+  },
+  "JURASSIC PARK 2": {
+    "url": "https://ok.ru/videoembed/3973184621201",
+    "duration": 7720
+  },
+  "JURASSIC PARK 3": {
+    "url": "https://ok.ru/videoembed/3973307566737",
+    "duration": 5541
+  },
+  "JÓ REGGELT VIETNÁM!": {
+    "url": "https://ok.ru/videoembed/3961122458257",
+    "duration": 7261
+  },
+  "SZUPERZSARU": {
+    "url": "https://ok.ru/videoembed/3889813850769",
+    "duration": 6371
+  },
+  "ARANYESŐ YUCCÁBAN": {
+    "url": "https://ok.ru/videoembed/3888992553617",
+    "duration": 5580
+  },
+  "BANÁNOS JOE": {
+    "url": "https://ok.ru/videoembed/3887228390033",
+    "duration": 5775
+  },
+  "SZUPERHEKUSOK": {
+    "url": "https://ok.ru/videoembed/3886483638929",
+    "duration": 5819
+  },
+  "ÉN A VÍZILOVAKKAL VAGYOK": {
+    "url": "https://ok.ru/videoembed/3886216448657",
+    "duration": 5978
+  },
+  "MINDENT BELE, FIÚK!": {
+    "url": "https://ok.ru/videoembed/3884749490833",
+    "duration": 6338
+  },
+  "BŰNVADÁSZOK": {
+    "url": "https://ok.ru/videoembed/3884496259729",
+    "duration": 6869
+  },
+  "BUNYÓ KARÁCSONYIG": {
+    "url": "https://ok.ru/videoembed/3882123987601",
+    "duration": 6175
+  },
+  "FOTRDÍTSD ODA A MÁSIK ORCÁDAT IS!": {
+    "url": "https://ok.ru/videoembed/3882403498641",
+    "duration": 5585
+  },
+  "NINCS KETTŐ NÉGY NÉLKÜL": {
+    "url": "https://ok.ru/videoembed/3876582132369",
+    "duration": 6231
+  },
+  "KÜLÖNBEN DÜHBE JÖVÜNK": {
+    "url": "https://ok.ru/videoembed/3876336831121",
+    "duration": 6104
+  },
+  "ÉS MEGINT DÜHBE JÖVÜNK": {
+    "url": "https://ok.ru/videoembed/3873940179601",
+    "duration": 6910
+  },
+  "KINCS, AMI NINCS": {
+    "url": "https://ok.ru/videoembed/3873117244049",
+    "duration": 6397
+  },
+  "NYOMÁS UTÁNA!": {
+    "url": "https://ok.ru/videoembed/3871228889745",
+    "duration": 6540
+  },
+  "AZ ÖRDÖG JOBB ÉS BAL KEZE": {
+    "url": "https://ok.ru/videoembed/3869013379729",
+    "duration": 6893
+  },
+  "AZ ÖRDÖG JOBB ÉS BAL KEZE 2": {
+    "url": "https://ok.ru/videoembed/3870328621713",
+    "duration": 7060
+  },
+  "ÁLLJ VAGY LŐ A MAMÁM!": {
+    "url": "https://ok.ru/videoembed/3147448257169",
+    "duration": 5235
+  },
+  "HOLNAPUTÁN": {
+    "url": "https://ok.ru/videoembed/3024656730769",
+    "duration": 7422
+  },
+  "JURASSIC PARK": {
+    "url": "https://ok.ru/videoembed/2672912178834",
+    "duration": 7608
   }
 }
