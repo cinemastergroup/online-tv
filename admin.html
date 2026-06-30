@@ -126,6 +126,16 @@
 
     <div class="panel">
         <h2>📅 Műsorfolyam Tervező (Műsorújság Generátor)</h2>
+        
+        <!-- HOZZÁADVA: Csatornalista manuális beolvasási lehetősége, ha az automata betöltés nem engedélyezett -->
+        <div style="padding: 12px; background: #1a1f2c; border-radius: 8px; border: 1px solid var(--accent-color); margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; gap: 15px;">
+            <div style="flex-grow: 1;">
+                <label style="color: var(--accent-color);">Létező csatornalista (channels.json) betöltése:</label>
+                <input type="file" id="channelFileSelector" accept=".json" style="padding: 5px; font-size: 12px; background: transparent; border: none;">
+            </div>
+            <button class="btn-load" style="width: auto; white-space: nowrap; background: var(--accent-color); color: white;" onclick="importChannelsJSON()">Lista Betöltése 📂</button>
+        </div>
+
         <div class="input-row" style="margin-bottom: 20px;">
             <div>
                 <label>Melyik csatorna műsorát írod?:</label>
@@ -181,7 +191,7 @@ let masterChannelList = [];
 
 let globalDurations = {};
 
-// ÚJ AUTOMATIKUS FUNKCIÓ: Újraépíti a legördülő csatornalistát a memóriában lévő adatok alapján
+// ÚJ SZINKRON FUNKCIÓ: Újraépíti a legördülő csatornalistát
 function updateChannelSelectDropdown() {
     const channelSelect = document.getElementById('channelId');
     if (!channelSelect) return;
@@ -199,9 +209,30 @@ function updateChannelSelectDropdown() {
     masterChannelList.forEach(ch => {
         const option = document.createElement('option');
         option.value = ch.id;
-        option.innerText = `${ch.name} (${ch.id})`;
+        option.innerText = `${ch.name.toUpperCase()} (${ch.id})`;
         channelSelect.appendChild(option);
     });
+}
+
+// ÚJ MANUÁLIS IMPORT: Ha az automata letöltés sikertelen, gombbal is beolvasható a channels.json
+function importChannelsJSON() {
+    const fileSelector = document.getElementById('channelFileSelector');
+    if (fileSelector.files.length === 0) {
+        alert("Kérlek, előbb válaszd ki a channels.json fájlt!");
+        return;
+    }
+    const file = fileSelector.files[0];
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            masterChannelList = JSON.parse(e.target.result);
+            updateChannelSelectDropdown();
+            alert(`Sikeresen betöltve ${masterChannelList.length} db csatorna a listába!`);
+        } catch (err) {
+            alert("Hiba történt a csatornalista beolvasásakor!");
+        }
+    };
+    reader.readAsText(file);
 }
 
 function createNewChannelConfig() {
@@ -210,7 +241,7 @@ function createNewChannelConfig() {
     if(!name || !id) return;
     masterChannelList.push({ id, name });
     
-    updateChannelSelectDropdown(); // Azonnal frissítjük a választót regisztráció után
+    updateChannelSelectDropdown(); 
     
     const blob = new Blob([JSON.stringify(masterChannelList, null, 2)], {type : 'application/json'});
     const url = URL.createObjectURL(blob);
@@ -358,23 +389,34 @@ function exportFilmekDB() {
     a.href = url; a.download = "filmekDB.json"; a.click();
 }
 
-// --- ÚJ FUNKCIÓ: Automatikusan beolvassa az indításkor jelen lévő channels.json-t (ha van) ---
+async function loadGlobalDurations() {
+    try {
+        const response = await fetch(`durations.json?t=${new Date().getTime()}`);
+        if (response.ok) {
+            globalDurations = await response.json();
+            statusLogUpdateAndRender();
+        }
+    } catch (e) {
+        console.log("durations.json betöltési hiba.");
+    }
+}
+
+// AUTOMATIKUS CSATORNABETÖLTŐ INDÍTÁSKOR
 async function loadChannelsConfigOnStart() {
     try {
         const response = await fetch(`channels.json?t=${new Date().getTime()}`);
         if (response.ok) {
             masterChannelList = await response.json();
             updateChannelSelectDropdown();
-            console.log("Csatornalista betöltve:", masterChannelList);
         }
     } catch (e) {
-        console.log("channels.json indításkor nem elérhető, manuális import szükséges.");
+        console.log("Automatikus csatornabeolvasás sikertelen (CORS korlátozás). Használd a kézi gombot.");
     }
 }
 
 window.addEventListener('DOMContentLoaded', () => {
     loadGlobalDurations();
-    loadChannelsConfigOnStart(); // Csatornák inicializálása indításkor
+    loadChannelsConfigOnStart(); 
 });
 
 // --- MŰSORREND-HOZZÁADÓ MOTOR AUTOMATIKUS IDŐ-LEVÁGÁSSAL ---
@@ -535,6 +577,7 @@ function exportScheduleOnlyJSON() {
         alert("A műsorrend üres! Előbb adj hozzá blokkokat.");
         return;
     }
+    // Kinyerjük a legördülőből a kiválasztott csatorna ID-ját
     const chId = document.getElementById('channelId').value.trim() || "cinemaster";
     const startInput = document.getElementById('streamStartDateTime').value;
     const statusLog = document.getElementById('statusConsoleLog');
