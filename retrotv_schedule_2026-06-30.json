@@ -1,10 +1,25 @@
 {
   "schedule": [
     {
-      "title": "FLUBBER, A SZÓRAKOZOTT PROFESSZOR",
-      "url": "https://ok.ru/videoembed/9798978243110",
-      "duration": 5638,
-      "start": "2026-06-30T20:20:00"
+      "title": "POFA BE!",
+      "url": "https://ok.ru/videoembed/1517148965528",
+      "duration": 5227,
+      "rating": "12",
+      "start": "2026-06-30T22:25:00"
+    },
+    {
+      "title": ".RTV_Ajánló16",
+      "url": "https://ok.ru/videoembed/15018394913448",
+      "duration": 450,
+      "rating": "",
+      "start": "2026-06-30T23:52:07"
+    },
+    {
+      "title": "CSALÁDI ÜZELMEK",
+      "url": "https://ok.ru/videoembed/6254657931812",
+      "duration": 7123,
+      "rating": "16",
+      "start": "2026-06-30T23:59:37"
     }
   ]
 }
