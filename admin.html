@@ -11,7 +11,7 @@
         h2 { margin-top: 0; font-size: 20px; color: #fff; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; }
         .video-box { position: relative; width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 8px; overflow: hidden; user-select: none; }
         video { width: 100%; height: 100%; }
-        /* ÁRNYÉKOLÁS ELTÁVOLÍTVA A LOGÓRÓL */
+        /* JAVÍTVA: Árnyékolás eltávolítva */
         .tv-watermark { position: absolute; top: 20px; left: 20px; width: 60px; opacity: 0.7; cursor: move; z-index: 10; }
         .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
         label { font-size: 12px; color: #8a99ad; font-weight: 600; text-transform: uppercase; margin-bottom: 5px; display: block; }
@@ -86,16 +86,16 @@
                 <label>OK.ru link vagy közvetlen (.mp4) URL</label>
                 <input type="text" id="dbUrl" placeholder="https://ok.ru/video/... vagy https://...">
             </div>
-            <div class="input-row" style="margin-bottom:5px">
+            <div class="input-row" style="margin-bottom:15px">
                 <div>
                     <label>Játékidő (ÓÓ:PP:MM vagy PP:MM)</label>
                     <input type="text" id="dbDuration" placeholder="pl. 02:32:15 vagy 95:08">
                 </div>
                 <div>
-                    <!-- ÚJ: KORHATÁR VÁLASZTÓ MEZŐ -->
-                    <label>Korhatár Besorolás</label>
+                    <label>Korhatár besorolás</label>
                     <select id="dbRating">
                         <option value="">KN (Korhatár nélkül)</option>
+                        <option value="6">6+</option>
                         <option value="12">12+</option>
                         <option value="16">16+</option>
                         <option value="18">18+</option>
@@ -192,15 +192,12 @@
 let catcastPlaylist = [];
 let logoConfig = { url: "https://upload.wikimedia.org/wikipedia/commons/a/ab/Logo_TV_2015.png", size: 60, topPercent: 5, leftPercent: 5 };
 let masterChannelList = [];
-
 let globalDurations = {};
 
 function updateChannelSelectDropdown() {
     const channelSelect = document.getElementById('channelId');
     if (!channelSelect) return;
-    
     channelSelect.innerHTML = '';
-    
     if (masterChannelList.length === 0) {
         const option = document.createElement('option');
         option.value = "cinemaster";
@@ -208,7 +205,6 @@ function updateChannelSelectDropdown() {
         channelSelect.appendChild(option);
         return;
     }
-    
     masterChannelList.forEach(ch => {
         const option = document.createElement('option');
         option.value = ch.id;
@@ -219,7 +215,7 @@ function updateChannelSelectDropdown() {
 
 function importChannelsJSON() {
     const fileSelector = document.getElementById('channelFileSelector');
-    if (fileSelector.files.length === 0) {
+    if (fileSelector && fileSelector.files.length === 0) {
         alert("Kérlek, előbb válaszd ki a channels.json fájlt!");
         return;
     }
@@ -242,9 +238,7 @@ function createNewChannelConfig() {
     const id = document.getElementById('newChannelId').value.trim().toLowerCase();
     if(!name || !id) return;
     masterChannelList.push({ id, name });
-    
     updateChannelSelectDropdown(); 
-    
     const blob = new Blob([JSON.stringify(masterChannelList, null, 2)], {type : 'application/json'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = "channels.json"; a.click();
@@ -255,6 +249,7 @@ function changeLogoSrc() {
     document.getElementById('channelLogoImg').src = logoConfig.url; 
 }
 
+// JAVÍTVA: Árnyékkezelés kiszedve
 function changeLogoSize() { 
     const size = document.getElementById('logoSizeSlider').value; 
     document.getElementById('logoSizeVal').innerText = size + "px"; 
@@ -287,25 +282,22 @@ document.addEventListener('mouseup', () => { isDragging = false; });
 function cloneTrackInTimeline(index) {
     const sourceTrack = catcastPlaylist[index];
     if (!sourceTrack) return;
-    // JAVÍTVA: A korhatár kód is klónozódik
     catcastPlaylist.push({ 
         title: sourceTrack.title, 
         url: sourceTrack.url, 
         duration: sourceTrack.duration,
-        rating: sourceTrack.rating || ""
+        rating: sourceTrack.rating || "" 
     });
     document.getElementById('statusConsoleLog').style.color = "#00e676";
     document.getElementById('statusConsoleLog').innerText = `➕ "${sourceTrack.title}" sikeresen duplikálva a lista végére!`;
     refreshTimeline();
 }
 
-// --- FILM ADATBÁZIS (filmekDB) KEZELÉSE ---
-
 function addFilmToDB() {
     const title = document.getElementById('dbTitle').value.trim();
     let url = document.getElementById('dbUrl').value.trim();
     const durationInput = document.getElementById('dbDuration').value.trim();
-    const rating = document.getElementById('dbRating').value; // ÚJ KORHATÁR BEOLVASÁS
+    const rating = document.getElementById('dbRating').value;
     const dbLog = document.getElementById('dbStatusLog');
 
     if (!title || !url || !durationInput) {
@@ -330,7 +322,6 @@ function addFilmToDB() {
         return;
     }
 
-    // MÓDOSÍTVA: Bekerül a rating is a durations/filmekDB adatbázisba
     globalDurations[title] = { url: url, duration: durationInSeconds, rating: rating };
 
     document.getElementById('dbTitle').value = '';
@@ -353,18 +344,14 @@ function formatSecondsToHMS(totalSeconds) {
 function statusLogUpdateAndRender() {
     const datalist = document.getElementById('dbFilmsDatalist');
     datalist.innerHTML = '';
-
     const sortedTitles = Object.keys(globalDurations).sort((a, b) => a.localeCompare(b, 'hu'));
-
     sortedTitles.forEach(title => {
         const filmData = globalDurations[title];
         const formattedTime = formatSecondsToHMS(filmData.duration);
-        
         const option = document.createElement('option');
         option.value = `${title} (${formattedTime})`;
         datalist.appendChild(option);
     });
-
     const dbLog = document.getElementById('dbStatusLog');
     dbLog.style.color = "#00b0ff";
     dbLog.innerText = `Adatbázis betöltve. Jelenleg ${sortedTitles.length} db műsor van a memóriában.`;
@@ -420,7 +407,7 @@ async function loadChannelsConfigOnStart() {
             updateChannelSelectDropdown();
         }
     } catch (e) {
-        console.log("Automatikus csatornabeolvasás sikertelen (CORS korlátozás). Használd a kézi gombot.");
+        console.log("Automatikus csatornabeolvasás sikertelen (CORS korlátozás).");
     }
 }
 
@@ -428,8 +415,6 @@ window.addEventListener('DOMContentLoaded', () => {
     loadGlobalDurations();
     loadChannelsConfigOnStart(); 
 });
-
-// --- MŰSORREND-HOZZÁADÓ MOTOR AUTOMATIKUS IDŐ-LEVÁGÁSSAL ---
 
 function addSelectedFilmToTimeline() {
     const selectorMezo = document.getElementById('scheduleFilmSelector');
@@ -459,7 +444,6 @@ function addSelectedFilmToTimeline() {
 
     const filmData = globalDurations[selectedTitle];
 
-    // MÓDOSÍTVA: A rating (korhatár kódja) is átkerül a napi schedule-be
     catcastPlaylist.push({
         title: selectedTitle, 
         url: filmData.url,
