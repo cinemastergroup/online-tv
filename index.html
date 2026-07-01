@@ -31,7 +31,6 @@
             left: -3% !important; 
         }
 
-        /* JAVÍTVA: Árnyékolás (filter) kiszedve */
         .tv-watermark { 
             position: absolute; 
             opacity: 0.9; 
@@ -41,12 +40,11 @@
             height: auto !important;
         }
 
-        /* ÚJ: Korhatár logó stílusa (Árnyékolás nélkül, z-index a watermark szintjén) */
         .tv-rating {
             position: absolute;
             opacity: 0.9;
-            pointer-events: none;
-            z-index: 1001 !important;
+            pointer-events: none; 
+            z-index: 1001 !important; 
             display: none;
             height: auto !important;
         }
@@ -158,7 +156,7 @@
 
         <div id="noStreamOverlay" class="no-stream-overlay"></div>
         
-        <video id="tvEngine" autoplay muted playsinline webkit-playsinline></video>
+        <video id="tvEngine" autoplay playsinline></video> 
         <iframe id="archiveEngine" allowfullscreen style="display: none;"></iframe>
         
         <img id="tvWatermark" class="tv-watermark" alt="Logo">
@@ -206,7 +204,7 @@ const pageWrapper = document.getElementById('pageWrapper');
 const container = document.getElementById('mainTvContainer');
 const overlay = document.getElementById('noStreamOverlay');
 const watermark = document.getElementById('tvWatermark');
-const ratingImg = document.getElementById('tvRating'); // ÚJ ELÉRÉS
+const ratingImg = document.getElementById('tvRating'); 
 const lblShow = document.getElementById('lblShow');
 const lblTime = document.getElementById('lblTime');
 const epgModalOverlay = document.getElementById('epgModalOverlay');
@@ -222,43 +220,30 @@ const archiveIframe = document.getElementById('archiveEngine');
 let activeChannel = 'cinemaster';
 let lastRenderedUrl = '';
 let currentLogoConfig = null;
-let currentRatingConfig = null; // ÚJ TÁROLÓ
+let currentRatingConfig = null; 
 let isEpgOpen = false;
 let userUnlocked = false;
 let isIframeLoaded = false; 
 
 let forceBlackoutActive = false;
 
-// ÚJ: az aktuálisan lekérdezett műsor-adat "előre kiszámolva" tárolva,
-// hogy kattintáskor (user gesture) szinkron módon, await nélkül tudjuk
-// elindítani a lejátszást - ez kritikus a cross-origin iframe (archive.org/ok.ru)
-// beágyazásoknál mobilon, mert a user-activation NEM öröklődik át az iframe-be,
-// ha a src beállítása a kattintás után egy await-lánc végén (aszinkron) történik.
-let pendingTrack = null;
-let pendingSecondsInTrack = 0;
-let pendingIsEmbed = false;
+// Eszközszűrés a logók késleltetéséhez
+const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+let mobileLogoDelayed = false;
 
 function startTvWithAudio(e) {
     e.stopPropagation();
     userUnlocked = true;
     document.getElementById('unlockOverlay').style.display = 'none';
-
+    
     vid.muted = false;
     vid.volume = 1.0;
-
-    // FIX: ha már van előre lekérdezett (preload-olt) műsoradatunk,
-    // akkor MOST, szinkron módon (await nélkül), a kattintás gesture-jén
-    // belül állítjuk be a vid.src / iframe.src-et és hívjuk a play()-t.
-    // Ez az, ami a cross-origin iframe-es (archive.org/ok.ru) tartalmaknál
-    // is lehetővé teszi a hangos autoplay-t mobilon.
-    if (pendingTrack) {
-        applyPlaybackDom();
-    } else {
-        // Ha még nincs kész adat (nagyon lassú net), legalább a natív
-        // video elemet próbáljuk feloldani, a többit majd a runTvEngine intézi.
-        vid.play().catch(() => {});
+    vid.play().catch(err => {});
+    
+    if (isMobileDevice) {
+        mobileLogoDelayed = true; // Mobilon elindítjuk a logógátat az első érintésig
     }
-
+    
     runTvEngine();
 }
 
@@ -311,19 +296,20 @@ window.addEventListener('keydown', function(e) {
     }
 });
 
-// EGYESÍTETT MEGJELENÍTÉSI MOTOR (Dinamikus méret-számítás mindkét JSON-höz)
 function updateLayersScale() {
-    if (currentLogoConfig && currentLogoConfig.url) {
+    if (currentLogoConfig && currentLogoConfig.url && !mobileLogoDelayed) {
         const finalSizePx = container.clientWidth * (currentLogoConfig.size / 440);
         watermark.style.width = finalSizePx + 'px';
         watermark.style.top = currentLogoConfig.topPercent + '%';
         watermark.style.left = currentLogoConfig.leftPercent + '%';
+        watermark.style.display = 'block';
     }
-    if (currentRatingConfig && currentRatingConfig.url) {
+    if (currentRatingConfig && currentRatingConfig.url && !mobileLogoDelayed) {
         const finalSizePx = container.clientWidth * (currentRatingConfig.size / 440);
         ratingImg.style.width = finalSizePx + 'px';
         ratingImg.style.top = currentRatingConfig.topPercent + '%';
         ratingImg.style.left = currentRatingConfig.leftPercent + '%';
+        ratingImg.style.display = 'block';
     }
 }
 
@@ -339,7 +325,6 @@ function switchChannel(channelId) {
     activeChannel = channelId;
     lastRenderedUrl = '';
     isIframeLoaded = false; 
-    pendingTrack = null;
     triggerBlackoutIncert(); 
     vid.pause();
     vid.removeAttribute('src');
@@ -347,216 +332,199 @@ function switchChannel(channelId) {
     vid.style.display = 'none';
     
     let embedFrame = document.getElementById('embedFrame');
-    if (embedFrame) { embedFrame.src = ''; embedFrame.style.display = 'none'; }
+    if (embedFrame) { embedFrame.remove(); }
     archiveIframe.src = '';
     archiveIframe.style.display = 'none';
     
-    document.querySelectorAll('.channel-btn').forEach(btn => btn.classList.remove('active'));
-    const clickedBtn = Array.from(document.querySelectorAll('.channel-btn')).find(btn => btn.getAttribute('onclick').includes(channelId));
-    if(clickedBtn) clickedBtn.classList.add('active');
+    if (isMobileDevice) {
+        mobileLogoDelayed = true; // Csatornaváltáskor újra szabaddá tesszük a terepet mobilon
+        watermark.style.display = 'none';
+        ratingImg.style.display = 'none';
+    }
+    
     runTvEngine();
 }
 
-// ADATLEKÉRÉS (async, fetch-eket tartalmaz) - ez FUT MÁR AZ UNLOCK ELŐTT IS,
-// hogy mire a felhasználó rákattint a gombra, a pendingTrack már készen álljon,
-// és a kattintás-handlerben szinkron módon indítható legyen a lejátszás.
-async function fetchAndDetermineTrack() {
-    // CSATORNALOGÓ JSON BETÖLTÉSE
-    try {
-        const logoResponse = await fetch(`${activeChannel}_logo.json?t=${new Date().getTime()}`);
-        if (logoResponse.ok) {
-            const logoConfig = await logoResponse.json();
-            if (logoConfig.logo && logoConfig.logo.url) {
-                currentLogoConfig = logoConfig.logo;
-                watermark.src = logoConfig.logo.url;
-                watermark.style.display = 'block';
-            }
-        } else { watermark.style.display = 'none'; currentLogoConfig = null; }
-    } catch (e) { watermark.style.display = 'none'; currentLogoConfig = null; }
-
-    let kombináltMűsor = [];
-    const baseDate = new Date(new Date().getTime() - 24 * 60 * 60 * 1000); 
-    const formázDátum = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-
-    for (let i = 0; i < 7; i++) {
-        const vizsgáltDátum = new Date(baseDate.getTime() + i * 24 * 60 * 60 * 1000);
-        const dátumStr = formázDátum(vizsgáltDátum);
-        try {
-            const response = await fetch(`${activeChannel}_schedule_${dátumStr}.json?t=${new Date().getTime()}`);
-            if (response.ok) {
-                const data = await response.json();
-                if (data && data.schedule && Array.isArray(data.schedule)) {
-                    kombináltMűsor = kombináltMűsor.concat(data.schedule);
-                }
-            }
-        } catch (innerError) { console.log("Schedule hiba"); }
-    }
-
-    const now = new Date();
-    let currentTrack = null;
-    epgRowsContainer.innerHTML = '';
-
-    kombináltMűsor.forEach(track => {
-        const trackStart = parseLocalISO(track.start);
-        const trackEnd = new Date(trackStart.getTime() + track.duration * 1000);
-        if (trackEnd >= now) {
-            const napInfo = trackStart.toLocaleDateString('hu-HU', { month: 'short', day: 'numeric', weekday: 'short' });
-            const óraPerc = `${String(trackStart.getHours()).padStart(2, '0')}:${String(trackStart.getMinutes()).padStart(2, '0')}`;
-            epgRowsContainer.innerHTML += `
-                <div style="display:flex; align-items:center; padding:12px; border-bottom:1px solid #1f2633; font-size:18px;">
-                    <div style="color:#ffb300; min-width:140px; font-weight:bold; font-size:15px;">${napInfo} ${óraPerc}</div>
-                    <div style="color:white; font-weight:bold;">${track.title}</div>
-                </div>`;
-        }
-        if (now >= trackStart && now < trackEnd) { currentTrack = track; }
-    });
-
-    pendingTrack = currentTrack;
-
-    if (currentTrack) {
-        lblShow.innerText = currentTrack.title;
-
-        const trackStart = parseLocalISO(currentTrack.start);
-        const trackEnd = new Date(trackStart.getTime() + currentTrack.duration * 1000);
-        const startHours = String(trackStart.getHours()).padStart(2, '0');
-        const startMinutes = String(trackStart.getMinutes()).padStart(2, '0');
-        const endHours = String(trackEnd.getHours()).padStart(2, '0');
-        const endMinutes = String(trackEnd.getMinutes()).padStart(2, '0');
-        lblTime.innerText = `${startHours}:${startMinutes} - ${endHours}:${endMinutes}`;
-
-        let secondsInTrack = Math.floor((now.getTime() - trackStart.getTime()) / 1000);
-        if (isNaN(secondsInTrack) || secondsInTrack < 0) { secondsInTrack = 0; }
-        pendingSecondsInTrack = secondsInTrack;
-
-        // --- KORHATÁR AUTOMATIKUS JSON MOTOR ---
-        if (currentTrack.rating && currentTrack.rating !== "") {
-            try {
-                const ratingResponse = await fetch(`korhatar_${currentTrack.rating}.json?t=${new Date().getTime()}`);
-                if (ratingResponse.ok) {
-                    const rConfig = await ratingResponse.json();
-                    if (rConfig.logo && rConfig.logo.url) {
-                        currentRatingConfig = rConfig.logo;
-                        ratingImg.src = rConfig.logo.url;
-                        ratingImg.style.display = 'block';
-                    }
-                } else { ratingImg.style.display = 'none'; currentRatingConfig = null; }
-            } catch (e) { ratingImg.style.display = 'none'; currentRatingConfig = null; }
-        } else { ratingImg.style.display = 'none'; currentRatingConfig = null; }
-
-        updateLayersScale();
-        updateFontSizes();
-
-        if (!currentTrack.title.toLowerCase().includes('ajánló')) {
-            if (secondsInTrack >= 10 && secondsInTrack <= 25) {
-                notifierTitle.innerText = currentTrack.title;
-                showNotifier.classList.add('active');
-            } else { showNotifier.classList.remove('active'); }
-        } else { showNotifier.classList.remove('active'); }
-
-        pendingIsEmbed = (currentTrack.url.includes('archive.org') && !currentTrack.url.toLowerCase().endsWith('.mp4')) || currentTrack.url.includes('ok.ru');
-    } else {
-        pendingSecondsInTrack = 0;
-        pendingIsEmbed = false;
-        showNotifier.classList.remove('active');
-        ratingImg.style.display = 'none'; currentRatingConfig = null;
-        lblShow.innerText = "Betöltés..."; lblTime.innerText = "--:--";
-    }
-}
-
-// TÉNYLEGES LEJÁTSZÁS-INDÍTÁS (SZINKRON, nincs benne await!)
-// Ezt hívja meg közvetlenül a kattintás-eseménykezelő (startTvWithAudio),
-// hogy a user-activation még érvényben legyen, amikor a vid.src/play()
-// vagy az iframe.src beállításra kerül - ez teszi lehetővé a hangos
-// autoplay-t a cross-origin (archive.org/ok.ru) beágyazásoknál mobilon is.
-function applyPlaybackDom() {
-    const currentTrack = pendingTrack;
-    const secondsInTrack = pendingSecondsInTrack;
-    const isEmbed = pendingIsEmbed;
-
-    if (currentTrack) {
-        if (!forceBlackoutActive) { overlay.style.display = 'none'; }
-
-        if (isEmbed) {
-            vid.pause(); vid.style.display = 'none';
-            let embedFrame = document.getElementById('embedFrame');
-
-            if (secondsInTrack >= (currentTrack.duration - 4)) {
-                if (embedFrame) { embedFrame.style.display = 'none'; }
-                overlay.style.display = 'flex'; overlay.innerText = ""; 
-                lastRenderedUrl = ''; isIframeLoaded = false; 
-                return;
-            }
-
-            if (!isIframeLoaded || !embedFrame || lastRenderedUrl !== currentTrack.url) {
-                isIframeLoaded = true; lastRenderedUrl = currentTrack.url; 
-                triggerBlackoutIncert(); 
-                if (embedFrame) { embedFrame.remove(); }
-
-                let targetUrl = currentTrack.url;
-                if (targetUrl.includes('?')) { targetUrl = targetUrl.split('?')[0]; }
-                if (targetUrl.includes('ok.ru/video/')) { targetUrl = targetUrl.replace('ok.ru/video/', 'ok.ru/videoembed/'); }
-
-                const finalSrc = `${targetUrl}?autoplay=1&fromTime=${secondsInTrack}`;
-                embedFrame = document.createElement('iframe');
-                embedFrame.id = 'embedFrame';
-                embedFrame.style.position = 'absolute';
-                embedFrame.style.top = '0'; embedFrame.style.left = '0'; embedFrame.style.width = '100%'; embedFrame.style.height = '100%';
-                embedFrame.style.border = 'none'; embedFrame.style.zIndex = '2';
-                embedFrame.allow = "autoplay; encrypted-media; fullscreen";
-                embedFrame.src = finalSrc;
-                container.appendChild(embedFrame);
-                embedFrame.style.display = 'block';
-            } else {
-                if (embedFrame) { embedFrame.style.display = 'block'; }
-            }
-        } else {
-            lastRenderedUrl = ''; isIframeLoaded = false; 
-            let embedFrame = document.getElementById('embedFrame');
-            if (embedFrame) embedFrame.remove();
-            vid.style.display = 'block';
-
-            if (vid.src !== currentTrack.url) {
-                vid.src = currentTrack.url; vid.load(); vid.currentTime = secondsInTrack;
-                triggerBlackoutIncert(); 
-                vid.muted = false; vid.volume = 1.0; 
-                vid.play().catch(() => {
-                    vid.muted = true;
-                    vid.play().then(() => { setTimeout(() => { vid.muted = false; vid.volume = 1.0; }, 200); });
-                });
-            } else {
-                if (Math.abs(vid.currentTime - secondsInTrack) > 5) { vid.currentTime = secondsInTrack; }
-                if (vid.paused) { vid.play().catch(e => {}); }
-                vid.muted = false; vid.volume = 1.0;
-            }
-        }
-    } else {
-        lastRenderedUrl = ''; isIframeLoaded = false; 
-        vid.pause(); vid.style.display = 'none'; 
-        let embedFrame = document.getElementById('embedFrame');
-        if (embedFrame) embedFrame.remove();
-        archiveIframe.src = ''; archiveIframe.style.display = 'none';
-        overlay.style.display = 'flex'; overlay.innerText = ""; 
-    }
-}
-
 async function runTvEngine() {
-    try {
-        await fetchAndDetermineTrack();
-    } catch (error) {
-        showNotifier.classList.remove('active');
-        ratingImg.style.display = 'none'; currentRatingConfig = null;
-        pendingTrack = null;
-        return;
-    }
-
-    // Az unlock-overlay eltávolítása előtt (userUnlocked === false) NEM
-    // nyúlunk a video/iframe elemekhez - de az adatot már lekérjük,
-    // hogy kattintáskor azonnal, szinkron módon indítható legyen a lejátszás.
     if (!userUnlocked) return;
 
     try {
-        applyPlaybackDom();
+        try {
+            const logoResponse = await fetch(`${activeChannel}_logo.json?t=${new Date().getTime()}`);
+            if (logoResponse.ok) {
+                const logoConfig = await logoResponse.json();
+                if (logoConfig.logo && logoConfig.logo.url) {
+                    currentLogoConfig = logoConfig.logo;
+                    if (!mobileLogoDelayed) {
+                        watermark.src = logoConfig.logo.url;
+                        watermark.style.display = 'block';
+                    }
+                }
+            } else { watermark.style.display = 'none'; currentLogoConfig = null; }
+        } catch (e) { watermark.style.display = 'none'; currentLogoConfig = null; }
+
+        let kombináltMűsor = [];
+        const baseDate = new Date(new Date().getTime() - 24 * 60 * 60 * 1000); 
+        const formázDátum = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+        for (let i = 0; i < 7; i++) {
+            const vizsgáltDátum = new Date(baseDate.getTime() + i * 24 * 60 * 60 * 1000);
+            const dátumStr = formázDátum(vizsgáltDátum);
+            try {
+                const response = await fetch(`${activeChannel}_schedule_${dátumStr}.json?t=${new Date().getTime()}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data && data.schedule && Array.isArray(data.schedule)) {
+                        kombináltMűsor = kombináltMűsor.concat(data.schedule);
+                    }
+                }
+            } catch (innerError) { console.log("Schedule hiba"); }
+        }
+
+        const now = new Date();
+        let currentTrack = null;
+        epgRowsContainer.innerHTML = '';
+
+        kombináltMűsor.forEach(track => {
+            const trackStart = parseLocalISO(track.start);
+            const trackEnd = new Date(trackStart.getTime() + track.duration * 1000);
+            if (trackEnd >= now) {
+                const napInfo = trackStart.toLocaleDateString('hu-HU', { month: 'short', day: 'numeric', weekday: 'short' });
+                const óraPerc = `${String(trackStart.getHours()).padStart(2, '0')}:${String(trackStart.getMinutes()).padStart(2, '0')}`;
+                epgRowsContainer.innerHTML += `
+                    <div style="display:flex; align-items:center; padding:12px; border-bottom:1px solid #1f2633; font-size:18px;">
+                        <div style="color:#ffb300; min-width:140px; font-weight:bold; font-size:15px;">${napInfo} ${óraPerc}</div>
+                        <div style="color:white; font-weight:bold;">${track.title}</div>
+                    </div>`;
+            }
+            if (now >= trackStart && now < trackEnd) { currentTrack = track; }
+        });
+
+        if (currentTrack) {
+            if (!forceBlackoutActive) { overlay.style.display = 'none'; }
+            lblShow.innerText = currentTrack.title;
+            
+            const trackStart = parseLocalISO(currentTrack.start);
+            const trackEnd = new Date(trackStart.getTime() + currentTrack.duration * 1000);
+            const startHours = String(trackStart.getHours()).padStart(2, '0');
+            const startMinutes = String(trackStart.getMinutes()).padStart(2, '0');
+            const endHours = String(trackEnd.getHours()).padStart(2, '0');
+            const endMinutes = String(trackEnd.getMinutes()).padStart(2, '0');
+            lblTime.innerText = `${startHours}:${startMinutes} - ${endHours}:${endMinutes}`;
+
+            let secondsInTrack = Math.floor((now.getTime() - trackStart.getTime()) / 1000);
+            if (isNaN(secondsInTrack) || secondsInTrack < 0) { secondsInTrack = 0; }
+
+            if (currentTrack.rating && currentTrack.rating !== "") {
+                try {
+                    const ratingResponse = await fetch("korhatar_" + currentTrack.rating + ".json?t=" + new Date().getTime());
+                    if (ratingResponse.ok) {
+                        const rConfig = await ratingResponse.json();
+                        if (rConfig.logo && rConfig.logo.url) {
+                            currentRatingConfig = rConfig.logo;
+                            if (!mobileLogoDelayed) {
+                                ratingImg.src = rConfig.logo.url;
+                                ratingImg.style.display = 'block';
+                            }
+                        }
+                    } else { ratingImg.style.display = 'none'; currentRatingConfig = null; }
+                } catch (e) { ratingImg.style.display = 'none'; currentRatingConfig = null; }
+            } else { ratingImg.style.display = 'none'; currentRatingConfig = null; }
+
+            updateLayersScale();
+            updateFontSizes();
+
+            if (!currentTrack.title.toLowerCase().includes('ajánló')) {
+                if (secondsInTrack >= 10 && secondsInTrack <= 25) {
+                    notifierTitle.innerText = currentTrack.title;
+                    showNotifier.classList.add('active');
+                } else { showNotifier.classList.remove('active'); }
+            } else { showNotifier.classList.remove('active'); }
+
+            const isEmbed = (currentTrack.url.includes('archive.org') && !currentTrack.url.toLowerCase().endsWith('.mp4')) || currentTrack.url.includes('ok.ru');
+
+            if (isEmbed) {
+                vid.pause(); vid.style.display = 'none';
+                let embedFrame = document.getElementById('embedFrame');
+
+                if (secondsInTrack >= (currentTrack.duration - 4)) {
+                    if (embedFrame) { embedFrame.style.display = 'none'; }
+                    overlay.style.display = 'flex'; overlay.innerText = ""; 
+                    lastRenderedUrl = ''; isIframeLoaded = false; 
+                    return;
+                }
+
+                if (!isIframeLoaded || !embedFrame || lastRenderedUrl !== currentTrack.url) {
+                    isIframeLoaded = true; lastRenderedUrl = currentTrack.url; 
+                    triggerBlackoutIncert(); 
+                    if (embedFrame) { embedFrame.remove(); }
+
+                    let targetUrl = currentTrack.url;
+                    if (targetUrl.includes('?')) { targetUrl = targetUrl.split('?')[0]; }
+                    if (targetUrl.includes('ok.ru/video/')) { targetUrl = targetUrl.replace('ok.ru/video/', 'ok.ru/videoembed/'); }
+
+                    const finalSrc = targetUrl + "?autoplay=1&fromTime=" + secondsInTrack;
+                    
+                    embedFrame = document.createElement('iframe');
+                    embedFrame.id = 'embedFrame';
+                    embedFrame.style.position = 'absolute';
+                    embedFrame.style.top = '0'; embedFrame.style.left = '0'; embedFrame.style.width = '100%'; embedFrame.style.height = '100%';
+                    embedFrame.style.border = 'none'; embedFrame.style.zIndex = '2';
+                    embedFrame.allow = "autoplay; encrypted-media; fullscreen";
+                    embedFrame.setAttribute("playsinline", "true");
+                    embedFrame.src = finalSrc;
+                    container.appendChild(embedFrame);
+                    embedFrame.style.display = 'block';
+
+                    // JAVÍTVA: Ha mobil, megvárjuk az igazi érintést az iframe-en, és utána töltjük be a logókat!
+                    if (isMobileDevice) {
+                        window.focus();
+                        const checkTouch = () => {
+                            mobileLogoDelayed = false; // Kikapcsoljuk a logógátat
+                            if (currentLogoConfig) watermark.style.display = 'block';
+                            if (currentRatingConfig) ratingImg.style.display = 'block';
+                            updateLayersScale();
+                            window.removeEventListener('touchstart', checkTouch);
+                        };
+                        window.addEventListener('touchstart', checkTouch);
+                    }
+
+                } else {
+                    if (embedFrame) { embedFrame.style.display = 'block'; }
+                }
+            } else {
+                let embedFrame = document.getElementById('embedFrame');
+                if (embedFrame) embedFrame.remove();
+                vid.style.display = 'block';
+                
+                if (vid.src !== currentTrack.url) {
+                    vid.src = currentTrack.url; vid.load(); vid.currentTime = secondsInTrack;
+                    triggerBlackoutIncert(); 
+                    vid.muted = false; vid.volume = 1.0; 
+                    vid.play().catch(() => {
+                        vid.muted = true;
+                        vid.play().then(() => { setTimeout(() => { vid.muted = false; vid.volume = 1.0; }, 200); });
+                    });
+                } else {
+                    if (Math.abs(vid.currentTime - secondsInTrack) > 5) { vid.currentTime = secondsInTrack; }
+                    if (vid.paused) { vid.play().catch(e => {}); }
+                    vid.muted = false; vid.volume = 1.0;
+                }
+            }
+        } else {
+            lastRenderedUrl = ''; isIframeLoaded = false; 
+            showNotifier.classList.remove('active');
+            ratingImg.style.display = 'none'; currentRatingConfig = null; 
+            vid.pause(); vid.style.display = 'none'; 
+            let embedFrame = document.getElementById('embedFrame');
+            if (embedFrame) embedFrame.remove();
+            archiveIframe.src = ''; archiveIframe.style.display = 'none';
+            lblShow.innerText = "Betöltés..."; lblTime.innerText = "--:--";
+            overlay.style.display = 'flex'; overlay.innerText = ""; 
+        }
     } catch (error) {
+        showNotifier.classList.remove('active');
+        ratingImg.style.display = 'none'; currentRatingConfig = null;
         vid.pause(); vid.style.display = 'none'; 
         let embedFrame = document.getElementById('embedFrame');
         if (embedFrame) embedFrame.remove();
