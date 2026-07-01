@@ -31,22 +31,22 @@
             left: -3% !important; 
         }
 
-        /* JAVÍTVA: Árnyékolás (filter) kiszedve */
+        /* Csatornalogó árnyék nélkül - pointer-events letiltva, hogy átengedje az érintést */
         .tv-watermark { 
             position: absolute; 
             opacity: 0.9; 
-            pointer-events: none; 
+            pointer-events: none !important; 
             z-index: 1001 !important; 
             display: block; 
             height: auto !important;
         }
 
-        /* ÚJ: Korhatár logó stílusa (Árnyékolás nélkül, z-index a watermark szintjén) */
+        /* Korhatárkarika árnyék nélkül - pointer-events letiltva, hogy átengedje az érintést */
         .tv-rating {
             position: absolute;
             opacity: 0.9;
-            pointer-events: none;
-            z-index: 1001 !important;
+            pointer-events: none !important; 
+            z-index: 1001 !important; 
             display: none;
             height: auto !important;
         }
@@ -71,7 +71,7 @@
             box-sizing: border-box;
             transition: right 0.5s ease-in-out; 
             box-shadow: -4px 4px 20px rgba(0,0,0,0.5);
-            pointer-events: none; 
+            pointer-events: none !important; 
         }
         .show-notifier-band.active {
             right: 0; 
@@ -132,7 +132,8 @@
         .epg-modal-overlay.active { opacity: 1; pointer-events: auto; display: flex; justify-content: center; align-items: center; }
         .epg-modal { width: 90%; max-width: 650px; background: #12161f; border: 1px solid var(--border-color); border-radius: 16px; padding: 25px; box-sizing: border-box; max-height: 80vh; display: flex; flex-direction: column; }
         
-        .no-stream-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; color: transparent; background: #000000; z-index: 995; pointer-events: none; }
+        /* Biztosítjuk, hogy a blackout réteg se blokkolja a kattintást */
+        .no-stream-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; color: transparent; background: #000000; z-index: 995; pointer-events: none !important; }
         
         .unlock-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #0f1115; z-index: 200001; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px; }
         .unlock-btn { background: var(--accent-color); color: white; border: none; padding: 22px 50px; font-size: 24px; font-weight: bold; border-radius: 14px; cursor: pointer; }
@@ -158,7 +159,7 @@
 
         <div id="noStreamOverlay" class="no-stream-overlay"></div>
         
-        <video id="tvEngine" autoplay></video>
+        <video id="tvEngine" autoplay playsinline></video> 
         <iframe id="archiveEngine" allowfullscreen style="display: none;"></iframe>
         
         <img id="tvWatermark" class="tv-watermark" alt="Logo">
@@ -206,7 +207,7 @@ const pageWrapper = document.getElementById('pageWrapper');
 const container = document.getElementById('mainTvContainer');
 const overlay = document.getElementById('noStreamOverlay');
 const watermark = document.getElementById('tvWatermark');
-const ratingImg = document.getElementById('tvRating'); // ÚJ ELÉRÉS
+const ratingImg = document.getElementById('tvRating'); 
 const lblShow = document.getElementById('lblShow');
 const lblTime = document.getElementById('lblTime');
 const epgModalOverlay = document.getElementById('epgModalOverlay');
@@ -222,7 +223,7 @@ const archiveIframe = document.getElementById('archiveEngine');
 let activeChannel = 'cinemaster';
 let lastRenderedUrl = '';
 let currentLogoConfig = null;
-let currentRatingConfig = null; // ÚJ TÁROLÓ
+let currentRatingConfig = null; 
 let isEpgOpen = false;
 let userUnlocked = false;
 let isIframeLoaded = false; 
@@ -233,8 +234,11 @@ function startTvWithAudio(e) {
     e.stopPropagation();
     userUnlocked = true;
     document.getElementById('unlockOverlay').style.display = 'none';
+    
     vid.muted = false;
     vid.volume = 1.0;
+    vid.play().catch(err => {});
+    
     runTvEngine();
 }
 
@@ -287,7 +291,6 @@ window.addEventListener('keydown', function(e) {
     }
 });
 
-// EGYESÍTETT MEGJELENÍTÉSI MOTOR (Dinamikus méret-számítás mindkét JSON-höz)
 function updateLayersScale() {
     if (currentLogoConfig && currentLogoConfig.url) {
         const finalSizePx = container.clientWidth * (currentLogoConfig.size / 440);
@@ -322,13 +325,10 @@ function switchChannel(channelId) {
     vid.style.display = 'none';
     
     let embedFrame = document.getElementById('embedFrame');
-    if (embedFrame) { embedFrame.src = ''; embedFrame.style.display = 'none'; }
+    if (embedFrame) { embedFrame.remove(); }
     archiveIframe.src = '';
     archiveIframe.style.display = 'none';
     
-    document.querySelectorAll('.channel-btn').forEach(btn => btn.classList.remove('active'));
-    const clickedBtn = Array.from(document.querySelectorAll('.channel-btn')).find(btn => btn.getAttribute('onclick').includes(channelId));
-    if(clickedBtn) clickedBtn.classList.add('active');
     runTvEngine();
 }
 
@@ -336,7 +336,6 @@ async function runTvEngine() {
     if (!userUnlocked) return;
 
     try {
-        // CSATORNALOGÓ JSON BETÖLTÉSE
         try {
             const logoResponse = await fetch(`${activeChannel}_logo.json?t=${new Date().getTime()}`);
             if (logoResponse.ok) {
@@ -401,10 +400,9 @@ async function runTvEngine() {
             let secondsInTrack = Math.floor((now.getTime() - trackStart.getTime()) / 1000);
             if (isNaN(secondsInTrack) || secondsInTrack < 0) { secondsInTrack = 0; }
 
-            // --- ÚJ KORHATÁR AUTOMATIKUS JSON MOTOR ---
             if (currentTrack.rating && currentTrack.rating !== "") {
                 try {
-                    const ratingResponse = await fetch(`korhatar_${currentTrack.rating}.json?t=${new Date().getTime()}`);
+                    const ratingResponse = await fetch("korhatar_" + currentTrack.rating + ".json?t=" + new Date().getTime());
                     if (ratingResponse.ok) {
                         const rConfig = await ratingResponse.json();
                         if (rConfig.logo && rConfig.logo.url) {
@@ -448,13 +446,15 @@ async function runTvEngine() {
                     if (targetUrl.includes('?')) { targetUrl = targetUrl.split('?')[0]; }
                     if (targetUrl.includes('ok.ru/video/')) { targetUrl = targetUrl.replace('ok.ru/video/', 'ok.ru/videoembed/'); }
 
-                    const finalSrc = `${targetUrl}?autoplay=1&fromTime=${secondsInTrack}`;
+                    const finalSrc = targetUrl + "?autoplay=1&fromTime=" + secondsInTrack;
+                    
                     embedFrame = document.createElement('iframe');
                     embedFrame.id = 'embedFrame';
                     embedFrame.style.position = 'absolute';
                     embedFrame.style.top = '0'; embedFrame.style.left = '0'; embedFrame.style.width = '100%'; embedFrame.style.height = '100%';
                     embedFrame.style.border = 'none'; embedFrame.style.zIndex = '2';
-                    embedFrame.allow = "autoplay; encrypted-media; fullscreen";
+                    embedFrame.allow = "autoplay; encrypted-media; fullscreen; picture-in-picture";
+                    embedFrame.setAttribute("playsinline", "true");
                     embedFrame.src = finalSrc;
                     container.appendChild(embedFrame);
                     embedFrame.style.display = 'block';
@@ -462,7 +462,6 @@ async function runTvEngine() {
                     if (embedFrame) { embedFrame.style.display = 'block'; }
                 }
             } else {
-                lastRenderedUrl = ''; isIframeLoaded = false; 
                 let embedFrame = document.getElementById('embedFrame');
                 if (embedFrame) embedFrame.remove();
                 vid.style.display = 'block';
@@ -484,7 +483,7 @@ async function runTvEngine() {
         } else {
             lastRenderedUrl = ''; isIframeLoaded = false; 
             showNotifier.classList.remove('active');
-            ratingImg.style.display = 'none'; currentRatingConfig = null; // Rejtés ha nincs adás
+            ratingImg.style.display = 'none'; currentRatingConfig = null; 
             vid.pause(); vid.style.display = 'none'; 
             let embedFrame = document.getElementById('embedFrame');
             if (embedFrame) embedFrame.remove();
