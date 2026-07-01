@@ -31,34 +31,24 @@
             left: -3% !important; 
         }
 
-        /* Csatornalogó árnyék nélkül */
+        /* Csatornalogó árnyék nélkül - pointer-events letiltva, hogy átengedje az érintést */
         .tv-watermark { 
             position: absolute; 
             opacity: 0.9; 
-            pointer-events: none; 
+            pointer-events: none !important; 
             z-index: 1001 !important; 
             display: block; 
             height: auto !important;
         }
 
-        /* Korhatárkarika árnyék nélkül */
+        /* Korhatárkarika árnyék nélkül - pointer-events letiltva, hogy átengedje az érintést */
         .tv-rating {
             position: absolute;
             opacity: 0.9;
-            pointer-events: none; 
+            pointer-events: none !important; 
             z-index: 1001 !important; 
             display: none;
             height: auto !important;
-        }
-
-        /* ÚJ: Láthatatlan mobilos érintés-áthidaló réteg a blokkolók ellen */
-        .mobile-touch-unblocker {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 2000;
-            background: transparent;
-            display: none;
-            cursor: pointer;
         }
 
         .show-notifier-band {
@@ -81,7 +71,7 @@
             box-sizing: border-box;
             transition: right 0.5s ease-in-out; 
             box-shadow: -4px 4px 20px rgba(0,0,0,0.5);
-            pointer-events: none; 
+            pointer-events: none !important; 
         }
         .show-notifier-band.active {
             right: 0; 
@@ -142,7 +132,8 @@
         .epg-modal-overlay.active { opacity: 1; pointer-events: auto; display: flex; justify-content: center; align-items: center; }
         .epg-modal { width: 90%; max-width: 650px; background: #12161f; border: 1px solid var(--border-color); border-radius: 16px; padding: 25px; box-sizing: border-box; max-height: 80vh; display: flex; flex-direction: column; }
         
-        .no-stream-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; color: transparent; background: #000000; z-index: 995; pointer-events: none; }
+        /* Biztosítjuk, hogy a blackout réteg se blokkolja a kattintást */
+        .no-stream-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; color: transparent; background: #000000; z-index: 995; pointer-events: none !important; }
         
         .unlock-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #0f1115; z-index: 200001; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px; }
         .unlock-btn { background: var(--accent-color); color: white; border: none; padding: 22px 50px; font-size: 24px; font-weight: bold; border-radius: 14px; cursor: pointer; }
@@ -171,9 +162,6 @@
         <video id="tvEngine" autoplay playsinline></video> 
         <iframe id="archiveEngine" allowfullscreen style="display: none;"></iframe>
         
-        <!-- ÚJ: Láthatatlan réteg, ami átengedi a kattintást mobilon -->
-        <div id="mobileTouchUnblocker" class="mobile-touch-unblocker" onclick="handleMobileUnblockClick()"></div>
-
         <img id="tvWatermark" class="tv-watermark" alt="Logo">
         <img id="tvRating" class="tv-rating" alt="Rating">
     </div>
@@ -242,9 +230,6 @@ let isIframeLoaded = false;
 
 let forceBlackoutActive = false;
 
-// Észleljük, ha mobilról nyitják meg
-const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
 function startTvWithAudio(e) {
     e.stopPropagation();
     userUnlocked = true;
@@ -255,12 +240,6 @@ function startTvWithAudio(e) {
     vid.play().catch(err => {});
     
     runTvEngine();
-}
-
-// ÚJ MOBILOS ÁTHIDALÓ: Ha rákattint, eltünteti a gátat, így a parancs közvetlenül átmegy az iframe-re
-function handleMobileUnblockClick() {
-    document.getElementById('mobileTouchUnblocker').style.display = 'none';
-    console.log("Mobilos gát feloldva, lejátszás kényszerítve.");
 }
 
 vid.onended = function() {
@@ -467,7 +446,6 @@ async function runTvEngine() {
                     if (targetUrl.includes('?')) { targetUrl = targetUrl.split('?')[0]; }
                     if (targetUrl.includes('ok.ru/video/')) { targetUrl = targetUrl.replace('ok.ru/video/', 'ok.ru/videoembed/'); }
 
-                    // VISSZAÁLLÍTVA: Eredeti, biztosan működő beágyazási link séma
                     const finalSrc = targetUrl + "?autoplay=1&fromTime=" + secondsInTrack;
                     
                     embedFrame = document.createElement('iframe');
@@ -480,17 +458,10 @@ async function runTvEngine() {
                     embedFrame.src = finalSrc;
                     container.appendChild(embedFrame);
                     embedFrame.style.display = 'block';
-
-                    // JAVÍTVA: Csak mobilon aktiváljuk az érintési réteget, hogy áttörje a Brave Shields blokkolását
-                    if (isMobile) {
-                        document.getElementById('mobileTouchUnblocker').style.display = 'block';
-                    }
                 } else {
                     if (embedFrame) { embedFrame.style.display = 'block'; }
                 }
             } else {
-                // MP4 GYÁRI LEJÁTSZÓ MÓD (Ami eddig is hibátlan volt)
-                document.getElementById('mobileTouchUnblocker').style.display = 'none';
                 let embedFrame = document.getElementById('embedFrame');
                 if (embedFrame) embedFrame.remove();
                 vid.style.display = 'block';
@@ -513,7 +484,6 @@ async function runTvEngine() {
             lastRenderedUrl = ''; isIframeLoaded = false; 
             showNotifier.classList.remove('active');
             ratingImg.style.display = 'none'; currentRatingConfig = null; 
-            document.getElementById('mobileTouchUnblocker').style.display = 'none';
             vid.pause(); vid.style.display = 'none'; 
             let embedFrame = document.getElementById('embedFrame');
             if (embedFrame) embedFrame.remove();
@@ -524,7 +494,6 @@ async function runTvEngine() {
     } catch (error) {
         showNotifier.classList.remove('active');
         ratingImg.style.display = 'none'; currentRatingConfig = null;
-        document.getElementById('mobileTouchUnblocker').style.display = 'none';
         vid.pause(); vid.style.display = 'none'; 
         let embedFrame = document.getElementById('embedFrame');
         if (embedFrame) embedFrame.remove();
