@@ -49,13 +49,13 @@
             height: auto !important;
         }
 
-        /* ÚJ: Speciális mobil lejátszás gomb stílusa */
-        .mobile-play-overlay {
+        /* JAVÍTVA: Sötét, teljes képernyős mobil lejátszó konténer stílusa */
+        .mobile-player-container {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7);
-            z-index: 10;
-            display: none; /* Alapból rejtve van, JS kapcsolja be csak mobilon */
+            background: #090a0e;
+            z-index: 5;
+            display: none;
             flex-direction: column;
             justify-content: center;
             align-items: center;
@@ -64,18 +64,20 @@
             padding: 20px;
             box-sizing: border-box;
         }
-        .mobile-play-btn {
+        .mobile-player-btn {
             background: #00e676;
             color: #000;
             border: none;
-            padding: 16px 32px;
-            font-size: 18px;
+            padding: 18px 36px;
+            font-size: 16px;
             font-weight: bold;
             border-radius: 8px;
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0,230,118,0.4);
+            box-shadow: 0 4px 15px rgba(0,230,118,0.3);
             text-transform: uppercase;
             text-decoration: none;
+            display: inline-block;
+            letter-spacing: 0.5px;
         }
 
         .show-notifier-band {
@@ -191,10 +193,11 @@
         <img id="tvWatermark" class="tv-watermark" alt="Logo">
         <img id="tvRating" class="tv-rating" alt="Rating">
 
-        <div id="mobilePlayOverlay" class="mobile-play-overlay">
-            <div style="font-size: 16px; color: #8a99ad; font-weight: bold;">CineMaster Player Link</div>
-            <a id="mobileExternalLink" href="#" target="_blank" class="mobile-play-btn">Videó megnyitása új lapon 🍿</a>
-            <div style="font-size: 12px; color: #627288; max-width: 280px;">A mobilos böngészők korlátozása miatt a külső streameket külön lapon tudod elindítani.</div>
+        <!-- JAVÍTVA: Tiszta mobilkonténer, ami kiváltja a hibás iframe-et telefonon -->
+        <div id="mobilePlayerContainer" class="mobile-player-container">
+            <div style="font-size: 15px; color: #8a99ad; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">CineMaster Mobile Player</div>
+            <a id="mobilePlayerBtn" href="#" target="_blank" class="mobile-player-btn">Adás megnyitása új lapon 🍿</a>
+            <div style="font-size: 12px; color: #627288; max-width: 300px; line-height: 1.5;">A mobilböngészők (Brave, Facebook) korlátozása miatt az élő adást egy biztonságos új lapon tudod elindítani.</div>
         </div>
     </div>
 
@@ -364,7 +367,8 @@ function switchChannel(channelId) {
     archiveIframe.src = '';
     archiveIframe.style.display = 'none';
     
-    document.getElementById('mobilePlayOverlay').style.display = 'none'; // Csatornaváltáskor alaphelyzet
+    // Tiszta reset váltáskor
+    document.getElementById('mobilePlayerContainer').style.display = 'none'; 
     
     document.querySelectorAll('.channel-btn').forEach(btn => btn.classList.remove('active'));
     const clickedBtn = Array.from(document.querySelectorAll('.channel-btn')).find(btn => btn.getAttribute('onclick').includes(channelId));
@@ -474,24 +478,26 @@ async function runTvEngine() {
                     if (embedFrame) { embedFrame.style.display = 'none'; }
                     overlay.style.display = 'flex'; overlay.innerText = ""; 
                     lastRenderedUrl = ''; isIframeLoaded = false; 
-                    document.getElementById('mobilePlayOverlay').style.display = 'none';
+                    document.getElementById('mobilePlayerContainer').style.display = 'none';
                     return;
                 }
 
-                // JAVÍTVA: Ha mobilról nézik, az iframe helyett a külső gombot aktiváljuk
+                // JAVÍTVA: Ha mobilról nézik, AZONNAL letiltjuk az iframe-et, és CSAK a tiszta külső gombot rajzoljuk ki
                 if (isMobileDevice) {
+                    if (embedFrame) { embedFrame.remove(); isIframeLoaded = false; }
+                    
                     let targetUrl = currentTrack.url;
-                    if (targetUrl.includes('ok.ru/video/')) { targetUrl = targetUrl.replace('ok.ru/video/', 'ok.ru/videoembed/'); }
+                    // TRÜKK: Átkonvertáljuk a linket a normál, mobilra optimalizált OK.ru weboldal változatra (?fromTime-mal együtt)
+                    if (targetUrl.includes('ok.ru/videoembed/')) { 
+                        targetUrl = targetUrl.replace('ok.ru/videoembed/', 'ok.ru/video/'); 
+                    }
+                    const finalSrc = targetUrl + "?fromTime=" + secondsInTrack;
                     
-                    // Összerakjuk a linket a pontos másodperccel, így ott folytatódik a videó, ahol az élő adás tart!
-                    const finalSrc = targetUrl + "?autoplay=1&fromTime=" + secondsInTrack;
-                    
-                    document.getElementById('mobileExternalLink').href = finalSrc;
-                    document.getElementById('mobilePlayOverlay').style.display = 'flex';
-                    console.log("Mobilos környezet észlelve, külső hivatkozás élesítve.");
+                    document.getElementById('mobilePlayerBtn').href = finalSrc;
+                    document.getElementById('mobilePlayerContainer').style.display = 'flex';
                 } else {
-                    // PC és TV BOX változat (Változatlanul hagyományos iframe beágyazás)
-                    document.getElementById('mobilePlayOverlay').style.display = 'none';
+                    // PC ÉS TV BOX LEJÁTSZÁS (Hagyományos, automatikus beágyazott iframe)
+                    document.getElementById('mobilePlayerContainer').style.display = 'none';
                     
                     if (!isIframeLoaded || !embedFrame || lastRenderedUrl !== currentTrack.url) {
                         isIframeLoaded = true; lastRenderedUrl = currentTrack.url; 
@@ -517,8 +523,8 @@ async function runTvEngine() {
                     }
                 }
             } else {
-                // MP4 LEJÁTSZÁS (Ez mobilon is kiválóan működik natívan)
-                document.getElementById('mobilePlayOverlay').style.display = 'none';
+                // MP4 STREAMEK (Ez mobilon is tökéletesen megy az iframe-en kívül)
+                document.getElementById('mobilePlayerContainer').style.display = 'none';
                 lastRenderedUrl = ''; isIframeLoaded = false; 
                 let embedFrame = document.getElementById('embedFrame');
                 if (embedFrame) embedFrame.remove();
@@ -542,7 +548,7 @@ async function runTvEngine() {
             lastRenderedUrl = ''; isIframeLoaded = false; 
             showNotifier.classList.remove('active');
             ratingImg.style.display = 'none'; currentRatingConfig = null; 
-            document.getElementById('mobilePlayOverlay').style.display = 'none';
+            document.getElementById('mobilePlayerContainer').style.display = 'none';
             vid.pause(); vid.style.display = 'none'; 
             let embedFrame = document.getElementById('embedFrame');
             if (embedFrame) embedFrame.remove();
@@ -553,7 +559,7 @@ async function runTvEngine() {
     } catch (error) {
         showNotifier.classList.remove('active');
         ratingImg.style.display = 'none'; currentRatingConfig = null;
-        document.getElementById('mobilePlayOverlay').style.display = 'none';
+        document.getElementById('mobilePlayerContainer').style.display = 'none';
         vid.pause(); vid.style.display = 'none'; 
         let embedFrame = document.getElementById('embedFrame');
         if (embedFrame) embedFrame.remove();
