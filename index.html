@@ -426,7 +426,11 @@ async function runTvEngine() {
                 } else { showNotifier.classList.remove('active'); }
             } else { showNotifier.classList.remove('active'); }
 
-            const isEmbed = (currentTrack.url.includes('archive.org') && !currentTrack.url.toLowerCase().endsWith('.mp4')) || currentTrack.url.includes('ok.ru');
+            const isEmbed = (currentTrack.url.includes('archive.org') && !currentTrack.url.toLowerCase().endsWith('.mp4')) || 
+                            currentTrack.url.includes('ok.ru') ||
+                            currentTrack.url.includes('vkvideo.ru') ||
+                            currentTrack.url.includes('video_ext.php') ||
+                            currentTrack.url.includes('vk.com');
 
             if (isEmbed) {
                 vid.pause(); vid.style.display = 'none';
