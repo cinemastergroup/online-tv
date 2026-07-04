@@ -311,7 +311,6 @@ function updateLayersScale() {
         watermark.style.width = finalSizePx + 'px';
         watermark.style.top = currentLogoConfig.topPercent + '%';
 
-        // Megkeressük a JSON fájl "positions" ágából az aktuális képarányt (ha nincs, a 16:9-et veszi alapul)
         const aspectKey = (currentTrackAspect === "4:3") ? "4:3" : "16:9";
         const currentPos = (currentLogoConfig.positions && currentLogoConfig.positions[aspectKey]) 
                             ? currentLogoConfig.positions[aspectKey] 
@@ -326,12 +325,11 @@ function updateLayersScale() {
                 watermark.style.left = 'auto';
             }
         } else {
-            // Vészhelyzeti fallback, ha a JSON még a régi formátumú lenne
             watermark.style.left = currentLogoConfig.leftPercent + '%';
             watermark.style.right = 'auto';
         }
     }
-}
+} // <-- EZ A ZÁRÓJEL JAVÍTJA KI A SCRIPT ÖSSZEOMLÁSÁT!
 
 window.addEventListener('resize', () => setTimeout(() => { updateLayersScale(); updateFontSizes(); }, 50));
 
