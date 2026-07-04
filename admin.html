@@ -294,7 +294,7 @@ function cloneTrackInTimeline(index) {
         url: sourceTrack.url, 
         duration: sourceTrack.duration,
         rating: sourceTrack.rating || "",
-        aspect: sourceTrack.aspect || "" // Marad üres ha üres volt
+        aspect: sourceTrack.aspect || ""
     });
     document.getElementById('statusConsoleLog').style.color = "#00e676";
     document.getElementById('statusConsoleLog').innerText = `➕ "${sourceTrack.title}" sikeresen duplikálva a lista végére!`;
@@ -337,7 +337,7 @@ function addFilmToDB() {
     document.getElementById('dbUrl').value = '';
     document.getElementById('dbDuration').value = '';
     document.getElementById('dbRating').value = '';
-    document.getElementById('dbAspect').value = ''; // Visszaáll az üres alapértelmezettre
+    document.getElementById('dbAspect').value = '';
 
     statusLogUpdateAndRender();
     dbLog.style.color = "#00e676";
@@ -351,7 +351,89 @@ function formatSecondsToHMS(totalSeconds) {
     return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 }
 
-// ... statusLogUpdateAndRender, importFilmekDB metódusok változatlanok ...
+function statusLogUpdateAndRender() {
+    const dbLog = document.getElementById('dbStatusLog');
+    const sortedTitles = Object.keys(globalDurations);
+    dbLog.style.color = "#00b0ff";
+    dbLog.innerText = `Adatbázis betöltve. Jelenleg ${sortedTitles.length} db műsor van a memóriában.`;
+}
+
+// JAVÍTVA: Az importálás most már azonnal frissíti a datalistet és a log kiírást is!
+function importFilmekDB() {
+    const fileSelector = document.getElementById('dbFileSelector');
+    if (fileSelector.files.length === 0) {
+        alert("Kérlek, előbb válaszd ki a lementett filmekDB.json fájlt!");
+        return;
+    }
+    const file = fileSelector.files[0];
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            globalDurations = JSON.parse(e.target.result);
+            statusLogUpdateAndRender();
+            updateScheduleDatalist(); 
+        } catch (err) {
+            alert("Hiba történt az adatbázis fájl beolvasásakor!");
+        }
+    };
+    reader.readAsText(file);
+}
+
+// JAVÍTVA: Ez a kiegészítő metódus felel az adásmenet tervező listájának azonnali feltöltéséért
+function updateScheduleDatalist() {
+    const datalist = document.getElementById('dbFilmsDatalist');
+    if (!datalist) return;
+    datalist.innerHTML = '';
+    const sortedTitles = Object.keys(globalDurations).sort((a, b) => a.localeCompare(b, 'hu'));
+    sortedTitles.forEach(title => {
+        const filmData = globalDurations[title];
+        const formattedTime = formatSecondsToHMS(filmData.duration);
+        const option = document.createElement('option');
+        option.value = `${title} (${formattedTime})`;
+        datalist.appendChild(option);
+    });
+}
+
+function exportFilmekDB() {
+    if (Object.keys(globalDurations).length === 0) {
+        alert("Az adatbázis üres, nincs mit elmenteni!");
+        return;
+    }
+    const blob = new Blob([JSON.stringify(globalDurations, null, 2)], {type : 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = "filmekDB.json"; a.click();
+}
+
+async function loadGlobalDurations() {
+    try {
+        const response = await fetch(`durations.json?t=${new Date().getTime()}`);
+        if (response.ok) {
+            globalDurations = await response.json();
+            statusLogUpdateAndRender();
+            updateScheduleDatalist();
+        }
+    } catch (e) {
+        console.log("durations.json betöltési hiba.");
+    }
+}
+
+async function loadChannelsConfigOnStart() {
+    try {
+        const response = await fetch(`channels.json?t=${new Date().getTime()}`);
+        if (response.ok) {
+            masterChannelList = await response.json();
+            updateChannelSelectDropdown();
+        }
+    } catch (e) {
+        console.log("Automatikus csatornabeolvasás sikertelen (CORS korlátozás).");
+    }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    loadGlobalDurations();
+    loadChannelsConfigOnStart(); 
+});
 
 function addSelectedFilmToTimeline() {
     const selectorMezo = document.getElementById('scheduleFilmSelector');
@@ -386,7 +468,7 @@ function addSelectedFilmToTimeline() {
         url: filmData.url,
         duration: filmData.duration,
         rating: filmData.rating || "" ,
-        aspect: filmData.aspect || "" // Csak akkor menti el, ha van különleges képarány (pl. 4:3)
+        aspect: filmData.aspect || "" 
     });
 
     selectorMezo.value = ''; 
@@ -394,6 +476,138 @@ function addSelectedFilmToTimeline() {
     statusLog.innerText = `✅ "${selectedTitle}" hozzáadva az adásmenethez!`;
 
     refreshTimeline();
+}
+
+function removeTrackFromTimeline(index) {
+    catcastPlaylist.splice(index, 1);
+    document.getElementById('statusConsoleLog').style.color = "#ff9100";
+    document.getElementById('statusConsoleLog').innerText = "🗑️ Műsorszám eltávolítva. Az időterv újraszámolva.";
+    refreshTimeline();
+}
+
+function refreshTimeline() {
+    const startInput = document.getElementById('streamStartDateTime').value; 
+    const container = document.getElementById('timelineContainer');
+    
+    if (!startInput || catcastPlaylist.length === 0) {
+        container.innerHTML = '';
+        document.getElementById('streamEndTimeCounter').innerText = "Nincs beállítva";
+        document.getElementById('streamTotalDurationMinutes').innerText = "(Összesen: 0 perc)";
+        return;
+    }
+    
+    container.innerHTML = ''; 
+    let parts = startInput.split(/[-T:]/);
+    let timelinePointer = new Date(parts[0], parts[1] - 1, parts[2], parts[3], parts[4], 0);
+    
+    if (isNaN(timelinePointer.getTime())) {
+        timelinePointer = new Date();
+    }
+
+    let totalSecs = 0;
+    catcastPlaylist.forEach((track, index) => {
+        let y = timelinePointer.getFullYear();
+        let m = String(timelinePointer.getMonth() + 1).padStart(2, '0');
+        let d = String(timelinePointer.getDate()).padStart(2, '0');
+        let hr = String(timelinePointer.getHours()).padStart(2, '0');
+        let min = String(timelinePointer.getMinutes()).padStart(2, '0');
+        let sec = String(timelinePointer.getSeconds()).padStart(2, '0');
+        
+        track.start = `${y}-${m}-${d}T${hr}:${min}:${sec}`;
+        
+        const startLocal = `${hr}:${min}:${sec}`;
+        const dateLocal = timelinePointer.toLocaleDateString([], {month: 'short', day: 'numeric', weekday: 'short'});
+        
+        timelinePointer = new Date(timelinePointer.getTime() + track.duration * 1000);
+        totalSecs += track.duration;
+        
+        const displayMin = Math.floor(track.duration / 60);
+        const displaySec = track.duration % 60;
+        
+        container.innerHTML += `
+            <div class="timeline-card">
+                <div class="card-time">
+                    <span style="display:block; font-size:11px; color:#8a99ad;">${dateLocal}</span>⏱️ ${startLocal}
+                </div>
+                <div class="card-info">
+                    <div class="card-title">${track.title}</div>
+                    <div class="card-url">${track.url}</div>
+                </div>
+                <div style="display: flex; align-items: center;">
+                    <div class="card-duration">${displayMin}m ${displaySec}s</div>
+                    <div class="btn-action-holder">
+                        <button class="btn-clone-track" onclick="cloneTrackInTimeline(${index})">＋</button>
+                        <button class="btn-delete-track" onclick="removeTrackFromTimeline(${index})">❌</button>
+                    </div>
+                </div>
+            </div>`;
+    });
+    
+    const endDateStr = timelinePointer.toLocaleDateString('hu-HU', { month: 'short', day: 'numeric', weekday: 'short' });
+    const endTimeStr = timelinePointer.toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    document.getElementById('streamEndTimeCounter').innerText = `${endDateStr} ${endTimeStr}`;
+    document.getElementById('streamTotalDurationMinutes').innerText = `(Összesen: ${Math.round(totalSecs / 60)} perc)`;
+}
+
+function importScheduleJSON() {
+    const fileSelector = document.getElementById('importFileSelector');
+    const statusLog = document.getElementById('statusConsoleLog');
+    if (fileSelector.files.length === 0) {
+        alert("Kérlek, előbb válaszd ki a lementett .json műsorfájlt!");
+        return;
+    }
+    const file = fileSelector.files[0];
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (data.schedule && Array.isArray(data.schedule)) {
+                catcastPlaylist = data.schedule;
+                if (catcastPlaylist.length > 0 && catcastPlaylist[0].start) {
+                    const savedStart = catcastPlaylist[0].start;
+                    document.getElementById('streamStartDateTime').value = savedStart.substring(0, 16);
+                }
+                statusLog.style.color = "#00e676";
+                statusLog.innerText = `Sikeresen beolvasva: ${file.name}.`;
+                refreshTimeline();
+            } else { alert("Ez a fájl nem tartalmaz érvényes műsorrendet!"); }
+        } catch (err) { alert("Hiba történt a JSON fájl feldolgozása során!"); }
+    };
+    reader.readAsText(file);
+}
+
+function exportLogoOnlyJSON() {
+    const chId = document.getElementById('logoChannelId').value.trim() || "cinemaster";
+    const statusLog = document.getElementById('logoStatusLog');
+    const logoOutput = { logo: logoConfig };
+    const blob = new Blob([JSON.stringify(logoOutput, null, 2)], {type : 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); 
+    a.href = url; a.download = chId + "_logo.json"; a.click();
+    statusLog.style.color = "#00e676";
+    statusLog.innerText = `✅ Logó sikeresen elmentve: ${chId}_logo.json`;
+}
+
+function exportScheduleOnlyJSON() {
+    if (catcastPlaylist.length === 0) {
+        alert("A műsorrend üres! Előbb adj hozzá blokkokat.");
+        return;
+    }
+    const chId = document.getElementById('channelId').value.trim() || "cinemaster";
+    const startInput = document.getElementById('streamStartDateTime').value;
+    const statusLog = document.getElementById('statusConsoleLog');
+    if (!startInput) {
+        alert("Kérlek, adj meg egy adásfolyam fix kezdő dátumot, hogy elmenthessem a napi műsort!");
+        return;
+    }
+    const datePart = startInput.split('T')[0];
+    const scheduleOutput = { schedule: catcastPlaylist };
+    const blob = new Blob([JSON.stringify(scheduleOutput, null, 2)], {type : 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); 
+    a.href = url; a.download = `${chId}_schedule_${datePart}.json`; a.click();
+    statusLog.style.color = "#00e676";
+    statusLog.innerText = `✅ Műsorrend sikeresen elmentve: ${chId}_schedule_${datePart}.json`;
 }
 </script>
 </body>
