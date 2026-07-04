@@ -290,21 +290,20 @@ window.addEventListener('keydown', function(e) {
 
 // MÓDOSÍTVA: Ha nincs kitöltve az aspect, vagy nem "4:3", akkor 1.0-ás szorzóval (normál szélén) hagyja
 function updateLayersScale() {
-    // A korhatárkarika szorzója marad a bevált 2.2
     const factorRating = (currentTrackAspect === "4:3") ? 2.2 : 1.0;
     
-    // Alapértelmezett szorzó a felső logónak (16:9-nél 1.0)
     let factorLogo = 1.0; 
     
-    // Csak akkor bíráljuk felül, ha 4:3-as a videó képaránya
+    // 1. LÉPÉS: Kiszámoljuk a szorzókat, ha 4:3 az adás
     if (currentTrackAspect === "4:3") {
         if (activeChannel === "retrotv") {
-            factorLogo = 2.9; // Nagyobb szorzó: jobban betolja jobbra a balos logót, mert az iframe kilóg balra
+            factorLogo = 2.9; 
         } else {
-            factorLogo = 3.3; // kisebb szorzó
+            factorLogo = 1.3; // Itt a CineMaster 2 miatt érdemes kisebb értéken hagyni (pl. 1.3), különben a 3.3-mal teljesen beúszik középre!
         }
-    }
+    } // <-- EZ AZ A KAPCSOS ZÁRÓJEL, AMIT ITT LE KELL ZÁRNI!
 
+    // 2. LÉPÉS: A kirajzolás már a feltételen KÍVÜL van, így 16:9 és 4:3 esetén is lefut!
     if (currentLogoConfig && currentLogoConfig.url) {
         const finalSizePx = container.clientWidth * (currentLogoConfig.size / 440);
         watermark.style.width = finalSizePx + 'px';
@@ -334,7 +333,7 @@ function updateLayersScale() {
             ratingImg.style.left = 'auto';
         }
     }
-}
+} // <-- Ez zárja le magát az updateLayersScale() függvényt
 
 window.addEventListener('resize', () => setTimeout(() => { updateLayersScale(); updateFontSizes(); }, 50));
 
