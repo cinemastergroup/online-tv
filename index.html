@@ -410,7 +410,11 @@ async function runTvEngine() {
             lblShow.innerText = currentTrack.title;
             
             // MÓDOSÍTVA: Ha nincs aspect kulcs, akkor üres stringet kap, ami a 16:9-et jelenti
-            currentTrackAspect = currentTrack.aspect || "";
+            if (currentTrack && typeof currentTrack.aspect !== 'undefined') {
+                currentTrackAspect = currentTrack.aspect;
+            } else {
+                currentTrackAspect = "";
+            }
 
             const trackStart = parseLocalISO(currentTrack.start);
             const trackEnd = new Date(trackStart.getTime() + currentTrack.duration * 1000);
