@@ -294,7 +294,7 @@ function updateLayersScale() {
     const factorRating = (currentTrackAspect === "4:3") ? 2.2 : 1.0;
     
     // A felső logónak vegyük kisebbre a szorzót, hogy ne másszon be ennyire!
-    const factorLogo = (currentTrackAspect === "4:3") ? 1.6 : 1.0; 
+    const factorLogo = (currentTrackAspect === "4:3") ? 1.1 : 1.0; 
 
     if (currentLogoConfig && currentLogoConfig.url) {
         const finalSizePx = container.clientWidth * (currentLogoConfig.size / 440);
