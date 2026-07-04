@@ -290,30 +290,34 @@ window.addEventListener('keydown', function(e) {
 
 // MÓDOSÍTVA: Ha nincs kitöltve az aspect, vagy nem "4:3", akkor 1.0-ás szorzóval (normál szélén) hagyja
 function updateLayersScale() {
+    // A korhatárkarika szorzója marad a bevált 2.2
     const factorRating = (currentTrackAspect === "4:3") ? 2.2 : 1.0;
     
-    let factorLogo = 1.0; 
-    
-    // 1. LÉPÉS: Kiszámoljuk a szorzókat, ha 4:3 az adás
-    if (currentTrackAspect === "4:3") {
-        if (activeChannel === "retrotv") {
-            factorLogo = 3.0; 
-        } else {
-            factorLogo = 0.7; // Itt a CineMaster 2 miatt érdemes kisebb értéken hagyni (pl. 1.3), különben a 3.3-mal teljesen beúszik középre!
-        }
-    } // <-- EZ AZ A KAPCSOS ZÁRÓJEL, AMIT ITT LE KELL ZÁRNI!
+    // Ez a változó fogja tárolni a logó végleges, módosított szorzóját
+    let factorLogo; 
 
-    // 2. LÉPÉS: A kirajzolás már a feltételen KÍVÜL van, így 16:9 és 4:3 esetén is lefut!
+    // --- ITT VALÓSUL MEG A TE LOGIKÁD ---
+    if (activeChannel === "retrotv") {
+        // A RetroTV-nél az alapértelmezett (16:9) fixen 1.0, 4:3 esetén pedig 3.0
+        factorLogo = (currentTrackAspect === "4:3") ? 3.0 : 1.0;
+    } else {
+        // EGYÉB ESETBEN: 16:9-nél 0.0 kéne (nulla margó), 4:3-nál pedig 0.7
+        factorLogo = (currentTrackAspect === "4:3") ? 0.7 : 0.0;
+    }
+    // ------------------------------------
+
     if (currentLogoConfig && currentLogoConfig.url) {
         const finalSizePx = container.clientWidth * (currentLogoConfig.size / 440);
         watermark.style.width = finalSizePx + 'px';
         watermark.style.top = currentLogoConfig.topPercent + '%';
         
         if (currentLogoConfig.leftPercent < 50) {
+            // Ha a factorLogo 0.0, akkor a leftPercent * 0 = 0% lesz (teljesen a szélére tapad, ahogy szeretted volna)
             watermark.style.left = (currentLogoConfig.leftPercent * factorLogo) + '%'; 
             watermark.style.right = 'auto';
         } else {
             const rightPercent = 100 - currentLogoConfig.leftPercent;
+            // Ha a factorLogo 0.0, a jobb oldalon is 0% lesz az eltolás (kiül a monitor jobb szélére)
             watermark.style.right = (rightPercent * factorLogo) + '%'; 
             watermark.style.left = 'auto';
         }
