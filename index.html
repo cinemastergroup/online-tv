@@ -290,11 +290,19 @@ window.addEventListener('keydown', function(e) {
 
 // MÓDOSÍTVA: Ha nincs kitöltve az aspect, vagy nem "4:3", akkor 1.0-ás szorzóval (normál szélén) hagyja
 function updateLayersScale() {
-    // A korhatárkarikának marad a 2.2, mert az most is jó helyen van
+    // A korhatárkarika szorzója marad a bevált 2.2
     const factorRating = (currentTrackAspect === "4:3") ? 2.2 : 1.0;
     
-    // A felső logónak vegyük kisebbre a szorzót, hogy ne másszon be ennyire!
-    const factorLogo = (currentTrackAspect === "4:3") ? 2.0 : 1.0; 
+    // Alapértelmezett szorzó a felső logónak (16:9-nél 1.0)
+    let factorLogo = 1.0; 
+    
+    // Csak akkor bíráljuk felül, ha 4:3-as a videó képaránya
+    if (currentTrackAspect === "4:3") {
+        if (activeChannel === "retrotv") {
+            factorLogo = 2.4; // Nagyobb szorzó: jobban betolja jobbra a balos logót, mert az iframe kilóg balra
+        } else {
+            factorLogo = 1.3; // kisebb szorzó
+    }
 
     if (currentLogoConfig && currentLogoConfig.url) {
         const finalSizePx = container.clientWidth * (currentLogoConfig.size / 440);
@@ -302,11 +310,11 @@ function updateLayersScale() {
         watermark.style.top = currentLogoConfig.topPercent + '%';
         
         if (currentLogoConfig.leftPercent < 50) {
-            watermark.style.left = (currentLogoConfig.leftPercent * factorLogo) + '%'; // factorLogo-t használja
+            watermark.style.left = (currentLogoConfig.leftPercent * factorLogo) + '%'; 
             watermark.style.right = 'auto';
         } else {
             const rightPercent = 100 - currentLogoConfig.leftPercent;
-            watermark.style.right = (rightPercent * factorLogo) + '%'; // factorLogo-t használja
+            watermark.style.right = (rightPercent * factorLogo) + '%'; 
             watermark.style.left = 'auto';
         }
     }
@@ -317,11 +325,11 @@ function updateLayersScale() {
         ratingImg.style.top = currentRatingConfig.topPercent + '%';
         
         if (currentRatingConfig.leftPercent < 50) {
-            ratingImg.style.left = (currentRatingConfig.leftPercent * factorRating) + '%'; // factorRating-ot használja
+            ratingImg.style.left = (currentRatingConfig.leftPercent * factorRating) + '%'; 
             ratingImg.style.right = 'auto';
         } else {
             const rightPercent = 100 - currentRatingConfig.leftPercent;
-            ratingImg.style.right = (rightPercent * factorRating) + '%'; // factorRating-ot használja
+            ratingImg.style.right = (rightPercent * factorRating) + '%'; 
             ratingImg.style.left = 'auto';
         }
     }
