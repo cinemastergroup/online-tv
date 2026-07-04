@@ -351,18 +351,20 @@ function formatSecondsToHMS(totalSeconds) {
     return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 }
 
+// JAVÍTVA: Megtisztított állapotjelző, ami nem fagyasztja le az oldalt
 function statusLogUpdateAndRender() {
     const dbLog = document.getElementById('dbStatusLog');
-    const sortedTitles = Object.keys(globalDurations);
+    if (!dbLog) return;
+    const itemsCount = Object.keys(globalDurations).length;
     dbLog.style.color = "#00b0ff";
-    dbLog.innerText = `Adatbázis betöltve. Jelenleg ${sortedTitles.length} db műsor van a memóriában.`;
+    dbLog.innerText = `Adatbázis betöltve. Jelenleg ${itemsCount} db műsor van a memóriában.`;
 }
 
-// JAVÍTVA: Az importálás most már azonnal frissíti a datalistet és a log kiírást is!
+// JAVÍTVA: Az importálás most már golyóállóan és azonnal frissíti a keresőlistát is!
 function importFilmekDB() {
     const fileSelector = document.getElementById('dbFileSelector');
     if (fileSelector.files.length === 0) {
-        alert("Kérlek, előbb válaszd ki a lementett filmekDB.json fájlt!");
+        alert("Kérlek, előbb válaszd ki a lementett filmekDB.json fáljt!");
         return;
     }
     const file = fileSelector.files[0];
@@ -370,20 +372,26 @@ function importFilmekDB() {
     reader.onload = function(e) {
         try {
             globalDurations = JSON.parse(e.target.result);
-            statusLogUpdateAndRender();
-            updateScheduleDatalist(); 
+            statusLogUpdateAndRender(); // Szöveges log frissítése
+            updateScheduleDatalist();   // Lenyíló lista feltöltése
+            
+            // Látványos zöld visszajelzés a gomb alatt
+            const dbLog = document.getElementById('dbStatusLog');
+            dbLog.style.color = "#00e676";
+            dbLog.innerText = `✅ Sikeresen beolvasva: ${file.name} (${Object.keys(globalDurations).length} db műsor)!`;
         } catch (err) {
-            alert("Hiba történt az adatbázis fájl beolvasásakor!");
+            alert("Hiba történt az adatbázis fájl beolvasásakor! Kérlek ellenőrizd a JSON struktúrát.");
         }
     };
     reader.readAsText(file);
 }
 
-// JAVÍTVA: Ez a kiegészítő metódus felel az adásmenet tervező listájának azonnali feltöltéséért
+// JAVÍTVA: Magyar ábécé szerinti rendezéssel tölti fel a lenyíló listát az adásmenet tervezőnél
 function updateScheduleDatalist() {
     const datalist = document.getElementById('dbFilmsDatalist');
     if (!datalist) return;
     datalist.innerHTML = '';
+    
     const sortedTitles = Object.keys(globalDurations).sort((a, b) => a.localeCompare(b, 'hu'));
     sortedTitles.forEach(title => {
         const filmData = globalDurations[title];
@@ -407,14 +415,15 @@ function exportFilmekDB() {
 
 async function loadGlobalDurations() {
     try {
-        const response = await fetch(`durations.json?t=${new Date().getTime()}`);
+        // Megpróbáljuk alapból a filmekDB.json-t keresni az induláskor
+        const response = await fetch(`filmekDB.json?t=${new Date().getTime()}`);
         if (response.ok) {
             globalDurations = await response.json();
             statusLogUpdateAndRender();
             updateScheduleDatalist();
         }
     } catch (e) {
-        console.log("durations.json betöltési hiba.");
+        console.log("Alapértelmezett filmekDB.json nem található a gyökérben, várd meg a manuális beolvasást.");
     }
 }
 
@@ -426,7 +435,7 @@ async function loadChannelsConfigOnStart() {
             updateChannelSelectDropdown();
         }
     } catch (e) {
-        console.log("Automatikus csatornabeolvasás sikertelen (CORS korlátozás).");
+        console.log("Automatikus csatornabeolvasás szünetel.");
     }
 }
 
