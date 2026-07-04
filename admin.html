@@ -11,11 +11,9 @@
         h2 { margin-top: 0; font-size: 20px; color: #fff; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; }
         .video-box { position: relative; width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 8px; overflow: hidden; user-select: none; }
         video { width: 100%; height: 100%; }
+        /* JAVÍTVA: Árnyékolás eltávolítva */
         .tv-watermark { position: absolute; top: 20px; left: 20px; width: 60px; opacity: 0.7; cursor: move; z-index: 10; }
-        
-        /* MÓDOSÍTVA: Három oszlopos elrendezés a paramétereknek (Idő, Korhatár, Képarány) */
-        .input-row-three { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 15px; margin-bottom: 15px; }
-        .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        .input-row-three{ display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 15px; margin-bottom: 15px; }
         label { font-size: 12px; color: #8a99ad; font-weight: 600; text-transform: uppercase; margin-bottom: 5px; display: block; }
         input, select { width: 100%; padding: 12px; background: #11141a; border: 1px solid var(--border-color); color: #fff; border-radius: 6px; box-sizing: border-box; font-size: 14px; color-scheme: dark; }
         button { background: var(--accent-color); color: white; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; font-size: 14px; transition: 0.2s; }
@@ -88,31 +86,29 @@
                 <label>OK.ru link vagy közvetlen (.mp4) URL</label>
                 <input type="text" id="dbUrl" placeholder="https://ok.ru/video/... vagy https://...">
             </div>
-            
             <div class="input-row-three">
-                <div>
-                    <label>Játékidő (ÓÓ:PP:MM vagy PP:MM)</label>
-                    <input type="text" id="dbDuration" placeholder="pl. 02:32:15 vagy 95:08">
-                </div>
-                <div>
-                    <label>Korhatár besorolás</label>
-                    <select id="dbRating">
-                        <option value="">KN (Korhatár nélkül)</option>
-                        <option value="6">6+</option>
-                        <option value="12">12+</option>
-                        <option value="16">16+</option>
-                        <option value="18">18+</option>
-                    </select>
-                </div>
-                <div>
-                    <label>Képarány</label>
-                    <select id="dbAspect">
-                        <option value="">Alapértelmezett (16:9)</option>
-                        <option value="4:3">4:3 (Régi film)</option>
-                    </select>
-                </div>
+            <div>
+                <label>Játékidő (ÓÓ:PP:MM vagy PP:MM)</label>
+                <input type="text" id="dbDuration" placeholder="pl. 02:32:15 vagy 95:08">
             </div>
-            
+            <div>
+                <label>Korhatár besorolás</label>
+                <select id="dbRating">
+                    <option value="">KN (Korhatár nélkül)</option>
+                    <option value="6">6+</option>
+                    <option value="12">12+</option>
+                    <option value="16">16+</option>
+                    <option value="18">18+</option>
+                </select>
+            </div>
+            <div>
+                <label>Képarány</label>
+                <select id="dbAspect">
+                    <option value="">Alapértelmezett (16:9)</option>
+                    <option value="4:3">4:3 (Régi film)</option>
+                </select>
+            </div>
+        </div>
             <div class="input-row">
                 <button onclick="addFilmToDB()">Film hozzáadása a DB-hez ➕</button>
                 <button class="btn-db-save" onclick="exportFilmekDB()">adatbázis mentése (filmekDB.json) 💾</button>
@@ -260,6 +256,7 @@ function changeLogoSrc() {
     document.getElementById('channelLogoImg').src = logoConfig.url; 
 }
 
+// JAVÍTVA: Árnyékkezelés kiszedve
 function changeLogoSize() { 
     const size = document.getElementById('logoSizeSlider').value; 
     document.getElementById('logoSizeVal').innerText = size + "px"; 
@@ -289,7 +286,6 @@ document.addEventListener('mousemove', (e) => {
 });
 document.addEventListener('mouseup', () => { isDragging = false; });
 
-// MÓDOSÍTVA: Klónozáskor az aspect (képarány) érték is biztonságosan átmásolódik
 function cloneTrackInTimeline(index) {
     const sourceTrack = catcastPlaylist[index];
     if (!sourceTrack) return;
@@ -305,13 +301,12 @@ function cloneTrackInTimeline(index) {
     refreshTimeline();
 }
 
-// MÓDOSÍTVA: Az aspect mező tartalmának kinyerése és elmentése a memóriába
 function addFilmToDB() {
     const title = document.getElementById('dbTitle').value.trim();
     let url = document.getElementById('dbUrl').value.trim();
     const durationInput = document.getElementById('dbDuration').value.trim();
     const rating = document.getElementById('dbRating').value;
-    const aspect = document.getElementById('dbAspect').value; // ÚJ
+    const aspect = document.getElementById('dbAspect').value;
     const dbLog = document.getElementById('dbStatusLog');
 
     if (!title || !url || !durationInput) {
@@ -342,7 +337,7 @@ function addFilmToDB() {
     document.getElementById('dbUrl').value = '';
     document.getElementById('dbDuration').value = '';
     document.getElementById('dbRating').value = '';
-    document.getElementById('dbAspect').value = ''; // Resetel az üres alapértelmezettre
+    document.getElementById('dbAspect').value = '';
 
     statusLogUpdateAndRender();
     dbLog.style.color = "#00e676";
@@ -372,7 +367,6 @@ function statusLogUpdateAndRender() {
     dbLog.innerText = `Adatbázis betöltve. Jelenleg ${sortedTitles.length} db műsor van a memóriában.`;
 }
 
-// JAVÍTVA: Az importálás most már garantáltan és azonnal feltölti az adásmenet keresőjét is a beolvasás után!
 function importFilmekDB() {
     const fileSelector = document.getElementById('dbFileSelector');
     if (fileSelector.files.length === 0) {
@@ -384,12 +378,7 @@ function importFilmekDB() {
     reader.onload = function(e) {
         try {
             globalDurations = JSON.parse(e.target.result);
-            statusLogUpdateAndRender(); // Ez rendezi és egyúttal legenerálja a listaelemeket
-            
-            // Látványos visszajelzés a sikeres beolvasásról
-            const dbLog = document.getElementById('dbStatusLog');
-            dbLog.style.color = "#00e676";
-            dbLog.innerText = `✅ Sikeresen beolvasva: ${file.name} (${Object.keys(globalDurations).length} db műsor)!`;
+            statusLogUpdateAndRender();
         } catch (err) {
             alert("Hiba történt az adatbázis fájl beolvasásakor!");
         }
@@ -437,7 +426,6 @@ window.addEventListener('DOMContentLoaded', () => {
     loadChannelsConfigOnStart(); 
 });
 
-// MÓDOSÍTVA: A kiválasztott film aspect paramétere is átkerül a napi adásmenet listába
 function addSelectedFilmToTimeline() {
     const selectorMezo = document.getElementById('scheduleFilmSelector');
     const rawSelectedValue = selectorMezo.value.trim();
@@ -471,7 +459,7 @@ function addSelectedFilmToTimeline() {
         url: filmData.url,
         duration: filmData.duration,
         rating: filmData.rating || "",
-        aspect: filmData.aspect || "" // Csak akkor menti el, ha van egyedi képarány érték (pl. 4:3)
+        aspect: filmData.aspect || ""
     });
 
     selectorMezo.value = ''; 
@@ -579,7 +567,6 @@ function importScheduleJSON() {
     reader.readAsText(file);
 }
 
-// ... (Minden egyéb export függvény változatlanul él a kódban) ...
 function exportLogoOnlyJSON() {
     const chId = document.getElementById('logoChannelId').value.trim() || "cinemaster";
     const statusLog = document.getElementById('logoStatusLog');
