@@ -297,9 +297,9 @@ function updateLayersScale() {
     // 1. LÉPÉS: Kiszámoljuk a szorzókat, ha 4:3 az adás
     if (currentTrackAspect === "4:3") {
         if (activeChannel === "retrotv") {
-            factorLogo = 2.9; 
+            factorLogo = 3.0; 
         } else {
-            factorLogo = 0.5; // Itt a CineMaster 2 miatt érdemes kisebb értéken hagyni (pl. 1.3), különben a 3.3-mal teljesen beúszik középre!
+            factorLogo = 0.7; // Itt a CineMaster 2 miatt érdemes kisebb értéken hagyni (pl. 1.3), különben a 3.3-mal teljesen beúszik középre!
         }
     } // <-- EZ AZ A KAPCSOS ZÁRÓJEL, AMIT ITT LE KELL ZÁRNI!
 
