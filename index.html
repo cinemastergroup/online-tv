@@ -290,7 +290,11 @@ window.addEventListener('keydown', function(e) {
 
 // MÓDOSÍTVA: Ha nincs kitöltve az aspect, vagy nem "4:3", akkor 1.0-ás szorzóval (normál szélén) hagyja
 function updateLayersScale() {
-    const factor = (currentTrackAspect === "4:3") ? 2.2 : 1.0;
+    // A korhatárkarikának marad a 2.2, mert az most is jó helyen van
+    const factorRating = (currentTrackAspect === "4:3") ? 2.2 : 1.0;
+    
+    // A felső logónak vegyük kisebbre a szorzót, hogy ne másszon be ennyire!
+    const factorLogo = (currentTrackAspect === "4:3") ? 1.6 : 1.0; 
 
     if (currentLogoConfig && currentLogoConfig.url) {
         const finalSizePx = container.clientWidth * (currentLogoConfig.size / 440);
@@ -298,25 +302,26 @@ function updateLayersScale() {
         watermark.style.top = currentLogoConfig.topPercent + '%';
         
         if (currentLogoConfig.leftPercent < 50) {
-            watermark.style.left = (currentLogoConfig.leftPercent * factor) + '%';
+            watermark.style.left = (currentLogoConfig.leftPercent * factorLogo) + '%'; // factorLogo-t használja
             watermark.style.right = 'auto';
         } else {
             const rightPercent = 100 - currentLogoConfig.leftPercent;
-            watermark.style.right = (rightPercent * factor) + '%';
+            watermark.style.right = (rightPercent * factorLogo) + '%'; // factorLogo-t használja
             watermark.style.left = 'auto';
         }
     }
+    
     if (currentRatingConfig && currentRatingConfig.url) {
         const finalSizePx = container.clientWidth * (currentRatingConfig.size / 440);
         ratingImg.style.width = finalSizePx + 'px';
         ratingImg.style.top = currentRatingConfig.topPercent + '%';
         
         if (currentRatingConfig.leftPercent < 50) {
-            ratingImg.style.left = (currentRatingConfig.leftPercent * factor) + '%';
+            ratingImg.style.left = (currentRatingConfig.leftPercent * factorRating) + '%'; // factorRating-ot használja
             ratingImg.style.right = 'auto';
         } else {
             const rightPercent = 100 - currentRatingConfig.leftPercent;
-            ratingImg.style.right = (rightPercent * factor) + '%';
+            ratingImg.style.right = (rightPercent * factorRating) + '%'; // factorRating-ot használja
             ratingImg.style.left = 'auto';
         }
     }
