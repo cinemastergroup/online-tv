@@ -1771,5 +1771,25 @@
     "url": "https://ok.ru/videoembed/2816829033171",
     "duration": 5869,
     "rating": "12"
+  },
+  "MÁSNAPOSOK 2": {
+    "url": "https://ok.ru/videoembed/2607041420946",
+    "duration": 6257,
+    "rating": "16"
+  },
+  "SPANGOL": {
+    "url": "https://ok.ru/videoembed/3138135591635",
+    "duration": 7869,
+    "rating": "12"
+  },
+  "ÖRÖMAPA": {
+    "url": "https://ok.ru/videoembed/7810738621072",
+    "duration": 6313,
+    "rating": "12"
+  },
+  "ÖRÖMAPA 2": {
+    "url": "https://ok.ru/videoembed/7810685143696",
+    "duration": 6365,
+    "rating": "12"
   }
 }
