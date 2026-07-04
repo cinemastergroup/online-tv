@@ -224,7 +224,7 @@ let currentRatingConfig = null;
 let isEpgOpen = false;
 let userUnlocked = false;
 let isIframeLoaded = false; 
-let currentTrackAspect = ""; // MÓDOSÍTVA: Alapból üres (ami 16:9-nek felel meg)
+let currentTrackAspect = ""; // ÚJ: Dinamikus képarány állapotjelző
 
 let forceBlackoutActive = false;
 
@@ -249,8 +249,6 @@ function parseLocalISO(isoStr) {
     let parts = clean.split(/[-T:]/);
     return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]), parseInt(parts[3]), parseInt(parts[4]), parseInt(parts[5]) || 0);
 }
-
-// ... updateFontSizes, toggleEpg, toggleNativeFullscreen változatlanok ...
 
 function updateFontSizes() {
     const baseWidth = container.clientWidth;
@@ -288,10 +286,10 @@ window.addEventListener('keydown', function(e) {
     }
 });
 
+// JAVÍTVA: Teljesen megújult, szorzásmentes, JSON-alapú precíziós elrendezés-kezelő
 function updateLayersScale() {
-    // 1. KORHATÁRKARIKA (Marad a jól bevált közvetlen vagy szorzós logika)
+    // 1. KORHATÁRKARIKA POZICIONÁLÁSA (A jól bevált, stabil szorzós logikával)
     const factorRating = (currentTrackAspect === "4:3") ? 2.2 : 1.0;
-    
     if (currentRatingConfig && currentRatingConfig.url) {
         const finalSizePx = container.clientWidth * (currentRatingConfig.size / 440);
         ratingImg.style.width = finalSizePx + 'px';
@@ -307,37 +305,31 @@ function updateLayersScale() {
         }
     }
 
-    // 2. CSATORNALOGÓK KÖZVETLEN POZICIONÁLÁSA
+    // 2. CSATORNALOGÓ POZICIONÁLÁSA (Fix és közvetlen JSON pozíciókból)
     if (currentLogoConfig && currentLogoConfig.url) {
         const finalSizePx = container.clientWidth * (currentLogoConfig.size / 440);
         watermark.style.width = finalSizePx + 'px';
-        
-        // A függőleges (top) pozíció maradhat az eredeti
         watermark.style.top = currentLogoConfig.topPercent + '%';
 
-        // Létrehozunk változókat a végleges százalékoknak
-        let finalLeft = 'auto';
-        let finalRight = 'auto';
+        // Megkeressük a JSON fájl "positions" ágából az aktuális képarányt (ha nincs, a 16:9-et veszi alapul)
+        const aspectKey = (currentTrackAspect === "4:3") ? "4:3" : "16:9";
+        const currentPos = (currentLogoConfig.positions && currentLogoConfig.positions[aspectKey]) 
+                            ? currentLogoConfig.positions[aspectKey] 
+                            : null;
 
-        if (activeChannel === "retrotv") {
-            // RETRO TV (Bal oldali logó)
-            if (currentTrackAspect === "4:3") {
-                finalLeft = '12%'; // 4:3-nál közvetlenül beljebb toljuk (írd át arra a %-ra, ami neked tetszik)
-            } else {
-                finalLeft = '4%';  // 16:9-nél az alapértelmezett helye
+        if (currentPos) {
+            if (currentPos.leftPercent !== undefined) {
+                watermark.style.left = currentPos.leftPercent;
+                watermark.style.right = 'auto';
+            } else if (currentPos.rightPercent !== undefined) {
+                watermark.style.right = currentPos.rightPercent;
+                watermark.style.left = 'auto';
             }
         } else {
-            // MINDEN MÁS CSATORNA (Jobb oldali logók, pl. CineMaster 2)
-            if (currentTrackAspect === "4:3") {
-                finalLeft = '86%'; 
-            } else {
-                finalLeft = '82%';   // 16:9-nél 
-            }
+            // Vészhelyzeti fallback, ha a JSON még a régi formátumú lenne
+            watermark.style.left = currentLogoConfig.leftPercent + '%';
+            watermark.style.right = 'auto';
         }
-
-        // Végül közvetlenül alkalmazzuk a kiszámolt fix értékeket
-        watermark.style.left = finalLeft;
-        watermark.style.right = finalRight;
     }
 }
 
@@ -353,7 +345,7 @@ function switchChannel(channelId) {
     activeChannel = channelId;
     lastRenderedUrl = '';
     isIframeLoaded = false; 
-    currentTrackAspect = ""; // Reset alapra csatornaváltáskor
+    currentTrackAspect = ""; // Csatornaváltáskor tiszta lap
     triggerBlackoutIncert(); 
     vid.pause();
     vid.removeAttribute('src');
@@ -375,12 +367,13 @@ async function runTvEngine() {
     if (!userUnlocked) return;
 
     try {
+        // CSATORNALOGÓ JSON BETÖLTÉSE
         try {
             const logoResponse = await fetch(`${activeChannel}_logo.json?t=${new Date().getTime()}`);
             if (logoResponse.ok) {
                 const logoConfig = await logoResponse.json();
                 if (logoConfig.logo && logoConfig.logo.url) {
-                    currentLogoConfig = logoConfig.logo;
+                    currentLogoConfig = logoConfig.logo; // Mentjük a teljes konfigurációt a pozíciókkal együtt
                     watermark.src = logoConfig.logo.url;
                     watermark.style.display = 'block';
                 }
@@ -428,7 +421,7 @@ async function runTvEngine() {
             if (!forceBlackoutActive) { overlay.style.display = 'none'; }
             lblShow.innerText = currentTrack.title;
             
-            // MÓDOSÍTVA: Ha nincs aspect kulcs, akkor üres stringet kap, ami a 16:9-et jelenti
+            // JAVÍTVA: A futó műsor aktuális képarányának dinamikus frissítése
             if (currentTrack && typeof currentTrack.aspect !== 'undefined') {
                 currentTrackAspect = currentTrack.aspect;
             } else {
