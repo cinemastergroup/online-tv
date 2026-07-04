@@ -12,6 +12,8 @@
         .video-box { position: relative; width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 8px; overflow: hidden; user-select: none; }
         video { width: 100%; height: 100%; }
         .tv-watermark { position: absolute; top: 20px; left: 20px; width: 60px; opacity: 0.7; cursor: move; z-index: 10; }
+        
+        /* MÓDOSÍTVA: Három oszlopos elrendezés a paramétereknek (Idő, Korhatár, Képarány) */
         .input-row-three { display: grid; grid-template-columns: 1.2fr 1fr 1fr; gap: 15px; margin-bottom: 15px; }
         .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
         label { font-size: 12px; color: #8a99ad; font-weight: 600; text-transform: uppercase; margin-bottom: 5px; display: block; }
@@ -93,9 +95,9 @@
                     <input type="text" id="dbDuration" placeholder="pl. 02:32:15 vagy 95:08">
                 </div>
                 <div>
-                    <label>Korhatár</label>
+                    <label>Korhatár besorolás</label>
                     <select id="dbRating">
-                        <option value="">KN (Nincs)</option>
+                        <option value="">KN (Korhatár nélkül)</option>
                         <option value="6">6+</option>
                         <option value="12">12+</option>
                         <option value="16">16+</option>
@@ -148,6 +150,7 @@
 
     <div class="panel">
         <h2>📅 Műsorfolyam Tervező (Műsorújság Generátor)</h2>
+        
         <div class="input-row" style="margin-bottom: 20px;">
             <div>
                 <label>Melyik csatorna műsorát írod?:</label>
@@ -286,6 +289,7 @@ document.addEventListener('mousemove', (e) => {
 });
 document.addEventListener('mouseup', () => { isDragging = false; });
 
+// MÓDOSÍTVA: Klónozáskor az aspect (képarány) érték is biztonságosan átmásolódik
 function cloneTrackInTimeline(index) {
     const sourceTrack = catcastPlaylist[index];
     if (!sourceTrack) return;
@@ -301,12 +305,13 @@ function cloneTrackInTimeline(index) {
     refreshTimeline();
 }
 
+// MÓDOSÍTVA: Az aspect mező tartalmának kinyerése és elmentése a memóriába
 function addFilmToDB() {
     const title = document.getElementById('dbTitle').value.trim();
     let url = document.getElementById('dbUrl').value.trim();
     const durationInput = document.getElementById('dbDuration').value.trim();
     const rating = document.getElementById('dbRating').value;
-    const aspect = document.getElementById('dbAspect').value; 
+    const aspect = document.getElementById('dbAspect').value; // ÚJ
     const dbLog = document.getElementById('dbStatusLog');
 
     if (!title || !url || !durationInput) {
@@ -337,7 +342,7 @@ function addFilmToDB() {
     document.getElementById('dbUrl').value = '';
     document.getElementById('dbDuration').value = '';
     document.getElementById('dbRating').value = '';
-    document.getElementById('dbAspect').value = '';
+    document.getElementById('dbAspect').value = ''; // Resetel az üres alapértelmezettre
 
     statusLogUpdateAndRender();
     dbLog.style.color = "#00e676";
@@ -351,47 +356,9 @@ function formatSecondsToHMS(totalSeconds) {
     return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 }
 
-// JAVÍTVA: Megtisztított állapotjelző, ami nem fagyasztja le az oldalt
 function statusLogUpdateAndRender() {
-    const dbLog = document.getElementById('dbStatusLog');
-    if (!dbLog) return;
-    const itemsCount = Object.keys(globalDurations).length;
-    dbLog.style.color = "#00b0ff";
-    dbLog.innerText = `Adatbázis betöltve. Jelenleg ${itemsCount} db műsor van a memóriában.`;
-}
-
-// JAVÍTVA: Az importálás most már golyóállóan és azonnal frissíti a keresőlistát is!
-function importFilmekDB() {
-    const fileSelector = document.getElementById('dbFileSelector');
-    if (fileSelector.files.length === 0) {
-        alert("Kérlek, előbb válaszd ki a lementett filmekDB.json fáljt!");
-        return;
-    }
-    const file = fileSelector.files[0];
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            globalDurations = JSON.parse(e.target.result);
-            statusLogUpdateAndRender(); // Szöveges log frissítése
-            updateScheduleDatalist();   // Lenyíló lista feltöltése
-            
-            // Látványos zöld visszajelzés a gomb alatt
-            const dbLog = document.getElementById('dbStatusLog');
-            dbLog.style.color = "#00e676";
-            dbLog.innerText = `✅ Sikeresen beolvasva: ${file.name} (${Object.keys(globalDurations).length} db műsor)!`;
-        } catch (err) {
-            alert("Hiba történt az adatbázis fájl beolvasásakor! Kérlek ellenőrizd a JSON struktúrát.");
-        }
-    };
-    reader.readAsText(file);
-}
-
-// JAVÍTVA: Magyar ábécé szerinti rendezéssel tölti fel a lenyíló listát az adásmenet tervezőnél
-function updateScheduleDatalist() {
     const datalist = document.getElementById('dbFilmsDatalist');
-    if (!datalist) return;
     datalist.innerHTML = '';
-    
     const sortedTitles = Object.keys(globalDurations).sort((a, b) => a.localeCompare(b, 'hu'));
     sortedTitles.forEach(title => {
         const filmData = globalDurations[title];
@@ -400,6 +367,34 @@ function updateScheduleDatalist() {
         option.value = `${title} (${formattedTime})`;
         datalist.appendChild(option);
     });
+    const dbLog = document.getElementById('dbStatusLog');
+    dbLog.style.color = "#00b0ff";
+    dbLog.innerText = `Adatbázis betöltve. Jelenleg ${sortedTitles.length} db műsor van a memóriában.`;
+}
+
+// JAVÍTVA: Az importálás most már garantáltan és azonnal feltölti az adásmenet keresőjét is a beolvasás után!
+function importFilmekDB() {
+    const fileSelector = document.getElementById('dbFileSelector');
+    if (fileSelector.files.length === 0) {
+        alert("Kérlek, előbb válaszd ki a lementett filmekDB.json fájlt!");
+        return;
+    }
+    const file = fileSelector.files[0];
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            globalDurations = JSON.parse(e.target.result);
+            statusLogUpdateAndRender(); // Ez rendezi és egyúttal legenerálja a listaelemeket
+            
+            // Látványos visszajelzés a sikeres beolvasásról
+            const dbLog = document.getElementById('dbStatusLog');
+            dbLog.style.color = "#00e676";
+            dbLog.innerText = `✅ Sikeresen beolvasva: ${file.name} (${Object.keys(globalDurations).length} db műsor)!`;
+        } catch (err) {
+            alert("Hiba történt az adatbázis fájl beolvasásakor!");
+        }
+    };
+    reader.readAsText(file);
 }
 
 function exportFilmekDB() {
@@ -415,15 +410,13 @@ function exportFilmekDB() {
 
 async function loadGlobalDurations() {
     try {
-        // Megpróbáljuk alapból a filmekDB.json-t keresni az induláskor
-        const response = await fetch(`filmekDB.json?t=${new Date().getTime()}`);
+        const response = await fetch(`durations.json?t=${new Date().getTime()}`);
         if (response.ok) {
             globalDurations = await response.json();
             statusLogUpdateAndRender();
-            updateScheduleDatalist();
         }
     } catch (e) {
-        console.log("Alapértelmezett filmekDB.json nem található a gyökérben, várd meg a manuális beolvasást.");
+        console.log("durations.json betöltési hiba.");
     }
 }
 
@@ -435,7 +428,7 @@ async function loadChannelsConfigOnStart() {
             updateChannelSelectDropdown();
         }
     } catch (e) {
-        console.log("Automatikus csatornabeolvasás szünetel.");
+        console.log("Automatikus csatornabeolvasás sikertelen (CORS korlátozás).");
     }
 }
 
@@ -444,6 +437,7 @@ window.addEventListener('DOMContentLoaded', () => {
     loadChannelsConfigOnStart(); 
 });
 
+// MÓDOSÍTVA: A kiválasztott film aspect paramétere is átkerül a napi adásmenet listába
 function addSelectedFilmToTimeline() {
     const selectorMezo = document.getElementById('scheduleFilmSelector');
     const rawSelectedValue = selectorMezo.value.trim();
@@ -476,8 +470,8 @@ function addSelectedFilmToTimeline() {
         title: selectedTitle, 
         url: filmData.url,
         duration: filmData.duration,
-        rating: filmData.rating || "" ,
-        aspect: filmData.aspect || "" 
+        rating: filmData.rating || "",
+        aspect: filmData.aspect || "" // Csak akkor menti el, ha van egyedi képarány érték (pl. 4:3)
     });
 
     selectorMezo.value = ''; 
@@ -585,6 +579,7 @@ function importScheduleJSON() {
     reader.readAsText(file);
 }
 
+// ... (Minden egyéb export függvény változatlanul él a kódban) ...
 function exportLogoOnlyJSON() {
     const chId = document.getElementById('logoChannelId').value.trim() || "cinemaster";
     const statusLog = document.getElementById('logoStatusLog');
