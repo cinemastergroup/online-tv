@@ -288,40 +288,9 @@ window.addEventListener('keydown', function(e) {
     }
 });
 
-// MÓDOSÍTVA: Ha nincs kitöltve az aspect, vagy nem "4:3", akkor 1.0-ás szorzóval (normál szélén) hagyja
 function updateLayersScale() {
-    // A korhatárkarika szorzója marad a bevált 2.2
+    // 1. KORHATÁRKARIKA (Marad a jól bevált közvetlen vagy szorzós logika)
     const factorRating = (currentTrackAspect === "4:3") ? 2.2 : 1.0;
-    
-    // Ez a változó fogja tárolni a logó végleges, módosított szorzóját
-    let factorLogo; 
-
-    // --- ITT VALÓSUL MEG A TE LOGIKÁD ---
-    if (activeChannel === "retrotv") {
-        // A RetroTV-nél az alapértelmezett (16:9) fixen 1.0, 4:3 esetén pedig 3.0
-        factorLogo = (currentTrackAspect === "4:3") ? 3.0 : 1.0;
-    } else {
-        // EGYÉB ESETBEN: 16:9-nél 0.0 kéne (nulla margó), 4:3-nál pedig 0.7
-        factorLogo = (currentTrackAspect === "4:3") ? 0.7 : 0.2;
-    }
-    // ------------------------------------
-
-    if (currentLogoConfig && currentLogoConfig.url) {
-        const finalSizePx = container.clientWidth * (currentLogoConfig.size / 440);
-        watermark.style.width = finalSizePx + 'px';
-        watermark.style.top = currentLogoConfig.topPercent + '%';
-        
-        if (currentLogoConfig.leftPercent < 50) {
-            // Ha a factorLogo 0.0, akkor a leftPercent * 0 = 0% lesz (teljesen a szélére tapad, ahogy szeretted volna)
-            watermark.style.left = (currentLogoConfig.leftPercent * factorLogo) + '%'; 
-            watermark.style.right = 'auto';
-        } else {
-            const rightPercent = 100 - currentLogoConfig.leftPercent;
-            // Ha a factorLogo 0.0, a jobb oldalon is 0% lesz az eltolás (kiül a monitor jobb szélére)
-            watermark.style.right = (rightPercent * factorLogo) + '%'; 
-            watermark.style.left = 'auto';
-        }
-    }
     
     if (currentRatingConfig && currentRatingConfig.url) {
         const finalSizePx = container.clientWidth * (currentRatingConfig.size / 440);
@@ -337,7 +306,40 @@ function updateLayersScale() {
             ratingImg.style.left = 'auto';
         }
     }
-} // <-- Ez zárja le magát az updateLayersScale() függvényt
+
+    // 2. CSATORNALOGÓK KÖZVETLEN POZICIONÁLÁSA
+    if (currentLogoConfig && currentLogoConfig.url) {
+        const finalSizePx = container.clientWidth * (currentLogoConfig.size / 440);
+        watermark.style.width = finalSizePx + 'px';
+        
+        // A függőleges (top) pozíció maradhat az eredeti
+        watermark.style.top = currentLogoConfig.topPercent + '%';
+
+        // Létrehozunk változókat a végleges százalékoknak
+        let finalLeft = 'auto';
+        let finalRight = 'auto';
+
+        if (activeChannel === "retrotv") {
+            // RETRO TV (Bal oldali logó)
+            if (currentTrackAspect === "4:3") {
+                finalLeft = '12%'; // 4:3-nál közvetlenül beljebb toljuk (írd át arra a %-ra, ami neked tetszik)
+            } else {
+                finalLeft = '4%';  // 16:9-nél az alapértelmezett helye
+            }
+        } else {
+            // MINDEN MÁS CSATORNA (Jobb oldali logók, pl. CineMaster 2)
+            if (currentTrackAspect === "4:3") {
+                finalRight = '3.5%'; // 4:3-nál közvetlenül megadjuk, mennyire legyen bent (a te 0.7-es szorzód megfelelője)
+            } else {
+                finalRight = '0%';   // 16:9-nél teljesen kimegy a szélére (a 0.0-s szorzó megfelelője!)
+            }
+        }
+
+        // Végül közvetlenül alkalmazzuk a kiszámolt fix értékeket
+        watermark.style.left = finalLeft;
+        watermark.style.right = finalRight;
+    }
+}
 
 window.addEventListener('resize', () => setTimeout(() => { updateLayersScale(); updateFontSizes(); }, 50));
 
