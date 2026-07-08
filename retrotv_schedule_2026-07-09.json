@@ -1,0 +1,46 @@
+{
+  "schedule": [
+    {
+      "title": "OVIZSARU",
+      "url": "https://ok.ru/videoembed/4432343403153",
+      "duration": 6674,
+      "rating": "12",
+      "start": "2026-07-09T17:00:00"
+    },
+    {
+      "title": "JURASSIC PARK",
+      "url": "https://ok.ru/videoembed/2672912178834",
+      "duration": 7608,
+      "rating": "12",
+      "start": "2026-07-09T18:51:14"
+    },
+    {
+      "title": "DESPERADO",
+      "url": "https://ok.ru/videoembed/8096583846546",
+      "duration": 6268,
+      "rating": "18",
+      "start": "2026-07-09T20:58:02"
+    },
+    {
+      "title": "DZSUNGELBŐL DZSUNGELBE",
+      "url": "https://ok.ru/videoembed/14405527341606",
+      "duration": 6034,
+      "rating": "12",
+      "start": "2026-07-09T22:42:30"
+    },
+    {
+      "title": "DIRTY DANCING - PISZKOS TÁNC",
+      "url": "https://ok.ru/videoembed/6992691333792",
+      "duration": 6034,
+      "rating": "12",
+      "start": "2026-07-10T00:23:04"
+    },
+    {
+      "title": ".ADÁSSZÜNET",
+      "url": "https://ok.ru/videoembed/15018399500968",
+      "duration": 3600,
+      "rating": "",
+      "start": "2026-07-10T02:03:38"
+    }
+  ]
+}
