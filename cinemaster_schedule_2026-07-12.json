@@ -1,0 +1,200 @@
+{
+  "schedule": [
+    {
+      "title": ".MŰSORSZÜNET",
+      "url": "https://ok.ru/videoembed/15018312927912",
+      "duration": 3601,
+      "rating": "",
+      "start": "2026-07-12T05:00:00"
+    },
+    {
+      "title": "A BŰN ÉJSZAKÁJA",
+      "url": "https://ok.ru/videoembed/1967589820964",
+      "duration": 5118,
+      "rating": "18",
+      "start": "2026-07-12T06:00:01"
+    },
+    {
+      "title": "-CM_Ajánló13",
+      "url": "https://ok.ru/videoembed/15404327504552",
+      "duration": 298,
+      "rating": "",
+      "start": "2026-07-12T07:25:19"
+    },
+    {
+      "title": "OSCAR",
+      "url": "https://ok.ru/videoembed/2590617701116",
+      "duration": 6302,
+      "rating": "12",
+      "start": "2026-07-12T07:30:17"
+    },
+    {
+      "title": "-CM_Ajánló12",
+      "url": "https://ok.ru/videoembed/15404327570088",
+      "duration": 338,
+      "rating": "",
+      "start": "2026-07-12T09:15:19"
+    },
+    {
+      "title": "NEMZETBIZTONSÁG BT.",
+      "url": "https://ok.ru/videoembed/4127746296465",
+      "duration": 5300,
+      "rating": "12",
+      "start": "2026-07-12T09:20:57"
+    },
+    {
+      "title": "-CM_Ajánló14",
+      "url": "https://ok.ru/videoembed/15404327373480",
+      "duration": 363,
+      "rating": "",
+      "start": "2026-07-12T10:49:17"
+    },
+    {
+      "title": "AKI BÚJT...",
+      "url": "https://ok.ru/videoembed/10879502125779",
+      "duration": 5723,
+      "rating": "18",
+      "start": "2026-07-12T10:55:20"
+    },
+    {
+      "title": "-CM_Ajánló11",
+      "url": "https://ok.ru/videoembed/15404327045800",
+      "duration": 265,
+      "rating": "",
+      "start": "2026-07-12T12:30:43"
+    },
+    {
+      "title": "AKI BÚJT 2 - JÖVÖK!",
+      "url": "https://ok.ru/videoembed/15402829351510",
+      "duration": 6474,
+      "rating": "18",
+      "start": "2026-07-12T12:35:08"
+    },
+    {
+      "title": "-CM_Ajánló16",
+      "url": "https://ok.ru/videoembed/15404327439016",
+      "duration": 426,
+      "rating": "",
+      "start": "2026-07-12T14:23:02"
+    },
+    {
+      "title": "A MÚMIA VISZATÉR",
+      "url": "https://ok.ru/videoembed/3995055950481",
+      "duration": 7772,
+      "rating": "12",
+      "start": "2026-07-12T14:30:08"
+    },
+    {
+      "title": "-CM_Ajánló12",
+      "url": "https://ok.ru/videoembed/15404327570088",
+      "duration": 338,
+      "rating": "",
+      "start": "2026-07-12T16:39:40"
+    },
+    {
+      "title": "A BŰN ÉJSZAKÁJA 2 - ANARCHIA",
+      "url": "https://ok.ru/videoembed/4374321957419",
+      "duration": 6215,
+      "rating": "18",
+      "start": "2026-07-12T16:45:18"
+    },
+    {
+      "title": "-CM_Ajánló01",
+      "url": "https://ok.ru/videoembed/15404326652584",
+      "duration": 82,
+      "rating": "",
+      "start": "2026-07-12T18:28:53"
+    },
+    {
+      "title": "JÓ SRÁCOK",
+      "url": "https://ok.ru/videoembed/2841925978765",
+      "duration": 5378,
+      "rating": "",
+      "start": "2026-07-12T18:30:15"
+    },
+    {
+      "title": "-CM_Ajánló02",
+      "url": "https://ok.ru/videoembed/15404326718120",
+      "duration": 80,
+      "rating": "",
+      "start": "2026-07-12T19:59:53"
+    },
+    {
+      "title": "FŰRÉSZ",
+      "url": "https://ok.ru/videoembed/2367983586003",
+      "duration": 5940,
+      "rating": "18",
+      "start": "2026-07-12T20:01:13"
+    },
+    {
+      "title": "-CM_Ajánló13",
+      "url": "https://ok.ru/videoembed/15404327504552",
+      "duration": 298,
+      "rating": "",
+      "start": "2026-07-12T21:40:13"
+    },
+    {
+      "title": "VAKÁCIÓ",
+      "url": "https://ok.ru/videoembed/6376879295012",
+      "duration": 5944,
+      "rating": "16",
+      "start": "2026-07-12T21:45:11"
+    },
+    {
+      "title": "-CM_Ajánló15",
+      "url": "https://ok.ru/videoembed/15404327111336",
+      "duration": 389,
+      "rating": "",
+      "start": "2026-07-12T23:24:15"
+    },
+    {
+      "title": "SEBHELYEK",
+      "url": "https://ok.ru/videoembed/4357846600337",
+      "duration": 6082,
+      "rating": "16",
+      "start": "2026-07-12T23:30:44"
+    },
+    {
+      "title": "-CM_Ajánló03",
+      "url": "https://ok.ru/videoembed/15404326783656",
+      "duration": 96,
+      "rating": "",
+      "start": "2026-07-13T01:12:06"
+    },
+    {
+      "title": "ÜNNEPRONTÓK ÜNNEPE",
+      "url": "https://ok.ru/videoembed/1578509142675",
+      "duration": 6851,
+      "rating": "16",
+      "start": "2026-07-13T01:13:42"
+    },
+    {
+      "title": "-CM_Ajánló05",
+      "url": "https://ok.ru/videoembed/15404328028840",
+      "duration": 147,
+      "rating": "",
+      "start": "2026-07-13T03:07:53"
+    },
+    {
+      "title": "KI A FASZAGYEREK?",
+      "url": "https://ok.ru/videoembed/1269281786512",
+      "duration": 4788,
+      "rating": "12",
+      "start": "2026-07-13T03:10:20"
+    },
+    {
+      "title": "-CM_Ajánló13",
+      "url": "https://ok.ru/videoembed/15404327504552",
+      "duration": 298,
+      "rating": "",
+      "start": "2026-07-13T04:30:08"
+    },
+    {
+      "title": ".MŰSORSZÜNET",
+      "url": "https://ok.ru/videoembed/15018312927912",
+      "duration": 3601,
+      "rating": "",
+      "start": "2026-07-13T04:35:06"
+    }
+  ]
+}
