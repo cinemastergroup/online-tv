@@ -62,13 +62,6 @@
             z-index: 1001 !important;
             font-family: 'Zen Dots', cursive;
             color: #7ec8ff;
-            -webkit-text-stroke: 1px #000000;
-            text-stroke: 1px #000000;
-            text-shadow:
-                -1px -1px 0 #000,
-                 1px -1px 0 #000,
-                -1px  1px 0 #000,
-                 1px  1px 0 #000;
             white-space: nowrap;
             letter-spacing: 1px;
         }
@@ -342,19 +335,26 @@ function positionHuClock() {
 
     huClock.style.display = 'block';
 
+    // ---- ITT ÁLLÍTHATÓ AZ ÓRA POZÍCIÓJA ----
+    // extraOffsetTopPx: pozitív érték lejjebb, negatív feljebb tolja az órát a logóhoz képest
+    // extraOffsetLeftPx: pozitív érték jobbra, negatív balra tolja az órát a logóhoz képest
+    const extraOffsetTopPx = -15;
+    const extraOffsetLeftPx = 15;
+    // -----------------------------------------
+
     if (currentLogoConfig && currentLogoConfig.url && watermark.style.display === 'block') {
         // A logó tényleges (renderelt) helyzetéhez igazítjuk, alá pozicionálva
         const containerRect = container.getBoundingClientRect();
         const watermarkRect = watermark.getBoundingClientRect();
-        const gapPx = Math.max(6, container.clientWidth * 0.008);
+        const gapPx = Math.max(6, container.clientWidth * 0.008); // logó és óra közti térköz
 
-        const topPx = (watermarkRect.bottom - containerRect.top) + gapPx;
-        const leftPx = watermarkRect.left - containerRect.left;
+        const topPx = (watermarkRect.bottom - containerRect.top) + gapPx + extraOffsetTopPx;
+        const leftPx = (watermarkRect.left - containerRect.left) + extraOffsetLeftPx;
 
         huClock.style.top = topPx + 'px';
         huClock.style.left = leftPx + 'px';
     } else {
-        // Ha nincs logó a csatornán, alapértelmezett hely a bal felső sarok közelében
+        // Ha nincs logó a csatornán, alapértelmezett hely (itt is állítható %-ban)
         huClock.style.top = '4%';
         huClock.style.left = '3%';
     }
