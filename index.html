@@ -276,7 +276,7 @@ function updateFontSizes() {
     textEls.forEach(el => { if(el) el.style.fontSize = computedFontSize + 'px'; });
 
     // ÚJ: az óra betűmérete is a konténer szélességéhez igazodik
-    const clockFontSize = Math.max(14, baseWidth * 0.01);
+    const clockFontSize = Math.max(14, baseWidth * 0.02);
     huClock.style.fontSize = clockFontSize + 'px';
 }
 
