@@ -450,7 +450,7 @@
   },
   "JURASSIC PARK": {
     "url": "https://ok.ru/videoembed/2672912178834",
-    "duration": 7608,
+    "duration": 7570,
     "rating": "12"
   },
   "POFA BE!": {
@@ -980,7 +980,7 @@
   },
   "MÁSNAPOSOK": {
     "url": "https://ok.ru/videoembed/2595541098130",
-    "duration": 6068,
+    "duration": 6000,
     "rating": "16"
   },
   "DENNIS, A KOMISZ": {
@@ -1525,7 +1525,7 @@
   },
   "MÁSNAPOSOK 2": {
     "url": "https://ok.ru/videoembed/2607041420946",
-    "duration": 6257,
+    "duration": 6055,
     "rating": "16"
   },
   "SPANGOL": {
@@ -4572,5 +4572,20 @@
     "url": "https://ok.ru/videoembed/15699309300392",
     "duration": 8660,
     "rating": "16"
+  },
+  "DÉMONOK KÖZÖTT 3 - AZ ÖRDÖG KÉNYSZERÍTETT": {
+    "url": "https://ok.ru/videoembed/15713061178024",
+    "duration": 7006,
+    "rating": "18"
+  },
+  "AZ - MÁSODIK FEJEZET": {
+    "url": "https://ok.ru/videoembed/15709399222952",
+    "duration": 11010,
+    "rating": "18"
+  },
+  "ÁTEJTVE": {
+    "url": "https://ok.ru/videoembed/15713782925992",
+    "duration": 7130,
+    "rating": "12"
   }
 }
