@@ -1,8 +1,4 @@
 {
-  ".MŰSORSZÜNET": {
-    "url": "https://ok.ru/videoembed/15018312927912",
-    "duration": 3601
-  },
   "A 16-OS SZINT": {
     "url": "https://ok.ru/videoembed/15018409396904",
     "duration": 6124,
@@ -467,11 +463,6 @@
     "url": "https://ok.ru/videoembed/6254657931812",
     "duration": 7123,
     "rating": "16"
-  },
-  ".ADÁSSZÜNET": {
-    "url": "https://ok.ru/videoembed/15018399500968",
-    "duration": 3600,
-    "rating": ""
   },
   "BÍBOR FOLYÓK": {
     "url": "https://ok.ru/videoembed/15715927394854",
@@ -2878,36 +2869,6 @@
     "duration": 82,
     "rating": ""
   },
-  "-RTV_Ajánló18": {
-    "url": "https://ok.ru/videoembed/15404381571752",
-    "duration": 560,
-    "rating": ""
-  },
-  "-RTV_Ajánló17": {
-    "url": "https://ok.ru/videoembed/15404381506216",
-    "duration": 516,
-    "rating": ""
-  },
-  "-RTV_Ajánló16": {
-    "url": "https://ok.ru/videoembed/15404381440680",
-    "duration": 452,
-    "rating": ""
-  },
-  "-RTV_Ajánló12": {
-    "url": "https://ok.ru/videoembed/15404380785320",
-    "duration": 328,
-    "rating": ""
-  },
-  "-RTV_Ajánló07": {
-    "url": "https://ok.ru/videoembed/15404379474600",
-    "duration": 204,
-    "rating": ""
-  },
-  "-RTV_Ajánló04": {
-    "url": "https://ok.ru/videoembed/15404379081384",
-    "duration": 138,
-    "rating": ""
-  },
   "-RTV_Ajánló03": {
     "url": "https://ok.ru/videoembed/15404379015848",
     "duration": 98,
@@ -2921,51 +2882,6 @@
   "-RTV_Ajánló01": {
     "url": "https://ok.ru/videoembed/15404378884776",
     "duration": 84,
-    "rating": ""
-  },
-  "-RTV_Ajánló11": {
-    "url": "https://ok.ru/videoembed/15404366826152",
-    "duration": 300,
-    "rating": ""
-  },
-  "-RTV_Ajánló08": {
-    "url": "https://ok.ru/videoembed/15404366760616",
-    "duration": 212,
-    "rating": ""
-  },
-  "-RTV_Ajánló10": {
-    "url": "https://ok.ru/videoembed/15404366695080",
-    "duration": 277,
-    "rating": ""
-  },
-  "-RTV_Ajánló09": {
-    "url": "https://ok.ru/videoembed/15404366629544",
-    "duration": 246,
-    "rating": ""
-  },
-  "-RTV_Ajánló14": {
-    "url": "https://ok.ru/videoembed/15404366564008",
-    "duration": 396,
-    "rating": ""
-  },
-  "-RTV_Ajánló15": {
-    "url": "https://ok.ru/videoembed/15404366498472",
-    "duration": 425,
-    "rating": ""
-  },
-  "-RTV_Ajánló13": {
-    "url": "https://ok.ru/videoembed/15404366432936",
-    "duration": 363,
-    "rating": ""
-  },
-  "-RTV_Ajánló06": {
-    "url": "https://ok.ru/videoembed/15404366236328",
-    "duration": 183,
-    "rating": ""
-  },
-  "-RTV_Ajánló05": {
-    "url": "https://ok.ru/videoembed/15404366170792",
-    "duration": 149,
     "rating": ""
   },
   "-CM_Ajánló16_1": {
@@ -3752,11 +3668,6 @@
     "url": "https://ok.ru/videoembed/15505677879976",
     "duration": 1756,
     "rating": "12"
-  },
-  "-CM_Ajánló001": {
-    "url": "https://ok.ru/videoembed/15520182110888",
-    "duration": 316,
-    "rating": ""
   },
   "MINDENKI": {
     "url": "https://ok.ru/videoembed/12400253602417",
@@ -5682,5 +5593,85 @@
     "url": "https://ok.ru/videoembed/15806234888872",
     "duration": 2934,
     "rating": "12"
+  },
+  "-RTV_Ajánló04S": {
+    "url": "https://ok.ru/videoembed/15880606124712",
+    "duration": 122,
+    "rating": ""
+  },
+  "-RTV_Ajánló05": {
+    "url": "https://ok.ru/videoembed/15880605928104",
+    "duration": 152,
+    "rating": ""
+  },
+  "-RTV_Ajánló06S": {
+    "url": "https://ok.ru/videoembed/15880605993640",
+    "duration": 184,
+    "rating": ""
+  },
+  "-RTV_Ajánló07": {
+    "url": "https://ok.ru/videoembed/15880604158632",
+    "duration": 210,
+    "rating": ""
+  },
+  "-RTV_Ajánló08S": {
+    "url": "https://ok.ru/videoembed/15880606059176",
+    "duration": 244,
+    "rating": ""
+  },
+  "-RTV_Ajánló09": {
+    "url": "https://ok.ru/videoembed/15880603962024",
+    "duration": 278,
+    "rating": ""
+  },
+  "-RTV_Ajánló10S": {
+    "url": "https://ok.ru/videoembed/15880597146280",
+    "duration": 308,
+    "rating": ""
+  },
+  "-RTV_Ajánló11": {
+    "url": "https://ok.ru/videoembed/15880596884136",
+    "duration": 326,
+    "rating": ""
+  },
+  "-RTV_Ajánló12": {
+    "url": "https://ok.ru/videoembed/15880596753064",
+    "duration": 360,
+    "rating": ""
+  },
+  "-RTV_Ajánló13S": {
+    "url": "https://ok.ru/videoembed/15880603830952",
+    "duration": 380,
+    "rating": ""
+  },
+  "-RTV_Ajánló14": {
+    "url": "https://ok.ru/videoembed/15880589019816",
+    "duration": 400,
+    "rating": ""
+  },
+  "-RTV_Ajánló15": {
+    "url": "https://ok.ru/videoembed/15880588954280",
+    "duration": 424,
+    "rating": ""
+  },
+  "-RTV_Ajánló16S": {
+    "url": "https://ok.ru/videoembed/15880588888744",
+    "duration": 452,
+    "rating": ""
+  },
+  "-RTV_Ajánló17": {
+    "url": "https://ok.ru/videoembed/15880588364456",
+    "duration": 488,
+    "rating": ""
+  },
+  "-RTV_Ajánló18": {
+    "url": "https://ok.ru/videoembed/15880588233384",
+    "duration": 516,
+    "rating": ""
+  },
+  "-RTV_Ajánló19": {
+    "url": "https://ok.ru/videoembed/15880588298920",
+    "duration": 544,
+    "rating": ""
   }
 }
