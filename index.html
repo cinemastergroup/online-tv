@@ -317,8 +317,12 @@ function updateLayersScale() {
         watermark.style.width = finalSizePx + 'px';
         watermark.style.top = currentLogoConfig.topPercent + '%';
         let logoLeftPercent = currentLogoConfig.leftPercent;
-        if (activeChannel === 'retrotv' && currentTrackRatio === '4:3') {
-            logoLeftPercent = 10.9904013961605584;
+        if (currentTrackRatio === '4:3') {
+            if (activeChannel === 'retrotv') {
+                logoLeftPercent = 10.9904013961605584;
+            } else if (activeChannel === 'cinemaster' || activeChannel === 'cinemaster2') {
+                logoLeftPercent = 73.94991273996509;
+            }
         }
         watermark.style.left = logoLeftPercent + '%';
     }
