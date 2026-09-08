@@ -1,0 +1,292 @@
+{
+  "schedule": [
+    {
+      "title": "-RTV_Ajánló03",
+      "url": "https://ok.ru/videoembed/15404379015848",
+      "duration": 98,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-09-09T04:59:00"
+    },
+    {
+      "title": "NICSAK, KI BESZÉL!",
+      "url": "https://ok.ru/videoembed/9287646906916",
+      "duration": 5752,
+      "rating": "12",
+      "ratio": "",
+      "start": "2026-09-09T05:00:38"
+    },
+    {
+      "title": "-RTV_Ajánló07",
+      "url": "https://ok.ru/videoembed/15880604158632",
+      "duration": 210,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-09-09T06:36:30"
+    },
+    {
+      "title": "HEGYLAKÓ",
+      "url": "https://ok.ru/videoembed/15522021247634",
+      "duration": 6998,
+      "rating": "16",
+      "ratio": "",
+      "start": "2026-09-09T06:40:00"
+    },
+    {
+      "title": "-RTV_Ajánló08S",
+      "url": "https://ok.ru/videoembed/15880606059176",
+      "duration": 244,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-09-09T08:36:38"
+    },
+    {
+      "title": "HULL A PELYHES",
+      "url": "https://ok.ru/videoembed/3859265554976",
+      "duration": 5373,
+      "rating": "12",
+      "ratio": "",
+      "start": "2026-09-09T08:40:42"
+    },
+    {
+      "title": "-RTV_Ajánló10S",
+      "url": "https://ok.ru/videoembed/15880597146280",
+      "duration": 308,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-09-09T10:10:15"
+    },
+    {
+      "title": "A SIMLIS ÉS A SZENDE, III/15.",
+      "url": "https://ok.ru/videoembed/8242179541590",
+      "duration": 2978,
+      "rating": "12",
+      "ratio": "4:3",
+      "start": "2026-09-09T10:15:23"
+    },
+    {
+      "title": "-RTV_Ajánló10S",
+      "url": "https://ok.ru/videoembed/15880597146280",
+      "duration": 308,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-09-09T11:05:01"
+    },
+    {
+      "title": "VAD ANGYAL, 39.",
+      "url": "https://ok.ru/videoembed/4909987072549",
+      "duration": 2560,
+      "rating": "12",
+      "ratio": "4:3",
+      "start": "2026-09-09T11:10:09"
+    },
+    {
+      "title": "-RTV_Ajánló16S",
+      "url": "https://ok.ru/videoembed/15880588888744",
+      "duration": 452,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-09-09T11:52:49"
+    },
+    {
+      "title": "ELNÖKCSEMETE",
+      "url": "https://ok.ru/videoembed/4861458189011",
+      "duration": 6050,
+      "rating": "12",
+      "ratio": "",
+      "start": "2026-09-09T12:00:21"
+    },
+    {
+      "title": "-RTV_Ajánló08S",
+      "url": "https://ok.ru/videoembed/15880606059176",
+      "duration": 244,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-09-09T13:41:11"
+    },
+    {
+      "title": "SZELLEMIRTÓK 2",
+      "url": "https://ok.ru/videoembed/1031604144839",
+      "duration": 6499,
+      "rating": "12",
+      "ratio": "",
+      "start": "2026-09-09T13:45:15"
+    },
+    {
+      "title": "-RTV_Ajánló04S",
+      "url": "https://ok.ru/videoembed/15880606124712",
+      "duration": 122,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-09-09T15:33:34"
+    },
+    {
+      "title": "AZ ÖRDÖG JOBB ÉS BAL KEZE",
+      "url": "https://ok.ru/videoembed/3869013379729",
+      "duration": 6893,
+      "rating": "12",
+      "ratio": "",
+      "start": "2026-09-09T15:35:36"
+    },
+    {
+      "title": "-RTV_Ajánló02",
+      "url": "https://ok.ru/videoembed/15404378950312",
+      "duration": 80,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-09-09T17:30:29"
+    },
+    {
+      "title": "A SIMLIS ÉS A SZENDE, IV/1.",
+      "url": "https://ok.ru/videoembed/8242257594966",
+      "duration": 2948,
+      "rating": "12",
+      "ratio": "4:3",
+      "start": "2026-09-09T17:31:49"
+    },
+    {
+      "title": "-RTV_Ajánló09",
+      "url": "https://ok.ru/videoembed/15880603962024",
+      "duration": 278,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-09-09T18:20:57"
+    },
+    {
+      "title": "VAD ANGYAL, 40.",
+      "url": "https://ok.ru/videoembed/4909987203621",
+      "duration": 2390,
+      "rating": "12",
+      "ratio": "4:3",
+      "start": "2026-09-09T18:25:35"
+    },
+    {
+      "title": "-RTV_Ajánló09",
+      "url": "https://ok.ru/videoembed/15880603962024",
+      "duration": 278,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-09-09T19:05:25"
+    },
+    {
+      "title": "ESTI MESE",
+      "url": "https://ok.ru/videoembed/16131665103528",
+      "duration": 44,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-09-09T19:10:03"
+    },
+    {
+      "title": "VÍZIPÓK-CSODAPÓK, I/4.",
+      "url": "https://ok.ru/videoembed/3902364781281",
+      "duration": 320,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-09-09T19:10:47"
+    },
+    {
+      "title": "JÓ ÉJSZAKÁT, GYEREKEK!",
+      "url": "https://ok.ru/videoembed/16131665169064",
+      "duration": 52,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-09-09T19:16:07"
+    },
+    {
+      "title": "-RTV_Ajánló07",
+      "url": "https://ok.ru/videoembed/15880604158632",
+      "duration": 210,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-09-09T19:16:59"
+    },
+    {
+      "title": "ÁLLJ VAGY JÖVÖK!",
+      "url": "https://ok.ru/videoembed/6727452461728",
+      "duration": 5648,
+      "rating": "12",
+      "ratio": "",
+      "start": "2026-09-09T19:20:29"
+    },
+    {
+      "title": "-RTV_Ajánló12",
+      "url": "https://ok.ru/videoembed/15880596753064",
+      "duration": 360,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-09-09T20:54:37"
+    },
+    {
+      "title": "HEGYLAKÓ 2 - A VISSZATÉRÉS",
+      "url": "https://ok.ru/videoembed/15522405157522",
+      "duration": 6584,
+      "rating": "16",
+      "ratio": "",
+      "start": "2026-09-09T21:00:37"
+    },
+    {
+      "title": "-RTV_Ajánló10S",
+      "url": "https://ok.ru/videoembed/15880597146280",
+      "duration": 308,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-09-09T22:50:21"
+    },
+    {
+      "title": "GHOST",
+      "url": "https://ok.ru/videoembed/15356186397222",
+      "duration": 7597,
+      "rating": "12",
+      "ratio": "",
+      "start": "2026-09-09T22:55:29"
+    },
+    {
+      "title": "-RTV_Ajánló06S",
+      "url": "https://ok.ru/videoembed/15880605993640",
+      "duration": 184,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-09-10T01:02:06"
+    },
+    {
+      "title": "A HALÁSZKIRÁLY LEGENDÁJA",
+      "url": "https://ok.ru/videoembed/6394720291474",
+      "duration": 8260,
+      "rating": "16",
+      "ratio": "",
+      "start": "2026-09-10T01:05:10"
+    },
+    {
+      "title": "-RTV_Ajánló05",
+      "url": "https://ok.ru/videoembed/15880605928104",
+      "duration": 152,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-09-10T03:22:50"
+    },
+    {
+      "title": "INDUL A BAKTERHÁZ",
+      "url": "https://ok.ru/videoembed/9803351394961",
+      "duration": 3970,
+      "rating": "12",
+      "ratio": "4:3",
+      "start": "2026-09-10T03:25:22"
+    },
+    {
+      "title": "-RTV_Ajánló19",
+      "url": "https://ok.ru/videoembed/15880588298920",
+      "duration": 544,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-09-10T04:31:32"
+    },
+    {
+      "title": "MŰSORSZÜNET•••",
+      "url": "https://ok.ru/videoembed/15799038249640",
+      "duration": 3600,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-09-10T04:40:36"
+    }
+  ]
+}
