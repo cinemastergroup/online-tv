@@ -153,10 +153,6 @@
             border-radius: 14px;
         }
         .icon-btn:hover { transform: scale(1.06); }
-        .icon-btn:focus-visible {
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(255,255,255,0.7);
-        }
         /* Enyhe vizuális elválasztás a csatornaikonok és az EPG/Teljes képernyő ikonok között */
         .channel-btn + .icon-btn { margin-left: 10px; }
 
@@ -184,6 +180,13 @@
         .channel-btn.active {
             border-color: #ffffff;
             box-shadow: 0 0 14px rgba(255,255,255,0.55);
+        }
+        /* ÚJ: külön, jól látható jelzés a távirányítóval/nyilakkal fókuszált gombon -
+           ez megkülönböztethető az "éppen ez megy" fehér kerettől (lehet egyszerre a kettő). */
+        .channel-btn:focus-visible,
+        .icon-btn:focus-visible {
+            outline: none;
+            box-shadow: 0 0 0 4px var(--accent-color);
         }
 
         .epg-modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 2000000000 !important; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
@@ -307,6 +310,10 @@ function startTvWithAudio(e) {
     vid.muted = false;
     vid.volume = 1.0;
     runTvEngine();
+    // ÚJ: feloldás után azonnal fókuszáljuk az aktív csatornagombot, hogy a
+    // távirányító/billentyűzet nyilaival rögtön navigálni lehessen
+    const activeBtn = document.querySelector('#channelButtonsContainer .channel-btn.active');
+    if (activeBtn) activeBtn.focus();
 }
 
 vid.onended = function() {
@@ -355,20 +362,53 @@ document.addEventListener('fullscreenchange', () => {
     setTimeout(() => { updateLayersScale(); updateFontSizes(); }, 100);
 });
 
+// ÚJ: nyilakkal / távirányítóval történő navigáció a gombsorban (csatornák + EPG + Teljes képernyő).
+// Az Enter/OK gomb aktiválása natívan működik, mert ezek valódi <button> elemek -
+// ehhez nem kell külön kód, a böngésző/TV-platform ezt magától megcsinálja.
+function getNavigableButtons() {
+    return Array.from(document.querySelectorAll('#channelButtonsContainer button'));
+}
+
+function focusAdjacentButton(direction) {
+    const buttons = getNavigableButtons();
+    if (buttons.length === 0) return;
+    const currentIndex = buttons.indexOf(document.activeElement);
+    let nextIndex;
+    if (currentIndex === -1) {
+        // Ha semmi sincs fókuszban, az éppen játszott csatornánál kezdjük
+        const activeBtn = document.querySelector('#channelButtonsContainer .channel-btn.active');
+        nextIndex = activeBtn ? buttons.indexOf(activeBtn) : 0;
+    } else {
+        nextIndex = currentIndex + direction;
+    }
+    if (nextIndex < 0) nextIndex = 0;
+    if (nextIndex >= buttons.length) nextIndex = buttons.length - 1;
+    buttons[nextIndex].focus();
+}
+
 window.addEventListener('keydown', function(e) {
     const isBackKey = (e.keyCode === 27 || e.keyCode === 461 || e.keyCode === 10009);
-    if (!isBackKey) return;
-
-    // Ha az EPG nyitva van, elsőként azt zárjuk be (ESC / távirányító Vissza gomb)
-    if (isEpgOpen) {
-        e.preventDefault();
-        toggleEpg(false);
+    if (isBackKey) {
+        if (isEpgOpen) {
+            e.preventDefault();
+            toggleEpg(false);
+            return;
+        }
+        if (document.fullscreenElement) {
+            e.preventDefault();
+            document.exitFullscreen();
+        }
         return;
     }
 
-    if (document.fullscreenElement) {
+    if (isEpgOpen) return; // EPG nyitva - ne navigáljunk a háttérben lévő gombsorban
+
+    if (e.key === 'ArrowRight' || e.keyCode === 39) {
         e.preventDefault();
-        document.exitFullscreen();
+        focusAdjacentButton(1);
+    } else if (e.key === 'ArrowLeft' || e.keyCode === 37) {
+        e.preventDefault();
+        focusAdjacentButton(-1);
     }
 });
 
