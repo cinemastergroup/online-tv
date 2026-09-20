@@ -184,10 +184,12 @@
         /* ÚJ: külön, jól látható jelzés a távirányítóval/nyilakkal fókuszált gombon -
            ez megkülönböztethető az "éppen ez megy" fehér kerettől (lehet egyszerre a kettő). */
         .channel-btn:focus-visible,
-        .icon-btn:focus-visible {
+        .icon-btn:focus-visible,
+        #epgCloseBtn:focus-visible {
             outline: none;
             box-shadow: 0 0 0 4px var(--accent-color);
         }
+        #epgCloseBtn:focus-visible { box-shadow: 0 0 0 3px #ffffff; }
 
         .epg-modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 2000000000 !important; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
         .epg-modal-overlay.active { opacity: 1; pointer-events: auto; display: flex; justify-content: center; align-items: center; }
@@ -264,7 +266,7 @@
         <div class="epg-modal" onclick="event.stopPropagation()">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                 <h3 id="epgModalTitle" style="margin:0; font-size:24px; color:white;">Műsorújság</h3>
-                <span style="color:#627288; font-size:13px;">ESC / Vissza a bezáráshoz</span>
+                <button id="epgCloseBtn" onclick="toggleEpg(false)" style="background: var(--accent-color); color:white; border:none; padding:10px 22px; border-radius:8px; font-weight:bold; cursor:pointer; font-size:16px;">Bezárás ✕</button>
             </div>
             <div id="epgRowsContainer" style="overflow-y:auto; flex-grow:1;"></div>
         </div>
@@ -283,6 +285,7 @@ const lblTime = document.getElementById('lblTime');
 const epgModalOverlay = document.getElementById('epgModalOverlay');
 const epgRowsContainer = document.getElementById('epgRowsContainer');
 const epgModalTitle = document.getElementById('epgModalTitle');
+const epgCloseBtn = document.getElementById('epgCloseBtn'); // ÚJ: bezárás gomb
 
 const showNotifier = document.getElementById('showNotifier');
 const notifierTitle = document.getElementById('notifierTitle');
@@ -354,6 +357,10 @@ function toggleEpg(show) {
     if (show) {
         epgModalTitle.innerText = "Műsorújság";
         epgModalOverlay.classList.add('active');
+        // ÚJ: azonnal fókuszáljuk a Bezárás gombot, hogy a távirányító OK/Enter
+        // gombjával rögtön be lehessen zárni (arra az esetre, ha a Vissza/Exit
+        // gomb nem küld a böngésző által felismert billentyűkódot).
+        setTimeout(() => { epgCloseBtn.focus(); }, 0);
     } else {
         epgModalOverlay.classList.remove('active');
     }
