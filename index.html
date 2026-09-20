@@ -395,11 +395,9 @@ function toggleNativeFullscreen() {
     }
 }
 
-// ÚJ: kilépés az oldalról/appból. A window.close() a legtöbb "sima" böngészőben
-// biztonsági okból csak akkor enged be, ha az ablakot script nyitotta - viszont
-// sok Smart TV böngésző/kiosk-app rendes lapokra is engedélyezi.
+// ÚJ: a KILÉPÉS gomb az oldalt tölti újra
 function exitApp() {
-    window.close();
+    location.reload();
 }
 
 document.addEventListener('fullscreenchange', () => {
