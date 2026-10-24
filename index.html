@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>CineMaster Stream - Smart TV Live</title>
 
-    <!-- ÚJ: PWA (telepíthető webapp) beállítások -->
+    <!--PWA (telepíthető webapp) beállítások -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#cf0202">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
@@ -46,7 +46,6 @@
             left: -3% !important; 
         }
 
-        /* JAVÍTVA: Árnyékolás (filter) kiszedve */
         .tv-watermark { 
             position: absolute; 
             opacity: 0.9; 
@@ -56,7 +55,7 @@
             height: auto !important;
         }
 
-        /* ÚJ: Korhatár logó stílusa (Árnyékolás nélkül, z-index a watermark szintjén) */
+        /* korhatár logo - nem árnyékolt */
         .tv-rating {
             position: absolute;
             opacity: 0.9;
@@ -66,7 +65,7 @@
             height: auto !important;
         }
 
-        /* ÚJ: Magyarországi pontos idő - csak Best Hits TV csatornán, a logó alatt */
+        /* Magyarországi pontos idő - csak Best Hits TV csatornán, a logó alatt */
         .hu-clock {
             position: absolute;
             display: none;
@@ -141,7 +140,7 @@
         .info-top-row { display: flex; align-items: center; justify-content: space-between; width: 100%; }
         .info-left { display: flex; flex-direction: column; }
 
-        /* ÚJ: KILÉPÉS gomb a cím-sor jobb oldalán */
+        /* KILÉPÉS gomb a cím-sor jobb oldalán */
         .exit-btn {
             background: var(--accent-color);
             color: #ffffff;
@@ -166,8 +165,8 @@
         
         .controls-right { display: flex; gap: 15px; align-items: center; }
 
-        /* ÚJ: EPG és Teljes Képernyő gombok most már logó-képek, nem szöveges gombok */
-        .icon-btn {icon-btn img
+        /* EPG és Teljes Képernyő gombok logó-képei */
+        .icon-btn {
             background: transparent;
             border: none;
             padding: 0;
@@ -190,8 +189,7 @@
 
         .channel-selector { display: flex; gap: 12px; width: 100%; justify-content: flex-start; overflow-x: auto; padding-bottom: 8px; align-items: center; }
 
-        /* ÚJ: a csatornagombok is logó-képek; az aktív csatornát fehér szegély jelzi
-           (a korábbi kék háttér/box-shadow kiemelés helyett) */
+        /* a csatornagombok is logó-képek; az aktív csatornát fehér szegély jelzi */
         .channel-btn {
             background: transparent;
             border: 3px solid transparent;
@@ -213,8 +211,7 @@
             border-color: #ffffff;
             box-shadow: 0 0 14px rgba(255,255,255,0.55);
         }
-        /* ÚJ: külön, jól látható jelzés a távirányítóval/nyilakkal fókuszált gombon -
-           ez megkülönböztethető az "éppen ez megy" fehér kerettől (lehet egyszerre a kettő). */
+        /* külön, jól látható jelzés a távirányítóval/nyilakkal fókuszált gombon */
         .channel-btn:focus-visible,
         .icon-btn:focus-visible,
         #epgCloseBtn:focus-visible {
@@ -328,24 +325,24 @@ const showNotifier = document.getElementById('showNotifier');
 const notifierTitle = document.getElementById('notifierTitle');
 const notifierLiveText = document.getElementById('notifierLiveText'); // ÚJ: a "MOST:" felirat eleme
 
-// ÚJ: csatornánként eltérő szín a "MOST:" feliraton és a sáv alsó csíkján
+// csatornánként eltérő szín a "MOST:" feliraton és a sáv alsó csíkján
 const CHANNEL_NOTIFIER_COLORS = {
     cinemaster: '#cf0202',
     cinemaster2: '#29ba30',
     retrotv: '#f58d05',
     besthits: '#07cee8',
-    viva: '#e6007e' // ÚJ: VIVA TV (magenta) - itt átírható a kívánt színre
+    vivatv: '#1f4eb4'
 };
 
 const vid = document.getElementById('tvEngine');
 const archiveIframe = document.getElementById('archiveEngine');
 
-const huClock = document.getElementById('huClock'); // ÚJ: magyar óra elem
+const huClock = document.getElementById('huClock'); // magyar óra elem
 
 let activeChannel = 'cinemaster';
 let lastRenderedUrl = '';
 let currentLogoConfig = null;
-let currentRatingConfig = null; // ÚJ TÁROLÓ
+let currentRatingConfig = null; 
 let currentTrackRatio = "";
 let isEpgOpen = false;
 let userUnlocked = false;
@@ -360,7 +357,7 @@ function startTvWithAudio(e) {
     vid.muted = false;
     vid.volume = 1.0;
 
-    // ÚJ: a hangos lejátszás engedélyét MÉG a kattintás szinkron részében
+    // a hangos lejátszás engedélyét MÉG a kattintás szinkron részében
     // próbáljuk "bevésetni" a böngészőbe - ha ezt csak a runTvEngine() aszinkron
     // fetch-hívásai UTÁN tesszük meg (mint korábban), sok szigorúbb autoplay-
     // policy (pl. Android TV böngészők, TV Bro) addigra már nem tekinti a
@@ -369,7 +366,7 @@ function startTvWithAudio(e) {
     vid.play().catch(() => {});
 
     runTvEngine();
-    // ÚJ: feloldás után azonnal fókuszáljuk az aktív csatornagombot, hogy a
+    // feloldás után azonnal fókuszáljuk az aktív csatornagombot, hogy a
     // távirányító/billentyűzet nyilaival rögtön navigálni lehessen
     const activeBtn = document.querySelector('#channelButtonsContainer .channel-btn.active');
     if (activeBtn) activeBtn.focus();
@@ -394,7 +391,7 @@ function updateFontSizes() {
     const textEls = document.querySelectorAll('.notifier-live-text, .notifier-title');
     textEls.forEach(el => { if(el) el.style.fontSize = computedFontSize + 'px'; });
 
-    // ÚJ: az óra betűmérete is a konténer szélességéhez igazodik
+    // az óra betűmérete is a konténer szélességéhez igazodik
     const clockFontSize = Math.max(14, baseWidth * 0.015);
     huClock.style.fontSize = clockFontSize + 'px';
 }
@@ -404,7 +401,7 @@ function toggleEpg(show) {
     if (show) {
         epgModalTitle.innerText = "Műsorújság";
         epgModalOverlay.classList.add('active');
-        // ÚJ: azonnal fókuszáljuk a Bezárás gombot, hogy a távirányító OK/Enter
+        // azonnal fókuszáljuk a Bezárás gombot, hogy a távirányító OK/Enter
         // gombjával rögtön be lehessen zárni (arra az esetre, ha a Vissza/Exit
         // gomb nem küld a böngésző által felismert billentyűkódot).
         setTimeout(() => { epgCloseBtn.focus(); }, 0);
@@ -421,7 +418,7 @@ function toggleNativeFullscreen() {
     }
 }
 
-// ÚJ: a KILÉPÉS gomb az oldalt tölti újra
+// a KILÉPÉS gomb az oldalt tölti újra
 function exitApp() {
     location.reload();
 }
@@ -430,7 +427,7 @@ document.addEventListener('fullscreenchange', () => {
     setTimeout(() => { updateLayersScale(); updateFontSizes(); }, 100);
 });
 
-// ÚJ: nyilakkal / távirányítóval történő navigáció a gombsorban (csatornák + EPG + Teljes képernyő).
+// nyilakkal / távirányítóval történő navigáció a gombsorban (csatornák + EPG + Teljes képernyő).
 // Az Enter/OK gomb aktiválása natívan működik, mert ezek valódi <button> elemek -
 // ehhez nem kell külön kód, a böngésző/TV-platform ezt magától megcsinálja.
 function getNavigableButtons() {
@@ -509,7 +506,7 @@ function updateLayersScale() {
     positionHuClock();
 }
 
-// ÚJ: a magyar pontos idő elhelyezése a logó alatt, csak a Best Hits TV csatornán
+// a magyar pontos idő elhelyezése a logó alatt, csak a Best Hits TV csatornán
 function positionHuClock() {
     if (activeChannel !== 'besthits') {
         huClock.style.display = 'none';
@@ -543,7 +540,7 @@ function positionHuClock() {
     }
 }
 
-// ÚJ: a magyarországi pontos idő szövegének frissítése (másodpercenként)
+// a magyarországi pontos idő szövegének frissítése (másodpercenként)
 function updateHuClockText() {
     if (activeChannel !== 'besthits') return;
     const now = new Date();
@@ -583,14 +580,14 @@ function switchChannel(channelId) {
     const clickedBtn = Array.from(document.querySelectorAll('.channel-btn')).find(btn => btn.getAttribute('onclick').includes(channelId));
     if(clickedBtn) clickedBtn.classList.add('active');
 
-    updateNotifierColor(); // ÚJ: a "MOST:" felirat és az alsó szegély színe is a csatornához igazodik
-    positionHuClock(); // ÚJ: csatornaváltáskor azonnal frissítjük az óra láthatóságát/pozícióját
+    updateNotifierColor(); // a "MOST:" felirat és az alsó szegély színe is a csatornához igazodik
+    positionHuClock(); // csatornaváltáskor azonnal frissítjük az óra láthatóságát/pozícióját
     updateHuClockText();
 
     runTvEngine();
 }
 
-// ÚJ: a "MOST:" felirat és a sáv alsó csíkjának színbeállítása az aktuális csatorna szerint
+// a "MOST:" felirat és a sáv alsó csíkjának színbeállítása az aktuális csatorna szerint
 function updateNotifierColor() {
     const channelColor = CHANNEL_NOTIFIER_COLORS[activeChannel] || '#ff1744';
     notifierLiveText.style.color = channelColor;
@@ -774,14 +771,14 @@ async function runTvEngine() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-    updateNotifierColor(); // ÚJ: a kezdeti (CineMaster) csatorna színét is beállítjuk induláskor
+    updateNotifierColor(); // a kezdeti (CineMaster) csatorna színét is beállítjuk induláskor
     runTvEngine(); 
     setInterval(runTvEngine, 5000); 
-    setInterval(updateHuClockText, 1000); // ÚJ: az óra szövege másodpercenként frissül
+    setInterval(updateHuClockText, 1000); // az óra szövege másodpercenként frissül
     updateHuClockText();
 });
 
-// ÚJ: service worker regisztrálása - ez teszi "telepíthetővé" (PWA) az oldalt.
+// service worker regisztrálása - ez teszi "telepíthetővé" (PWA) az oldalt.
 // Szándékosan nem gyorsítótároz semmit (lásd sw.js megjegyzését), csak a
 // telepíthetőségi feltételt elégíti ki.
 if ('serviceWorker' in navigator) {
