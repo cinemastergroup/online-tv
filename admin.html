@@ -400,7 +400,7 @@ function formatSecondsToHMS(totalSeconds) {
 }
 
 function statusLogUpdateAndRender() {
-    const sortedTitles = Object.keys(globalDurations).sort((a, b) => a.localeCompare(b, 'hu'));
+    const sortedTitles = Object.keys(globalDurations).sort((a, b) => a.localeCompare(b, 'hu', { numeric: true, sensitivity: 'base' }));
     const dbLog = document.getElementById('dbStatusLog');
     dbLog.style.color = "#00b0ff";
     dbLog.innerText = `Adatbázis betöltve. Jelenleg ${sortedTitles.length} db műsor van a memóriában.`;
@@ -417,7 +417,7 @@ function renderFilmDropdown(filterText) {
     const dropdown = document.getElementById('filmSelectDropdown');
     if (!dropdown) return;
 
-    const sortedTitles = Object.keys(globalDurations).sort((a, b) => a.localeCompare(b, 'hu'));
+    const sortedTitles = Object.keys(globalDurations).sort((a, b) => a.localeCompare(b, 'hu', { numeric: true, sensitivity: 'base' }));
     const cleanFilter = (filterText || '').replace(/\s*\(\d{2}:\d{2}:\d{2}\)\s*$/, '').toLowerCase();
     const matches = cleanFilter
         ? sortedTitles.filter(title => title.toLowerCase().includes(cleanFilter))
