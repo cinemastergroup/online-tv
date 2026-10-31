@@ -1,0 +1,308 @@
+{
+  "schedule": [
+    {
+      "title": "-RTV_Ajánló03",
+      "url": "https://ok.ru/videoembed/15404379015848",
+      "duration": 98,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-10-31T04:59:00"
+    },
+    {
+      "title": "A KÖLYÖK",
+      "url": "https://ok.ru/videoembed/8528722332203",
+      "duration": 5996,
+      "rating": "12",
+      "ratio": "",
+      "start": "2026-10-31T05:00:38"
+    },
+    {
+      "title": "-RTV_Ajánló10S",
+      "url": "https://ok.ru/videoembed/15880597146280",
+      "duration": 308,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-10-31T06:40:34"
+    },
+    {
+      "title": "ELNÖKCSEMETE",
+      "url": "https://ok.ru/videoembed/4861458189011",
+      "duration": 6050,
+      "rating": "12",
+      "ratio": "",
+      "start": "2026-10-31T06:45:42"
+    },
+    {
+      "title": "-RTV_Ajánló07",
+      "url": "https://ok.ru/videoembed/15880604158632",
+      "duration": 210,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-10-31T08:26:32"
+    },
+    {
+      "title": "MR. BEAN, 10.",
+      "url": "https://ok.ru/videoembed/2278170102315",
+      "duration": 1456,
+      "rating": "12",
+      "ratio": "4:3",
+      "start": "2026-10-31T08:30:02"
+    },
+    {
+      "title": "-RTV_Ajánló12",
+      "url": "https://ok.ru/videoembed/15880596753064",
+      "duration": 360,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-10-31T08:54:18"
+    },
+    {
+      "title": "A TENKES KAPITÁNYA, 13/1.",
+      "url": "https://ok.ru/videoembed/4979119622753",
+      "duration": 1601,
+      "rating": "12",
+      "ratio": "4:3",
+      "start": "2026-10-31T09:00:18"
+    },
+    {
+      "title": "-RTV_Ajánló06S",
+      "url": "https://ok.ru/videoembed/15880605993640",
+      "duration": 184,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-10-31T09:26:59"
+    },
+    {
+      "title": "XENA, I/16.",
+      "url": "https://ok.ru/videoembed/3850664676088",
+      "duration": 2550,
+      "rating": "12",
+      "ratio": "4:3",
+      "start": "2026-10-31T09:30:03"
+    },
+    {
+      "title": "-RTV_Ajánló05",
+      "url": "https://ok.ru/videoembed/15880605928104",
+      "duration": 152,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-10-31T10:12:33"
+    },
+    {
+      "title": "A SZUPERCSAPAT, II/3.",
+      "url": "https://ok.ru/videoembed/8341832469078",
+      "duration": 2888,
+      "rating": "12",
+      "ratio": "4:3",
+      "start": "2026-10-31T10:15:05"
+    },
+    {
+      "title": "-RTV_Ajánló04S",
+      "url": "https://ok.ru/videoembed/15880606124712",
+      "duration": 122,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-10-31T11:03:13"
+    },
+    {
+      "title": "DOB+BASSZUS, 8.",
+      "url": "https://ok.ru/videoembed/7615830493929",
+      "duration": 1506,
+      "rating": "12",
+      "ratio": "4:3",
+      "start": "2026-10-31T11:05:15"
+    },
+    {
+      "title": "-RTV_Ajánló10S",
+      "url": "https://ok.ru/videoembed/15880597146280",
+      "duration": 308,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-10-31T11:30:21"
+    },
+    {
+      "title": "AZ EMBER, AKI TÚL KEVESET TUDOTT",
+      "url": "https://ok.ru/videoembed/2611395824339",
+      "duration": 5623,
+      "rating": "12",
+      "ratio": "",
+      "start": "2026-10-31T11:35:29"
+    },
+    {
+      "title": "-RTV_Ajánló14",
+      "url": "https://ok.ru/videoembed/15880589019816",
+      "duration": 400,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-10-31T13:09:12"
+    },
+    {
+      "title": "KAMPÓKÉZ",
+      "url": "https://ok.ru/videoembed/789214661319",
+      "duration": 5694,
+      "rating": "18",
+      "ratio": "",
+      "start": "2026-10-31T13:15:52"
+    },
+    {
+      "title": "-RTV_Ajánló10S",
+      "url": "https://ok.ru/videoembed/15880597146280",
+      "duration": 308,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-10-31T14:50:46"
+    },
+    {
+      "title": "KAMPÓKÉZ 2",
+      "url": "https://ok.ru/videoembed/2688190974675",
+      "duration": 5670,
+      "rating": "18",
+      "ratio": "",
+      "start": "2026-10-31T14:55:54"
+    },
+    {
+      "title": "-RTV_Ajánló11",
+      "url": "https://ok.ru/videoembed/15880596884136",
+      "duration": 326,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-10-31T16:30:24"
+    },
+    {
+      "title": "KAMPÓKÉZ 3 - HOLTAK NAPJA",
+      "url": "https://ok.ru/videoembed/2688194972371",
+      "duration": 5598,
+      "rating": "18",
+      "ratio": "",
+      "start": "2026-10-31T16:35:50"
+    },
+    {
+      "title": "-RTV_Ajánló14",
+      "url": "https://ok.ru/videoembed/15880589019816",
+      "duration": 400,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-10-31T18:09:08"
+    },
+    {
+      "title": "HEGYLAKÓ, I/20.",
+      "url": "https://ok.ru/videoembed/15806234430120",
+      "duration": 2934,
+      "rating": "12",
+      "ratio": "4:3",
+      "start": "2026-10-31T18:15:48"
+    },
+    {
+      "title": "-RTV_Ajánló12",
+      "url": "https://ok.ru/videoembed/15880596753064",
+      "duration": 360,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-10-31T19:04:42"
+    },
+    {
+      "title": "AZ ELVESZETT VILÁG, I/20.",
+      "url": "https://ok.ru/videoembed/5739099589206",
+      "duration": 2591,
+      "rating": "12",
+      "ratio": "4:3",
+      "start": "2026-10-31T19:10:42"
+    },
+    {
+      "title": "-RTV_Ajánló13S",
+      "url": "https://ok.ru/videoembed/15880603830952",
+      "duration": 380,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-10-31T19:53:53"
+    },
+    {
+      "title": "EGY ÓRA MÚLVA ITT VAGYOK, 2.",
+      "url": "https://ok.ru/videoembed/3200694487589",
+      "duration": 4631,
+      "rating": "12",
+      "ratio": "4:3",
+      "start": "2026-10-31T20:00:13"
+    },
+    {
+      "title": "-RTV_Ajánló06S",
+      "url": "https://ok.ru/videoembed/15880605993640",
+      "duration": 184,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-10-31T21:17:24"
+    },
+    {
+      "title": "RÉMÁLOM AZ ELM UTCÁBAN",
+      "url": "https://ok.ru/videoembed/8411635518098",
+      "duration": 5338,
+      "rating": "18",
+      "ratio": "",
+      "start": "2026-10-31T21:20:28"
+    },
+    {
+      "title": "-RTV_Ajánló01",
+      "url": "https://ok.ru/videoembed/15404378884776",
+      "duration": 84,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-10-31T22:49:26"
+    },
+    {
+      "title": "A KÖR",
+      "url": "https://ok.ru/videoembed/7602988190354",
+      "duration": 6917,
+      "rating": "16",
+      "ratio": "",
+      "start": "2026-10-31T22:50:50"
+    },
+    {
+      "title": "-RTV_Ajánló08S",
+      "url": "https://ok.ru/videoembed/15880606059176",
+      "duration": 244,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-11-01T00:46:07"
+    },
+    {
+      "title": "CASPER",
+      "url": "https://ok.ru/videoembed/15687575276079",
+      "duration": 6010,
+      "rating": "12",
+      "ratio": "",
+      "start": "2026-11-01T00:50:11"
+    },
+    {
+      "title": "-RTV_Ajánló10S",
+      "url": "https://ok.ru/videoembed/15880597146280",
+      "duration": 308,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-11-01T02:30:21"
+    },
+    {
+      "title": "DUGIPÉNZ",
+      "url": "https://ok.ru/videoembed/16105555036840",
+      "duration": 6528,
+      "rating": "12",
+      "ratio": "",
+      "start": "2026-11-01T02:35:29"
+    },
+    {
+      "title": "-RTV_Ajánló12",
+      "url": "https://ok.ru/videoembed/15880596753064",
+      "duration": 360,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-11-01T04:24:17"
+    },
+    {
+      "title": "MŰSORSZÜNET•••",
+      "url": "https://ok.ru/videoembed/15799038249640",
+      "duration": 3600,
+      "rating": "",
+      "ratio": "",
+      "start": "2026-11-01T04:30:17"
+    }
+  ]
+}
