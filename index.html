@@ -267,9 +267,12 @@
                     <span class="time-info" id="lblTime">--:--</span>
                 </div>
             </div>
-	    <button class="icon-btn" onclick="toggleNativeFullscreen()" aria-label="Teljes Képernyő">
-                <img src="https://img.catcast.tv/uploads/19092026/logos/15170-6aaea700baa5d.jpg" alt="Teljes Képernyő"></button>
-            <button class="exit-btn" onclick="exitApp()">KILÉPÉS</button>
+            <div class="controls-right">
+                <button class="icon-btn" onclick="toggleNativeFullscreen()" aria-label="Teljes Képernyő">
+                    <img src="https://img.catcast.tv/uploads/19092026/logos/15170-6aaea700baa5d.jpg" alt="Teljes Képernyő">
+                </button>
+                <button class="exit-btn" onclick="exitApp()">KILÉPÉS</button>
+            </div>
         </div>
         
         <div class="channel-selector" id="channelButtonsContainer">
@@ -279,7 +282,7 @@
             <button class="channel-btn" onclick="switchChannel('cinemaster2')" aria-label="CineMaster 2">
                 <img src="https://img.catcast.tv/uploads/19092026/logos/15170-6aaea6d801506.jpg" alt="CineMaster 2">
             </button>
-	     <button class="channel-btn" onclick="switchChannel('cinemaster4k')" aria-label="CineMaster+4K">
+            <button class="channel-btn" onclick="switchChannel('cinemaster4k')" aria-label="CineMaster+4K">
                 <img src="https://cinemastergroup.github.io/online-tv/logo/cinemaster+4k-button.jpg" alt="CineMaster+4K">
             </button>
             <button class="channel-btn" onclick="switchChannel('retrotv')" aria-label="RetroTV">
@@ -314,23 +317,22 @@ const pageWrapper = document.getElementById('pageWrapper');
 const container = document.getElementById('mainTvContainer');
 const overlay = document.getElementById('noStreamOverlay');
 const watermark = document.getElementById('tvWatermark');
-const ratingImg = document.getElementById('tvRating'); // ÚJ ELÉRÉS
+const ratingImg = document.getElementById('tvRating');
 const lblShow = document.getElementById('lblShow');
 const lblTime = document.getElementById('lblTime');
 const epgModalOverlay = document.getElementById('epgModalOverlay');
 const epgRowsContainer = document.getElementById('epgRowsContainer');
 const epgModalTitle = document.getElementById('epgModalTitle');
-const epgCloseBtn = document.getElementById('epgCloseBtn'); // ÚJ: bezárás gomb
+const epgCloseBtn = document.getElementById('epgCloseBtn');
 
 const showNotifier = document.getElementById('showNotifier');
 const notifierTitle = document.getElementById('notifierTitle');
-const notifierLiveText = document.getElementById('notifierLiveText'); // ÚJ: a "MOST:" felirat eleme
+const notifierLiveText = document.getElementById('notifierLiveText');
 
-// csatornánként eltérő szín a "MOST:" feliraton és a sáv alsó csíkján
 const CHANNEL_NOTIFIER_COLORS = {
     cinemaster: '#cf0202',
     cinemaster2: '#29ba30',
-	cinemaster4k: '#00bfff',
+    cinemaster4k: '#00bfff',
     retrotv: '#f58d05',
     besthits: '#07cee8',
     vivatv: '#1f4eb4'
@@ -339,7 +341,7 @@ const CHANNEL_NOTIFIER_COLORS = {
 const vid = document.getElementById('tvEngine');
 const archiveIframe = document.getElementById('archiveEngine');
 
-const huClock = document.getElementById('huClock'); // magyar óra elem
+const huClock = document.getElementById('huClock');
 
 let activeChannel = 'cinemaster';
 let lastRenderedUrl = '';
@@ -359,17 +361,9 @@ function startTvWithAudio(e) {
     vid.muted = false;
     vid.volume = 1.0;
 
-    // a hangos lejátszás engedélyét MÉG a kattintás szinkron részében
-    // próbáljuk "bevésetni" a böngészőbe - ha ezt csak a runTvEngine() aszinkron
-    // fetch-hívásai UTÁN tesszük meg (mint korábban), sok szigorúbb autoplay-
-    // policy (pl. Android TV böngészők, TV Bro) addigra már nem tekinti a
-    // lejátszást felhasználói gesztus által engedélyezettnek, és csendben
-    // indítja csak el a videót, amit utólag nem mindig sikerül feloldani.
     vid.play().catch(() => {});
 
     runTvEngine();
-    // feloldás után azonnal fókuszáljuk az aktív csatornagombot, hogy a
-    // távirányító/billentyűzet nyilaival rögtön navigálni lehessen
     const activeBtn = document.querySelector('#channelButtonsContainer .channel-btn.active');
     if (activeBtn) activeBtn.focus();
 }
@@ -393,7 +387,6 @@ function updateFontSizes() {
     const textEls = document.querySelectorAll('.notifier-live-text, .notifier-title');
     textEls.forEach(el => { if(el) el.style.fontSize = computedFontSize + 'px'; });
 
-    // az óra betűmérete is a konténer szélességéhez igazodik
     const clockFontSize = Math.max(14, baseWidth * 0.015);
     huClock.style.fontSize = clockFontSize + 'px';
 }
@@ -403,9 +396,6 @@ function toggleEpg(show) {
     if (show) {
         epgModalTitle.innerText = "Műsorújság";
         epgModalOverlay.classList.add('active');
-        // azonnal fókuszáljuk a Bezárás gombot, hogy a távirányító OK/Enter
-        // gombjával rögtön be lehessen zárni (arra az esetre, ha a Vissza/Exit
-        // gomb nem küld a böngésző által felismert billentyűkódot).
         setTimeout(() => { epgCloseBtn.focus(); }, 0);
     } else {
         epgModalOverlay.classList.remove('active');
@@ -420,7 +410,6 @@ function toggleNativeFullscreen() {
     }
 }
 
-// a KILÉPÉS gomb az oldalt tölti újra
 function exitApp() {
     location.reload();
 }
@@ -429,9 +418,6 @@ document.addEventListener('fullscreenchange', () => {
     setTimeout(() => { updateLayersScale(); updateFontSizes(); }, 100);
 });
 
-// nyilakkal / távirányítóval történő navigáció a gombsorban (csatornák + EPG + Teljes képernyő).
-// Az Enter/OK gomb aktiválása natívan működik, mert ezek valódi <button> elemek -
-// ehhez nem kell külön kód, a böngésző/TV-platform ezt magától megcsinálja.
 function getNavigableButtons() {
     return Array.from(document.querySelectorAll('#channelButtonsContainer button'));
 }
@@ -442,7 +428,6 @@ function focusAdjacentButton(direction) {
     const currentIndex = buttons.indexOf(document.activeElement);
     let nextIndex;
     if (currentIndex === -1) {
-        // Ha semmi sincs fókuszban, az éppen játszott csatornánál kezdjük
         const activeBtn = document.querySelector('#channelButtonsContainer .channel-btn.active');
         nextIndex = activeBtn ? buttons.indexOf(activeBtn) : 0;
     } else {
@@ -468,7 +453,7 @@ window.addEventListener('keydown', function(e) {
         return;
     }
 
-    if (isEpgOpen) return; // EPG nyitva - ne navigáljunk a háttérben lévő gombsorban
+    if (isEpgOpen) return;
 
     if (e.key === 'ArrowRight' || e.keyCode === 39) {
         e.preventDefault();
@@ -479,7 +464,6 @@ window.addEventListener('keydown', function(e) {
     }
 });
 
-// EGYESÍTETT MEGJELENÍTÉSI MOTOR (Dinamikus méret-számítás mindkét JSON-höz)
 function updateLayersScale() {
     if (currentLogoConfig && currentLogoConfig.url) {
         const finalSizePx = container.clientWidth * (currentLogoConfig.size / 440);
@@ -508,7 +492,6 @@ function updateLayersScale() {
     positionHuClock();
 }
 
-// a magyar pontos idő elhelyezése a logó alatt, csak a Best Hits TV csatornán
 function positionHuClock() {
     if (activeChannel !== 'besthits') {
         huClock.style.display = 'none';
@@ -517,18 +500,13 @@ function positionHuClock() {
 
     huClock.style.display = 'block';
 
-    // ---- ITT ÁLLÍTHATÓ AZ ÓRA POZÍCIÓJA ----
-    // extraOffsetTopPx: pozitív érték lejjebb, negatív feljebb tolja az órát a logóhoz képest
-    // extraOffsetLeftPx: pozitív érték jobbra, negatív balra tolja az órát a logóhoz képest
     const extraOffsetTopPx = -40;
     const extraOffsetLeftPx = 75;
-    // -----------------------------------------
 
     if (currentLogoConfig && currentLogoConfig.url && watermark.style.display === 'block') {
-        // A logó tényleges (renderelt) helyzetéhez igazítjuk, alá pozicionálva
         const containerRect = container.getBoundingClientRect();
         const watermarkRect = watermark.getBoundingClientRect();
-        const gapPx = Math.max(6, container.clientWidth * 0.008); // logó és óra közti térköz
+        const gapPx = Math.max(6, container.clientWidth * 0.008);
 
         const topPx = (watermarkRect.bottom - containerRect.top) + gapPx + extraOffsetTopPx;
         const leftPx = (watermarkRect.left - containerRect.left) + extraOffsetLeftPx;
@@ -536,13 +514,11 @@ function positionHuClock() {
         huClock.style.top = topPx + 'px';
         huClock.style.left = leftPx + 'px';
     } else {
-        // Ha nincs logó a csatornán, alapértelmezett hely (itt is állítható %-ban)
         huClock.style.top = '4%';
         huClock.style.left = '3%';
     }
 }
 
-// a magyarországi pontos idő szövegének frissítése (másodpercenként)
 function updateHuClockText() {
     if (activeChannel !== 'besthits') return;
     const now = new Date();
@@ -582,14 +558,13 @@ function switchChannel(channelId) {
     const clickedBtn = Array.from(document.querySelectorAll('.channel-btn')).find(btn => btn.getAttribute('onclick').includes(channelId));
     if(clickedBtn) clickedBtn.classList.add('active');
 
-    updateNotifierColor(); // a "MOST:" felirat és az alsó szegély színe is a csatornához igazodik
-    positionHuClock(); // csatornaváltáskor azonnal frissítjük az óra láthatóságát/pozícióját
+    updateNotifierColor();
+    positionHuClock();
     updateHuClockText();
 
     runTvEngine();
 }
 
-// a "MOST:" felirat és a sáv alsó csíkjának színbeállítása az aktuális csatorna szerint
 function updateNotifierColor() {
     const channelColor = CHANNEL_NOTIFIER_COLORS[activeChannel] || '#ff1744';
     notifierLiveText.style.color = channelColor;
@@ -600,7 +575,6 @@ async function runTvEngine() {
     if (!userUnlocked) return;
 
     try {
-        // CSATORNALOGÓ JSON BETÖLTÉSE
         try {
             const logoResponse = await fetch(`${activeChannel}_logo.json?t=${new Date().getTime()}`);
             if (logoResponse.ok) {
@@ -666,7 +640,6 @@ async function runTvEngine() {
             let secondsInTrack = Math.floor((now.getTime() - trackStart.getTime()) / 1000);
             if (isNaN(secondsInTrack) || secondsInTrack < 0) { secondsInTrack = 0; }
 
-            // --- ÚJ KORHATÁR AUTOMATIKUS JSON MOTOR ---
             if (currentTrack.rating && currentTrack.rating !== "") {
                 try {
                     const ratingResponse = await fetch(`korhatar_${currentTrack.rating}.json?t=${new Date().getTime()}`);
@@ -754,7 +727,7 @@ async function runTvEngine() {
             lastRenderedUrl = ''; isIframeLoaded = false;
             currentTrackRatio = "";
             showNotifier.classList.remove('active');
-            ratingImg.style.display = 'none'; currentRatingConfig = null; // Rejtés ha nincs adás
+            ratingImg.style.display = 'none'; currentRatingConfig = null;
             vid.pause(); vid.style.display = 'none'; 
             let embedFrame = document.getElementById('embedFrame');
             if (embedFrame) embedFrame.remove();
@@ -773,16 +746,13 @@ async function runTvEngine() {
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-    updateNotifierColor(); // a kezdeti (CineMaster) csatorna színét is beállítjuk induláskor
+    updateNotifierColor();
     runTvEngine(); 
     setInterval(runTvEngine, 5000); 
-    setInterval(updateHuClockText, 1000); // az óra szövege másodpercenként frissül
+    setInterval(updateHuClockText, 1000);
     updateHuClockText();
 });
 
-// service worker regisztrálása - ez teszi "telepíthetővé" (PWA) az oldalt.
-// Szándékosan nem gyorsítótároz semmit (lásd sw.js megjegyzését), csak a
-// telepíthetőségi feltételt elégíti ki.
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js').catch(err => {
