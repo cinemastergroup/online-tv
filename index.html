@@ -140,7 +140,7 @@
         .info-top-row { display: flex; align-items: center; justify-content: space-between; width: 100%; }
         .info-left { display: flex; flex-direction: column; }
 
-        /* KILÉPÉS gomb a cím-sor jobb oldalán */
+        /* EXIT gomb a cím-sor jobb oldalán */
         .exit-btn {
             background: var(--accent-color);
             color: #ffffff;
@@ -268,10 +268,10 @@
                 </div>
             </div>
             <div class="controls-right">
+                <button class="exit-btn" onclick="exitApp()">EXIT</button>
                 <button class="icon-btn" onclick="toggleNativeFullscreen()" aria-label="Teljes Képernyő">
                     <img src="https://img.catcast.tv/uploads/19092026/logos/15170-6aaea700baa5d.jpg" alt="Teljes Képernyő">
                 </button>
-                <button class="exit-btn" onclick="exitApp()">KILÉPÉS</button>
             </div>
         </div>
         
