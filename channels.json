@@ -12,15 +12,15 @@
     "name": "RetroTV"
   },
   {
-    "id": "horrorchannel",
-    "name": "Horror Channel"
-  },
-  {
     "id": "besthits",
     "name": "Best Hits TV"
   },
   {
     "id": "vivatv",
     "name": "VIVA TV"
+  },
+  {
+    "id": "cinemaster4k",
+    "name": "CINEMASTER+4K"
   }
 ]
