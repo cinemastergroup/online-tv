@@ -391,6 +391,7 @@ const tickerBar = document.getElementById('tvTicker');
 const tickerTrack = document.getElementById('tvTickerTrack');
 
 // ---- ITT ÁLLÍTHATÓ A FUTÓSZÖVEG ----
+const TICKER_HEIGHT_SCALE = 0.5;            // a sáv magassága a korhatár-karikához képest (0.5 = fele; a betűméret ezt követi)
 const TICKER_SPEED_PX_PER_SEC = 110;        // görgetés sebessége (nagyobb = gyorsabb)
 const TICKER_SEPARATOR = '     •     ';      // több egyidejű szöveg közti elválasztó
 // Tartalék pozíció/méret, ha még nem ismert a korhatár-karika helyzete:
@@ -417,10 +418,15 @@ function positionTicker() {
         if (h > 0) heightPx = h;
     }
 
-    tickerBar.style.top = topPercent + '%';
-    tickerBar.style.height = heightPx + 'px';
-    tickerBar.style.lineHeight = heightPx + 'px';
-    tickerBar.style.fontSize = Math.max(14, heightPx * 0.5) + 'px';
+    // A sáv a karikához képest kisebb, de a karika függőleges közepére igazítva
+    const barHeightPx = heightPx * TICKER_HEIGHT_SCALE;
+    const circleTopPx = container.clientHeight * (topPercent / 100);
+    const barTopPx = circleTopPx + (heightPx - barHeightPx) / 2;
+
+    tickerBar.style.top = barTopPx + 'px';
+    tickerBar.style.height = barHeightPx + 'px';
+    tickerBar.style.lineHeight = barHeightPx + 'px';
+    tickerBar.style.fontSize = Math.max(10, barHeightPx * 0.5) + 'px';
 }
 
 // A görgetés újraindítása úgy, hogy a sebesség állandó maradjon a szöveg hosszától függetlenül
