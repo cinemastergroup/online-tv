@@ -692,6 +692,14 @@ function forceVkUnmute(frame) {
         };
         try { player.on('inited', unmute); } catch (e) {}
         try { player.on('started', unmute); } catch (e) {}
+
+        // Amikor a videó ténylegesen véget ér, azonnal elsötétítjük, hogy ne villanjon fel az ajánló képernyő
+        try {
+            player.on('ended', () => {
+                overlay.style.display = 'flex';
+            });
+        } catch (e) {}
+
         [500, 1500, 3000].forEach(ms => setTimeout(unmute, ms));
     } catch (e) { console.log('VK unmute hiba', e); }
 }
@@ -840,7 +848,8 @@ async function runTvEngine() {
                 clearTimeout(endTimer);
                 const msToEnd = trackEnd.getTime() - Date.now();
                 if (msToEnd > 0) {
-                    endTimer = setTimeout(runTvEngine, msToEnd + 50);
+                    // +2500 ms puffer-kompenzáció, hogy az iframe betöltési ideje ne csípje le a videó végét
+                    endTimer = setTimeout(runTvEngine, msToEnd + 2500);
                 }
 
                 if (!isIframeLoaded || !embedFrame || lastRenderedUrl !== currentTrack.url) {
