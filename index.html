@@ -383,7 +383,14 @@ let userUnlocked = false;
 let isIframeLoaded = false;
 
 let forceBlackoutActive = false;
-let endTimer = null; // a videó végéhez igazított pontos időzítő
+let endTimerNext = null;     // a műsor végéhez igazított időzítő: a következő műsor indítása
+let endTimerBlackout = null; // az utolsó 2 mp elsötétítéséhez igazított időzítő (beágyazott videónál)
+let blackoutTimer = null;
+let overlayWanted = true;    // true: a fekete takarónak látszania kell (nincs élő adás / műsorvég / váltás)
+let currentTrackKey = '';    // az aktuális műsor egyedi kulcsa (kezdési idő + link)
+let lastVideoKey = '';       // az mp4 lejátszó aktuális műsorának egyedi kulcsa
+let engineRunning = false;   // ne fusson két motor-ciklus egyszerre
+let engineRerun = false;
 
 // ===================== FUTÓSZÖVEG (TICKER) =====================
 // Csatornánként a {csatorna}_ticker.json fájlból töltődik: { "ticker": [ { "text", "start", "end" } ] }
@@ -684,7 +691,12 @@ window.addEventListener('resize', () => setTimeout(() => { updateLayersScale(); 
 function triggerBlackoutIncert() {
     forceBlackoutActive = true;
     overlay.style.display = 'flex';
-    setTimeout(() => { forceBlackoutActive = false; }, 2500);
+    clearTimeout(blackoutTimer);
+    blackoutTimer = setTimeout(() => {
+        forceBlackoutActive = false;
+        // Ha közben már élő műsor megy, nem várjuk meg a következő 5 mp-es ciklust: azonnal levesszük a takarót
+        if (!overlayWanted) { overlay.style.display = 'none'; }
+    }, 2500);
 }
 
 function forceVkUnmute(frame) {
@@ -695,9 +707,23 @@ function forceVkUnmute(frame) {
             try { player.unmute(); } catch (e) {}
             try { player.setVolume(1); } catch (e) {}
         };
+        let playing = false;
+        const markPlaying = () => { playing = true; unmute(); };
         try { player.on('inited', unmute); } catch (e) {}
-        try { player.on('started', unmute); } catch (e) {}
+        try { player.on('started', markPlaying); } catch (e) {}
+        try { player.on('resumed', markPlaying); } catch (e) {}
+        try { player.on('timeupdate', () => { playing = true; }); } catch (e) {}
         [500, 1500, 3000].forEach(ms => setTimeout(unmute, ms));
+
+        // Ha a böngésző/lejátszó nem engedte az automatikus indítást (a poszter marad), kézzel indítjuk:
+        // 2 mp után hanggal, 4,5 mp után némítva (a némított indítás mindig engedélyezett), majd újra próbáljuk a hangot.
+        const kick = (muted) => {
+            if (playing) return;
+            try { if (muted) { player.mute(); } player.play(); } catch (e) {}
+        };
+        setTimeout(() => kick(false), 2000);
+        setTimeout(() => kick(true), 4500);
+        [7000, 10000].forEach(ms => setTimeout(() => { if (playing) unmute(); }, ms));
     } catch (e) { console.log('VK unmute hiba', e); }
 }
 
@@ -705,6 +731,11 @@ function switchChannel(channelId) {
     activeChannel = channelId;
     lastRenderedUrl = '';
     isIframeLoaded = false;
+    overlayWanted = true;
+    lastVideoKey = '';
+    currentTrackKey = '';
+    clearTimeout(endTimerNext);
+    clearTimeout(endTimerBlackout);
     triggerBlackoutIncert();
     vid.pause();
     vid.removeAttribute('src');
@@ -737,12 +768,26 @@ function updateNotifierColor() {
     showNotifier.style.borderBottomColor = channelColor;
 }
 
+// A motor-ciklusok nem futhatnak egymás hegyén-hátán: ha éppen fut egy, a kérés összevonva
+// egyetlen újrafuttatásként várakozik (így nem keletkeznek "elavult" ciklusok, amik felülírják az újat).
 async function runTvEngine() {
+    if (engineRunning) { engineRerun = true; return; }
+    engineRunning = true;
+    try { await runTvEngineOnce(); }
+    finally {
+        engineRunning = false;
+        if (engineRerun) { engineRerun = false; runTvEngine(); }
+    }
+}
+
+async function runTvEngineOnce() {
     if (!userUnlocked) return;
+    const channelAtStart = activeChannel;
 
     try {
         try {
-            const logoResponse = await fetch(`${activeChannel}_logo.json?t=${new Date().getTime()}`);
+            const logoResponse = await fetch(`${channelAtStart}_logo.json?t=${new Date().getTime()}`);
+            if (channelAtStart !== activeChannel) return; // közben csatornát váltottak
             if (logoResponse.ok) {
                 const logoConfig = await logoResponse.json();
                 if (logoConfig.logo && logoConfig.logo.url) {
@@ -757,19 +802,20 @@ async function runTvEngine() {
         const baseDate = new Date(new Date().getTime() - 24 * 60 * 60 * 1000);
         const formázDátum = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
-        for (let i = 0; i < 7; i++) {
-            const vizsgáltDátum = new Date(baseDate.getTime() + i * 24 * 60 * 60 * 1000);
-            const dátumStr = formázDátum(vizsgáltDátum);
+        // A 7 napi műsorfájl lekérése párhuzamosan (nem egymás után), így egy ciklus csak 1 hálózati körbe kerül
+        const scheduleParts = await Promise.all(Array.from({ length: 7 }, async (_, i) => {
+            const dátumStr = formázDátum(new Date(baseDate.getTime() + i * 24 * 60 * 60 * 1000));
             try {
-                const response = await fetch(`${activeChannel}_schedule_${dátumStr}.json?t=${new Date().getTime()}`);
+                const response = await fetch(`${channelAtStart}_schedule_${dátumStr}.json?t=${new Date().getTime()}`);
                 if (response.ok) {
                     const data = await response.json();
-                    if (data && data.schedule && Array.isArray(data.schedule)) {
-                        kombináltMűsor = kombináltMűsor.concat(data.schedule);
-                    }
+                    if (data && data.schedule && Array.isArray(data.schedule)) { return data.schedule; }
                 }
             } catch (innerError) { console.log("Schedule hiba"); }
-        }
+            return [];
+        }));
+        if (channelAtStart !== activeChannel) return; // közben csatornát váltottak: ennek a ciklusnak az eredménye már nem érvényes
+        kombináltMűsor = [].concat(...scheduleParts);
 
         const now = new Date();
         let currentTrack = null;
@@ -791,12 +837,15 @@ async function runTvEngine() {
         });
 
         if (currentTrack) {
+            overlayWanted = false;
             if (!forceBlackoutActive) { overlay.style.display = 'none'; }
             lblShow.innerText = currentTrack.title;
             currentTrackRatio = currentTrack.ratio || "";
 
             const trackStart = parseLocalISO(currentTrack.start);
             const trackEnd = new Date(trackStart.getTime() + currentTrack.duration * 1000);
+            // Egyedi kulcs: kezdési idő + link. Így két egymás utáni, azonos linkű műsor is újra betöltődik.
+            const trackKey = currentTrack.start + '|' + currentTrack.url;
             const startHours = String(trackStart.getHours()).padStart(2, '0');
             const startMinutes = String(trackStart.getMinutes()).padStart(2, '0');
             const endHours = String(trackEnd.getHours()).padStart(2, '0');
@@ -825,6 +874,7 @@ async function runTvEngine() {
             updateLayersScale();
             updateFontSizes();
 
+            if (channelAtStart !== activeChannel) return; // közben csatornát váltottak
             if (!currentTrack.title.toLowerCase().includes('ajánló')) {
                 if (secondsInTrack >= 10 && secondsInTrack <= 25) {
                     notifierTitle.innerText = currentTrack.title;
@@ -838,28 +888,43 @@ async function runTvEngine() {
                             currentTrack.url.includes('video_ext.php') ||
                             currentTrack.url.includes('vk.com');
 
+            // --- Pontos időzítők a műsor végéhez igazítva (az 5 mp-es ciklustól függetlenül) ---
+            clearTimeout(endTimerNext);
+            clearTimeout(endTimerBlackout);
+            currentTrackKey = trackKey;
+            const msToEnd = trackEnd.getTime() - Date.now();
+            if (msToEnd > 0) {
+                // a következő műsor a váltás után ~0,15 mp-cel indul
+                endTimerNext = setTimeout(runTvEngine, msToEnd + 150);
+                // beágyazott videónál az utolsó 2 mp elsötétítése közvetlenül fut, hálózati lekérés nélkül
+                if (isEmbed && msToEnd > 2000) {
+                    endTimerBlackout = setTimeout(() => {
+                        if (activeChannel !== channelAtStart || currentTrackKey !== trackKey) return;
+                        const f = document.getElementById('embedFrame');
+                        if (f) { f.style.display = 'none'; }
+                        overlayWanted = true;
+                        overlay.style.display = 'flex';
+                        lastRenderedUrl = ''; isIframeLoaded = false;
+                    }, msToEnd - 2000);
+                }
+            }
+
             if (isEmbed) {
                 vid.pause(); vid.style.display = 'none';
                 let embedFrame = document.getElementById('embedFrame');
 
-                clearTimeout(endTimer);
-                const ENGINE_LEAD_MS = 800;
-                const msToEnd = trackEnd.getTime() - Date.now();
-                const msToBlackout = msToEnd - 2000;
-                if (msToEnd > 0) {
-                    const baseMs = (msToBlackout > ENGINE_LEAD_MS) ? msToBlackout : msToEnd;
-                    endTimer = setTimeout(runTvEngine, Math.max(100, baseMs - ENGINE_LEAD_MS));
-                }
-
-                if (secondsInTrack >= (currentTrack.duration - 2)) {
+                // A videó utolsó 2 másodpercében eltakarjuk az iframe-et (újrajátszás képernyő elrejtése).
+                // Friss órával számolunk, mert a ciklus közben telhetett az idő.
+                if (Math.floor((Date.now() - trackStart.getTime()) / 1000) >= (currentTrack.duration - 2)) {
+                    overlayWanted = true;
                     if (embedFrame) { embedFrame.style.display = 'none'; }
                     overlay.style.display = 'flex'; overlay.innerText = "";
                     lastRenderedUrl = ''; isIframeLoaded = false;
                     return;
                 }
 
-                if (!isIframeLoaded || !embedFrame || lastRenderedUrl !== currentTrack.url) {
-                    isIframeLoaded = true; lastRenderedUrl = currentTrack.url;
+                if (!isIframeLoaded || !embedFrame || lastRenderedUrl !== trackKey) {
+                    isIframeLoaded = true; lastRenderedUrl = trackKey;
                     triggerBlackoutIncert();
                     if (embedFrame) { embedFrame.remove(); }
 
@@ -902,7 +967,8 @@ async function runTvEngine() {
                 if (embedFrame) embedFrame.remove();
                 vid.style.display = 'block';
 
-                if (vid.src !== currentTrack.url) {
+                if (vid.src !== currentTrack.url || lastVideoKey !== trackKey) {
+                    lastVideoKey = trackKey;
                     vid.src = currentTrack.url; vid.load(); vid.currentTime = secondsInTrack;
                     triggerBlackoutIncert();
                     vid.muted = false; vid.volume = 1.0;
@@ -925,10 +991,12 @@ async function runTvEngine() {
             let embedFrame = document.getElementById('embedFrame');
             if (embedFrame) embedFrame.remove();
             archiveIframe.src = ''; archiveIframe.style.display = 'none';
+            overlayWanted = true; currentTrackKey = '';
             lblShow.innerText = "Betöltés..."; lblTime.innerText = "--:--";
             overlay.style.display = 'flex'; overlay.innerText = "";
         }
     } catch (error) {
+        overlayWanted = true;
         showNotifier.classList.remove('active');
         ratingImg.style.display = 'none'; currentRatingConfig = null;
         vid.pause(); vid.style.display = 'none';
