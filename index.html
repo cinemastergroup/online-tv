@@ -20,38 +20,38 @@
     <link href="https://fonts.googleapis.com/css2?family=Zen+Dots&display=swap" rel="stylesheet">
     <style>
         :root { --bg-color: #090a0e; --panel-color: #141821; --accent-color: #cf0202; --text-color: #e3e8f0; --border-color: #262f3d; }
-        
+
         body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: var(--bg-color); color: var(--text-color); font-family: 'Segoe UI', Tahoma, sans-serif; overflow-x: hidden; }
 
         .page-wrapper { display: flex; flex-direction: column; width: 100vw; height: 100vh; box-sizing: border-box; }
 
-        .tv-container { 
-            position: relative; 
-            width: 100%; 
-            height: calc(100vh - 230px); 
-            background: #000; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
+        .tv-container {
+            position: relative;
+            width: 100%;
+            height: calc(100vh - 230px);
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             overflow: hidden;
         }
-        
+
         iframe, video { width: 100%; height: 100%; border: none; background: #000; position: absolute; top: 0; left: 0; z-index: 1; display: none; }
 
-        #embedFrame { 
-            z-index: 2; 
-            width: 106% !important; 
-            height: 112% !important; 
-            top: -6% !important; 
-            left: -3% !important; 
+        #embedFrame {
+            z-index: 2;
+            width: 106% !important;
+            height: 112% !important;
+            top: -6% !important;
+            left: -3% !important;
         }
 
-        .tv-watermark { 
-            position: absolute; 
-            opacity: 0.9; 
-            pointer-events: none; 
-            z-index: 1001 !important; 
-            display: block; 
+        .tv-watermark {
+            position: absolute;
+            opacity: 0.9;
+            pointer-events: none;
+            z-index: 1001 !important;
+            display: block;
             height: auto !important;
         }
 
@@ -63,6 +63,32 @@
             z-index: 1001 !important;
             display: none;
             height: auto !important;
+        }
+
+        /* Futószöveg (ticker): a korhatár-karika mellett jobbra kezdődik, fehér betű, 50%-os átlátszó fekete háttér */
+        .tv-ticker {
+            position: absolute;
+            display: none;
+            overflow: hidden;
+            box-sizing: border-box;
+            background: rgba(0, 0, 0, 0.5);
+            color: #ffffff;
+            font-weight: bold;
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 1000 !important;
+            border-top-left-radius: 6px;
+            border-bottom-left-radius: 6px;
+        }
+        .tv-ticker-track {
+            display: inline-block;
+            padding-left: 100%; /* a szöveg a jobb szélről indul */
+            white-space: nowrap;
+            will-change: transform;
+        }
+        @keyframes tickerScroll {
+            from { transform: translateX(0); }
+            to { transform: translateX(-100%); }
         }
 
         /* Magyarországi pontos idő - csak Best Hits TV csatornán, a logó alatt */
@@ -77,64 +103,64 @@
             letter-spacing: 1px;
         }
 
-        .show-notifier-band { 
-            position: absolute; 
-            top: 7.5%; 
-            right: -100%; 
+        .show-notifier-band {
+            position: absolute;
+            top: 7.5%;
+            right: -100%;
             left: auto;
-            width: 70%; 
-            height: 8.5%; 
-            min-height: 42px; 
-            max-height: 54px; 
-            background: rgba(20, 24, 33, 0.85); 
-            backdrop-filter: blur(8px); 
-            border-bottom: 3px solid var(--accent-color); 
-            border-bottom-left-radius: 8px; 
-            z-index: 1000 !important; 
-            display: flex; 
-            align-items: center; 
-            padding: 0 30px; 
-            box-sizing: border-box; 
-            transition: right 0.5s ease-in-out; 
-            box-shadow: -4px 4px 20px rgba(0,0,0,0.5); 
-            pointer-events: none; 
+            width: 70%;
+            height: 8.5%;
+            min-height: 42px;
+            max-height: 54px;
+            background: rgba(20, 24, 33, 0.85);
+            backdrop-filter: blur(8px);
+            border-bottom: 3px solid var(--accent-color);
+            border-bottom-left-radius: 8px;
+            z-index: 1000 !important;
+            display: flex;
+            align-items: center;
+            padding: 0 30px;
+            box-sizing: border-box;
+            transition: right 0.5s ease-in-out;
+            box-shadow: -4px 4px 20px rgba(0,0,0,0.5);
+            pointer-events: none;
         }
-        .show-notifier-band.active { 
-            right: 0; 
-        }
-        
-        .notifier-live-text { 
-            color: #ff1744; 
-            font-size: 1.65vw; 
-            min-font-size: 18px; 
-            font-weight: 900; 
-            text-transform: uppercase; 
-            margin-right: 10px; 
-            letter-spacing: 1px; 
-        }
-        
-        .notifier-title { 
-            font-size: 1.65vw; 
-            min-font-size: 18px; 
-            font-weight: bold; 
-            color: #ffffff; 
-            text-transform: uppercase; 
-            white-space: nowrap; 
-            overflow: hidden; 
-            text-overflow: ellipsis; 
+        .show-notifier-band.active {
+            right: 0;
         }
 
-        .info-bar { 
-            width: 100%; 
-            height: 230px; 
-            background: var(--panel-color); 
-            border-top: 1px solid var(--border-color); 
-            padding: 20px 2%; 
-            box-sizing: border-box; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 18px; 
-            z-index: 10; 
+        .notifier-live-text {
+            color: #ff1744;
+            font-size: 1.65vw;
+            min-font-size: 18px;
+            font-weight: 900;
+            text-transform: uppercase;
+            margin-right: 10px;
+            letter-spacing: 1px;
+        }
+
+        .notifier-title {
+            font-size: 1.65vw;
+            min-font-size: 18px;
+            font-weight: bold;
+            color: #ffffff;
+            text-transform: uppercase;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .info-bar {
+            width: 100%;
+            height: 230px;
+            background: var(--panel-color);
+            border-top: 1px solid var(--border-color);
+            padding: 20px 2%;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            z-index: 10;
         }
 
         .info-top-row { display: flex; align-items: center; justify-content: space-between; width: 100%; }
@@ -162,7 +188,7 @@
         .badge-live { background: #ff1744; color: white; font-size: 11px; font-weight: bold; padding: 4px 10px; border-radius: 4px; text-transform: uppercase; width: max-content; margin-bottom: 6px; }
         .show-title { font-size: 24px; font-weight: bold; color: #fff; }
         .time-info { font-size: 20px; font-weight: bold; color: #8a99ad; margin-left: 15px; }
-        
+
         .controls-right { display: flex; gap: 15px; align-items: center; }
 
         /* EPG és Teljes Képernyő gombok logó-képei */
@@ -223,9 +249,9 @@
         .epg-modal-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 2000000000 !important; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
         .epg-modal-overlay.active { opacity: 1; pointer-events: auto; display: flex; justify-content: center; align-items: center; }
         .epg-modal { width: 90%; max-width: 650px; background: #12161f; border: 1px solid var(--border-color); border-radius: 16px; padding: 25px; box-sizing: border-box; max-height: 80vh; display: flex; flex-direction: column; }
-        
+
         .no-stream-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; color: transparent; background: #000000; z-index: 995; pointer-events: none; }
-        
+
         .unlock-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #0f1115; z-index: 200001; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px; }
         .unlock-btn { background: var(--accent-color); color: white; border: none; padding: 22px 50px; font-size: 24px; font-weight: bold; border-radius: 14px; cursor: pointer; }
 
@@ -249,13 +275,14 @@
         </div>
 
         <div id="noStreamOverlay" class="no-stream-overlay"></div>
-        
+
         <video id="tvEngine" autoplay></video>
         <iframe id="archiveEngine" allowfullscreen style="display: none;"></iframe>
-        
+
         <img id="tvWatermark" class="tv-watermark" alt="Logo">
         <img id="tvRating" class="tv-rating" alt="Rating">
         <div id="huClock" class="hu-clock">--:--:--</div>
+        <div id="tvTicker" class="tv-ticker"><span id="tvTickerTrack" class="tv-ticker-track"></span></div>
     </div>
 
     <div class="info-bar" id="mainInfoBar">
@@ -274,7 +301,7 @@
                 </button>
             </div>
         </div>
-        
+
         <div class="channel-selector" id="channelButtonsContainer">
             <button class="channel-btn active" onclick="switchChannel('cinemaster')" aria-label="CineMaster">
                 <img src="https://cinemastergroup.github.io/online-tv/logo/cinemaster-button.jpg" alt="CineMaster">
@@ -349,13 +376,130 @@ const huClock = document.getElementById('huClock');
 let activeChannel = 'cinemaster';
 let lastRenderedUrl = '';
 let currentLogoConfig = null;
-let currentRatingConfig = null; 
+let currentRatingConfig = null;
 let currentTrackRatio = "";
 let isEpgOpen = false;
 let userUnlocked = false;
-let isIframeLoaded = false; 
+let isIframeLoaded = false;
 
 let forceBlackoutActive = false;
+let endTimer = null; // a videó végéhez igazított pontos időzítő
+
+// ===================== FUTÓSZÖVEG (TICKER) =====================
+// Csatornánként a {csatorna}_ticker.json fájlból töltődik: { "ticker": [ { "text", "start", "end" } ] }
+const tickerBar = document.getElementById('tvTicker');
+const tickerTrack = document.getElementById('tvTickerTrack');
+
+// ---- ITT ÁLLÍTHATÓ A FUTÓSZÖVEG ----
+const TICKER_HEIGHT_PX = 50; // A sáv fix magassága pixelben (kb. a karika fele)
+const TICKER_BOTTOM_PERCENT = 5.5; // Távolság a képernyő aljától %-ban (ha nincs karika)
+const TICKER_GAP_FROM_RATING_PX = 10; // Hány pixel távolságra kezdődjön a karika jobb szélétől
+const TICKER_SPEED_PX_PER_SEC = 110; // Görgetés sebessége (nagyobb = gyorsabb)
+const TICKER_SEPARATOR = ' • '; // Több egyidejű szöveg közti elválasztó
+// ------------------------------------
+
+let tickerEntries = [];
+let currentTickerText = '';
+let lastRatingGeometry = null;
+
+// Ha van korhatár-karika, közvetlenül mellőle indul jobbra, és a középvonalához igazodik.
+// Ha nincs karika, alul teljes szélességben fut.
+function positionTicker() {
+    if (currentRatingConfig && ratingImg.style.display === 'block') {
+        const containerRect = container.getBoundingClientRect();
+        const ratingRect = ratingImg.getBoundingClientRect();
+
+        if (ratingRect.width > 0 && ratingRect.height > 0) {
+            const ratingCenterY = (ratingRect.top - containerRect.top) + (ratingRect.height / 2);
+            const barTopPx = ratingCenterY - (TICKER_HEIGHT_PX / 2);
+            const barLeftPx = (ratingRect.right - containerRect.left) + TICKER_GAP_FROM_RATING_PX;
+
+            tickerBar.style.top = barTopPx + 'px';
+            tickerBar.style.bottom = 'auto';
+            tickerBar.style.left = barLeftPx + 'px';
+            tickerBar.style.width = `calc(100% - ${barLeftPx}px)`;
+            tickerBar.style.height = TICKER_HEIGHT_PX + 'px';
+            tickerBar.style.lineHeight = TICKER_HEIGHT_PX + 'px';
+            tickerBar.style.fontSize = Math.round(TICKER_HEIGHT_PX * 0.56) + 'px';
+            return;
+        }
+    }
+
+    tickerBar.style.top = 'auto';
+    tickerBar.style.bottom = TICKER_BOTTOM_PERCENT + '%';
+    tickerBar.style.left = '0px';
+    tickerBar.style.width = '100%';
+    tickerBar.style.height = TICKER_HEIGHT_PX + 'px';
+    tickerBar.style.lineHeight = TICKER_HEIGHT_PX + 'px';
+    tickerBar.style.fontSize = Math.round(TICKER_HEIGHT_PX * 0.56) + 'px';
+}
+
+// A görgetés újraindítása úgy, hogy a sebesség állandó maradjon a szöveg hosszától függetlenül
+function restartTickerAnimation() {
+    if (!currentTickerText) return;
+    const distancePx = tickerTrack.scrollWidth;
+    const durationSec = Math.max(5, distancePx / TICKER_SPEED_PX_PER_SEC);
+    tickerTrack.style.animation = 'none';
+    void tickerTrack.offsetWidth;
+    tickerTrack.style.animation = `tickerScroll ${durationSec}s linear infinite`;
+}
+
+function applyTickerText(text) {
+    currentTickerText = text;
+    if (!text) {
+        tickerBar.style.display = 'none';
+        tickerTrack.textContent = '';
+        tickerTrack.style.animation = 'none';
+        return;
+    }
+    tickerTrack.textContent = text;
+    tickerBar.style.display = 'block';
+    positionTicker();
+    restartTickerAnimation();
+}
+
+// Másodpercenként: melyik bejegyzés aktív most (kezdő <= most < vég)
+function evaluateTicker() {
+    const now = new Date();
+    const activeTexts = tickerEntries
+        .filter(e => e && e.text && e.start && e.end &&
+                     now >= parseLocalISO(e.start) && now < parseLocalISO(e.end))
+        .map(e => String(e.text).trim());
+    const text = activeTexts.join(TICKER_SEPARATOR);
+    if (text !== currentTickerText) { applyTickerText(text); }
+}
+
+async function loadTickerConfig() {
+    const channelAtRequest = activeChannel;
+    try {
+        const response = await fetch(`${channelAtRequest}_ticker.json?t=${new Date().getTime()}`);
+        if (channelAtRequest !== activeChannel) return;
+        if (response.ok) {
+            const data = await response.json();
+            tickerEntries = (data && Array.isArray(data.ticker)) ? data.ticker : [];
+        } else { tickerEntries = []; }
+    } catch (e) {
+        if (channelAtRequest !== activeChannel) return;
+        tickerEntries = [];
+    }
+    evaluateTicker();
+}
+
+async function initTicker() {
+    try {
+        const r = await fetch(`korhatar_12.json?t=${new Date().getTime()}`);
+        if (r.ok) {
+            const c = await r.json();
+            if (c.logo && !lastRatingGeometry) { lastRatingGeometry = c.logo; }
+        }
+    } catch (e) {}
+    positionTicker();
+    loadTickerConfig();
+}
+
+window.addEventListener('resize', () => setTimeout(() => { positionTicker(); restartTickerAnimation(); }, 120));
+document.addEventListener('fullscreenchange', () => setTimeout(() => { positionTicker(); restartTickerAnimation(); }, 200));
+// ===============================================================
 
 function startTvWithAudio(e) {
     e.stopPropagation();
@@ -373,8 +517,8 @@ function startTvWithAudio(e) {
 
 vid.onended = function() {
     lastRenderedUrl = '';
-    isIframeLoaded = false; 
-    triggerBlackoutIncert(); 
+    isIframeLoaded = false;
+    triggerBlackoutIncert();
     runTvEngine();
 };
 
@@ -386,7 +530,7 @@ function parseLocalISO(isoStr) {
 
 function updateFontSizes() {
     const baseWidth = container.clientWidth;
-    const computedFontSize = Math.max(18, baseWidth * 0.0165); 
+    const computedFontSize = Math.max(18, baseWidth * 0.0165);
     const textEls = document.querySelectorAll('.notifier-live-text, .notifier-title');
     textEls.forEach(el => { if(el) el.style.fontSize = computedFontSize + 'px'; });
 
@@ -493,6 +637,7 @@ function updateLayersScale() {
         ratingImg.style.left = ratingLeftPercent + '%';
     }
     positionHuClock();
+    positionTicker();
 }
 
 function positionHuClock() {
@@ -539,12 +684,9 @@ window.addEventListener('resize', () => setTimeout(() => { updateLayersScale(); 
 function triggerBlackoutIncert() {
     forceBlackoutActive = true;
     overlay.style.display = 'flex';
-    setTimeout(() => { forceBlackoutActive = false; }, 2500); 
+    setTimeout(() => { forceBlackoutActive = false; }, 2500);
 }
 
-// VK lejátszó hangjának bekapcsolása a hivatalos VK player API-val.
-// A VK iframe alapból némítva autoplay-el, ezért a lejátszó betöltődése után
-// (és néhány tartalék időpontban) explicit unmute-ot küldünk neki.
 function forceVkUnmute(frame) {
     if (typeof VK === 'undefined' || !VK.VideoPlayer) return;
     try {
@@ -555,7 +697,6 @@ function forceVkUnmute(frame) {
         };
         try { player.on('inited', unmute); } catch (e) {}
         try { player.on('started', unmute); } catch (e) {}
-        // tartalék: néhány újrapróbálkozás, ha az esemény kimaradna
         [500, 1500, 3000].forEach(ms => setTimeout(unmute, ms));
     } catch (e) { console.log('VK unmute hiba', e); }
 }
@@ -563,18 +704,18 @@ function forceVkUnmute(frame) {
 function switchChannel(channelId) {
     activeChannel = channelId;
     lastRenderedUrl = '';
-    isIframeLoaded = false; 
-    triggerBlackoutIncert(); 
+    isIframeLoaded = false;
+    triggerBlackoutIncert();
     vid.pause();
     vid.removeAttribute('src');
     vid.load();
     vid.style.display = 'none';
-    
+
     let embedFrame = document.getElementById('embedFrame');
     if (embedFrame) { embedFrame.src = ''; embedFrame.style.display = 'none'; }
     archiveIframe.src = '';
     archiveIframe.style.display = 'none';
-    
+
     document.querySelectorAll('.channel-btn').forEach(btn => btn.classList.remove('active'));
     const clickedBtn = Array.from(document.querySelectorAll('.channel-btn')).find(btn => btn.getAttribute('onclick').includes(channelId));
     if(clickedBtn) clickedBtn.classList.add('active');
@@ -582,6 +723,10 @@ function switchChannel(channelId) {
     updateNotifierColor();
     positionHuClock();
     updateHuClockText();
+
+    tickerEntries = [];
+    applyTickerText('');
+    loadTickerConfig();
 
     runTvEngine();
 }
@@ -609,7 +754,7 @@ async function runTvEngine() {
         } catch (e) { watermark.style.display = 'none'; currentLogoConfig = null; }
 
         let kombináltMűsor = [];
-        const baseDate = new Date(new Date().getTime() - 24 * 60 * 60 * 1000); 
+        const baseDate = new Date(new Date().getTime() - 24 * 60 * 60 * 1000);
         const formázDátum = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
         for (let i = 0; i < 7; i++) {
@@ -649,7 +794,7 @@ async function runTvEngine() {
             if (!forceBlackoutActive) { overlay.style.display = 'none'; }
             lblShow.innerText = currentTrack.title;
             currentTrackRatio = currentTrack.ratio || "";
-            
+
             const trackStart = parseLocalISO(currentTrack.start);
             const trackEnd = new Date(trackStart.getTime() + currentTrack.duration * 1000);
             const startHours = String(trackStart.getHours()).padStart(2, '0');
@@ -668,6 +813,8 @@ async function runTvEngine() {
                         const rConfig = await ratingResponse.json();
                         if (rConfig.logo && rConfig.logo.url) {
                             currentRatingConfig = rConfig.logo;
+                            lastRatingGeometry = rConfig.logo;
+                            ratingImg.onload = () => { updateLayersScale(); positionTicker(); };
                             ratingImg.src = rConfig.logo.url;
                             ratingImg.style.display = 'block';
                         }
@@ -685,7 +832,7 @@ async function runTvEngine() {
                 } else { showNotifier.classList.remove('active'); }
             } else { showNotifier.classList.remove('active'); }
 
-            const isEmbed = (currentTrack.url.includes('archive.org') && !currentTrack.url.toLowerCase().endsWith('.mp4')) || 
+            const isEmbed = (currentTrack.url.includes('archive.org') && !currentTrack.url.toLowerCase().endsWith('.mp4')) ||
                             currentTrack.url.includes('ok.ru') ||
                             currentTrack.url.includes('vkvideo.ru') ||
                             currentTrack.url.includes('video_ext.php') ||
@@ -695,22 +842,32 @@ async function runTvEngine() {
                 vid.pause(); vid.style.display = 'none';
                 let embedFrame = document.getElementById('embedFrame');
 
-                if (secondsInTrack >= (currentTrack.duration - 4)) {
+                clearTimeout(endTimer);
+                const ENGINE_LEAD_MS = 800;
+                const msToEnd = trackEnd.getTime() - Date.now();
+                const msToBlackout = msToEnd - 2000;
+                if (msToEnd > 0) {
+                    const baseMs = (msToBlackout > ENGINE_LEAD_MS) ? msToBlackout : msToEnd;
+                    endTimer = setTimeout(runTvEngine, Math.max(100, baseMs - ENGINE_LEAD_MS));
+                }
+
+                if (secondsInTrack >= (currentTrack.duration - 2)) {
                     if (embedFrame) { embedFrame.style.display = 'none'; }
-                    overlay.style.display = 'flex'; overlay.innerText = ""; 
-                    lastRenderedUrl = ''; isIframeLoaded = false; 
+                    overlay.style.display = 'flex'; overlay.innerText = "";
+                    lastRenderedUrl = ''; isIframeLoaded = false;
                     return;
                 }
 
                 if (!isIframeLoaded || !embedFrame || lastRenderedUrl !== currentTrack.url) {
-                    isIframeLoaded = true; lastRenderedUrl = currentTrack.url; 
-                    triggerBlackoutIncert(); 
+                    isIframeLoaded = true; lastRenderedUrl = currentTrack.url;
+                    triggerBlackoutIncert();
                     if (embedFrame) { embedFrame.remove(); }
 
                     let targetUrl = currentTrack.url;
                     let finalSrc = "";
 
                     if (targetUrl.includes('vkvideo.ru') || targetUrl.includes('vk.com') || targetUrl.includes('video_ext.php')) {
+                        targetUrl = targetUrl.replace('www.vk.com', 'vkvideo.ru').replace('vk.com', 'vkvideo.ru');
                         const vkMatch = targetUrl.match(/video(-?\d+)_(\d+)/);
                         if (vkMatch && !targetUrl.includes('video_ext.php')) {
                             targetUrl = `https://vkvideo.ru/video_ext.php?oid=${vkMatch[1]}&id=${vkMatch[2]}&hd=2`;
@@ -733,7 +890,6 @@ async function runTvEngine() {
                     container.appendChild(embedFrame);
                     embedFrame.style.display = 'block';
 
-                    // VK linkeknél explicit hangbekapcsolás a VK player API-n keresztül
                     if (finalSrc.includes('vkvideo.ru') || finalSrc.includes('vk.com')) {
                         forceVkUnmute(embedFrame);
                     }
@@ -741,15 +897,15 @@ async function runTvEngine() {
                     if (embedFrame) { embedFrame.style.display = 'block'; }
                 }
             } else {
-                lastRenderedUrl = ''; isIframeLoaded = false; 
+                lastRenderedUrl = ''; isIframeLoaded = false;
                 let embedFrame = document.getElementById('embedFrame');
                 if (embedFrame) embedFrame.remove();
                 vid.style.display = 'block';
-                
+
                 if (vid.src !== currentTrack.url) {
                     vid.src = currentTrack.url; vid.load(); vid.currentTime = secondsInTrack;
-                    triggerBlackoutIncert(); 
-                    vid.muted = false; vid.volume = 1.0; 
+                    triggerBlackoutIncert();
+                    vid.muted = false; vid.volume = 1.0;
                     vid.play().catch(() => {
                         vid.muted = true;
                         vid.play().then(() => { setTimeout(() => { vid.muted = false; vid.volume = 1.0; }, 200); });
@@ -765,28 +921,31 @@ async function runTvEngine() {
             currentTrackRatio = "";
             showNotifier.classList.remove('active');
             ratingImg.style.display = 'none'; currentRatingConfig = null;
-            vid.pause(); vid.style.display = 'none'; 
+            vid.pause(); vid.style.display = 'none';
             let embedFrame = document.getElementById('embedFrame');
             if (embedFrame) embedFrame.remove();
             archiveIframe.src = ''; archiveIframe.style.display = 'none';
             lblShow.innerText = "Betöltés..."; lblTime.innerText = "--:--";
-            overlay.style.display = 'flex'; overlay.innerText = ""; 
+            overlay.style.display = 'flex'; overlay.innerText = "";
         }
     } catch (error) {
         showNotifier.classList.remove('active');
         ratingImg.style.display = 'none'; currentRatingConfig = null;
-        vid.pause(); vid.style.display = 'none'; 
+        vid.pause(); vid.style.display = 'none';
         let embedFrame = document.getElementById('embedFrame');
         if (embedFrame) embedFrame.remove();
-        overlay.style.display = 'flex'; overlay.innerText = ""; 
+        overlay.style.display = 'flex'; overlay.innerText = "";
     }
 }
 
 window.addEventListener('DOMContentLoaded', () => {
     updateNotifierColor();
-    runTvEngine(); 
-    setInterval(runTvEngine, 5000); 
+    runTvEngine();
+    setInterval(runTvEngine, 5000);
     setInterval(updateHuClockText, 1000);
+    initTicker();
+    setInterval(loadTickerConfig, 30000);
+    setInterval(evaluateTicker, 1000);
     updateHuClockText();
 });
 
