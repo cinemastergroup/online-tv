@@ -885,6 +885,7 @@ async function runTvEngineOnce() {
             const isEmbed = (currentTrack.url.includes('archive.org') && !currentTrack.url.toLowerCase().endsWith('.mp4')) ||
                             currentTrack.url.includes('ok.ru') ||
                             currentTrack.url.includes('vkvideo.ru') ||
+                            currentTrack.url.includes('vk.ru') ||
                             currentTrack.url.includes('video_ext.php') ||
                             currentTrack.url.includes('vk.com');
 
@@ -931,8 +932,8 @@ async function runTvEngineOnce() {
                     let targetUrl = currentTrack.url;
                     let finalSrc = "";
 
-                    if (targetUrl.includes('vkvideo.ru') || targetUrl.includes('vk.com') || targetUrl.includes('video_ext.php')) {
-                        targetUrl = targetUrl.replace('www.vk.com', 'vkvideo.ru').replace('vk.com', 'vkvideo.ru');
+                    if (targetUrl.includes('vkvideo.ru') || targetUrl.includes('vk.com') || targetUrl.includes('vk.ru') || targetUrl.includes('video_ext.php')) {
+                        targetUrl = targetUrl.replace(/\/\/(www\.|m\.)?vk\.(com|ru)\//, '//vkvideo.ru/');
                         const vkMatch = targetUrl.match(/video(-?\d+)_(\d+)/);
                         if (vkMatch && !targetUrl.includes('video_ext.php')) {
                             targetUrl = `https://vkvideo.ru/video_ext.php?oid=${vkMatch[1]}&id=${vkMatch[2]}&hd=2`;
