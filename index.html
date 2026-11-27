@@ -257,6 +257,9 @@
 
         :fullscreen .tv-container { width: 100vw; height: 100vh; }
         :-webkit-full-screen .tv-container { width: 100vw; height: 100vh; }
+
+        /* Maszk a VK lejátszó betöltő pöttyei és felvillanó menüje elé */
+        .vk-mask { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 996; display: none; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -275,6 +278,7 @@
         </div>
 
         <div id="noStreamOverlay" class="no-stream-overlay"></div>
+        <div id="vkMask" class="vk-mask"></div>
 
         <video id="tvEngine" autoplay></video>
         <iframe id="archiveEngine" allowfullscreen style="display: none;"></iframe>
@@ -699,6 +703,26 @@ function triggerBlackoutIncert() {
     }, 2500);
 }
 
+// ===================== VK MASZK =====================
+const vkMask = document.getElementById('vkMask');
+const VK_MASK_AFTER_START_MS = 3000; // indulás után ennyivel tűnik el a maszk
+const VK_MASK_MAX_MS = 12000;        // legkésőbb ennyi idő után mindenképp eltűnik
+let vkMaskRevealTimer = null;
+let vkMaskMaxTimer = null;
+
+function hideVkMask() {
+    clearTimeout(vkMaskRevealTimer);
+    clearTimeout(vkMaskMaxTimer);
+    vkMask.style.display = 'none';
+}
+
+function showVkMask() {
+    hideVkMask();
+    vkMask.style.display = 'block';
+    vkMaskMaxTimer = setTimeout(hideVkMask, VK_MASK_MAX_MS);
+}
+// ====================================================
+
 function forceVkUnmute(frame) {
     if (typeof VK === 'undefined' || !VK.VideoPlayer) return;
     try {
@@ -708,17 +732,23 @@ function forceVkUnmute(frame) {
             try { player.setVolume(1); } catch (e) {}
         };
         let playing = false;
-        const markPlaying = () => { playing = true; unmute(); };
+        let revealScheduled = false;
+        const reveal = () => {
+            if (revealScheduled || !frame.isConnected) return;
+            revealScheduled = true;
+            vkMaskRevealTimer = setTimeout(hideVkMask, VK_MASK_AFTER_START_MS);
+        };
+        const markPlaying = () => { playing = true; unmute(); reveal(); };
         try { player.on('inited', unmute); } catch (e) {}
         try { player.on('started', markPlaying); } catch (e) {}
         try { player.on('resumed', markPlaying); } catch (e) {}
-        try { player.on('timeupdate', () => { playing = true; }); } catch (e) {}
+        try { player.on('timeupdate', () => { playing = true; reveal(); }); } catch (e) {}
         [500, 1500, 3000].forEach(ms => setTimeout(unmute, ms));
 
         // Ha a böngésző/lejátszó nem engedte az automatikus indítást (a poszter marad), kézzel indítjuk:
         // 2 mp után hanggal, 4,5 mp után némítva (a némított indítás mindig engedélyezett), majd újra próbáljuk a hangot.
         const kick = (muted) => {
-            if (playing) return;
+            if (playing || !frame.isConnected) return;
             try { if (muted) { player.mute(); } player.play(); } catch (e) {}
         };
         setTimeout(() => kick(false), 2000);
@@ -737,6 +767,7 @@ function switchChannel(channelId) {
     clearTimeout(endTimerNext);
     clearTimeout(endTimerBlackout);
     triggerBlackoutIncert();
+    hideVkMask();
     vid.pause();
     vid.removeAttribute('src');
     vid.load();
@@ -885,7 +916,6 @@ async function runTvEngineOnce() {
             const isEmbed = (currentTrack.url.includes('archive.org') && !currentTrack.url.toLowerCase().endsWith('.mp4')) ||
                             currentTrack.url.includes('ok.ru') ||
                             currentTrack.url.includes('vkvideo.ru') ||
-                            currentTrack.url.includes('vk.ru') ||
                             currentTrack.url.includes('video_ext.php') ||
                             currentTrack.url.includes('vk.com');
 
@@ -932,7 +962,7 @@ async function runTvEngineOnce() {
                     let targetUrl = currentTrack.url;
                     let finalSrc = "";
 
-                    if (targetUrl.includes('vkvideo.ru') || targetUrl.includes('vk.com') || targetUrl.includes('vk.ru') || targetUrl.includes('video_ext.php')) {
+                    if (targetUrl.includes('vkvideo.ru') || targetUrl.includes('vk.com') || targetUrl.includes('video_ext.php')) {
                         targetUrl = targetUrl.replace(/\/\/(www\.|m\.)?vk\.(com|ru)\//, '//vkvideo.ru/');
                         const vkMatch = targetUrl.match(/video(-?\d+)_(\d+)/);
                         if (vkMatch && !targetUrl.includes('video_ext.php')) {
@@ -957,7 +987,10 @@ async function runTvEngineOnce() {
                     embedFrame.style.display = 'block';
 
                     if (finalSrc.includes('vkvideo.ru') || finalSrc.includes('vk.com')) {
+                        showVkMask();
                         forceVkUnmute(embedFrame);
+                    } else {
+                        hideVkMask();
                     }
                 } else {
                     if (embedFrame) { embedFrame.style.display = 'block'; }
@@ -966,6 +999,7 @@ async function runTvEngineOnce() {
                 lastRenderedUrl = ''; isIframeLoaded = false;
                 let embedFrame = document.getElementById('embedFrame');
                 if (embedFrame) embedFrame.remove();
+                hideVkMask();
                 vid.style.display = 'block';
 
                 if (vid.src !== currentTrack.url || lastVideoKey !== trackKey) {
