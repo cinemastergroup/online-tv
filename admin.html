@@ -13,9 +13,12 @@
         video { width: 100%; height: 100%; }
         /* JAVÍTVA: Árnyékolás eltávolítva */
         .tv-watermark { position: absolute; top: 20px; left: 20px; width: 60px; opacity: 0.7; cursor: move; z-index: 10; }
+        /* ÚJ: háttérkép-réteg a logó pozicionálóban (a logó fölött nem, alatta van) */
+        .logo-bg-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; pointer-events: none; z-index: 1; display: none; }
         .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
         label { font-size: 12px; color: #8a99ad; font-weight: 600; text-transform: uppercase; margin-bottom: 5px; display: block; }
-        input, select { width: 100%; padding: 12px; background: #11141a; border: 1px solid var(--border-color); color: #fff; border-radius: 6px; box-sizing: border-box; font-size: 14px; color-scheme: dark; }
+        input, select, textarea { width: 100%; padding: 12px; background: #11141a; border: 1px solid var(--border-color); color: #fff; border-radius: 6px; box-sizing: border-box; font-size: 14px; color-scheme: dark; }
+        textarea { font-family: inherit; line-height: 1.4; resize: vertical; }
         button { background: var(--accent-color); color: white; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; font-size: 14px; transition: 0.2s; }
         button:hover { background: #3d5afe; }
         button:disabled { background: #2c323f; color: #627288; cursor: not-allowed; }
@@ -155,10 +158,23 @@
         </div>
 
         <div class="panel">
-            <h2>📺 Élő Monitor & Logó Pozicionáló</h2>
+            <h2>🖼️ Logó Pozicionáló (16:9 háttérképpel)</h2>
+
+            <div style="padding: 12px; background: #1a1f2c; border-radius: 8px; border: 1px solid #ff9100; margin-bottom: 15px;">
+                <label style="color: #ff9100;">Háttérkép (képernyőkép az adásból):</label>
+                <input type="file" id="bgFileSelector" accept="image/*" multiple style="padding: 5px; font-size: 12px; background: transparent; border: none; margin-bottom: 8px;">
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <input type="text" id="bgUrlInput" placeholder="vagy a kép URL-je (https://...png / .jpg)">
+                    <button class="btn-load" style="width: auto; white-space: nowrap;" onclick="addBackgroundFromUrl()">Hozzáadás ➕</button>
+                </div>
+                <select id="bgSelect" onchange="applyBackgroundSelection()">
+                    <option value="">Fekete háttér (nincs kép)</option>
+                </select>
+            </div>
+
             <div class="video-box" id="videoBoxContainer">
+                <img id="bgLayerImg" class="logo-bg-layer" alt="">
                 <img id="channelLogoImg" src="https://upload.wikimedia.org/wikipedia/commons/a/ab/Logo_TV_2015.png" class="tv-watermark" alt="Logo">
-                <video id="catcastEngine" controls autoplay muted crossorigin="anonymous"></video>
             </div>
             
             <div style="margin-top: 20px; background: #11141a; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
@@ -179,6 +195,60 @@
                 <button class="btn-logo-save" onclick="exportLogoOnlyJSON()">Csak a Logó Beállítások Mentése (logo_only.json) 💾</button>
                 <div id="logoStatusLog" class="status-msg" style="color: #8a99ad;">A logó adatai függetlenek a műsortól.</div>
             </div>
+        </div>
+    </div>
+
+    <div>
+        <div class="panel">
+            <h2>📅 Műsorfolyam Tervező (Műsorújság Generátor)</h2>
+        
+            <div class="input-row" style="margin-bottom: 20px;">
+                <div>
+                    <label>Melyik csatorna műsorát írod?:</label>
+                    <select id="channelId">
+                        <option value="cinemaster">CineMaster (alapértelmezett)</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Adásfolyam fix kezdete:</label>
+                    <input type="datetime-local" id="streamStartDateTime" onchange="refreshTimeline()">
+                </div>
+            </div>
+
+            <div style="padding: 15px; background: #1a1f2c; border-radius: 8px; border: 1px solid #ff9100; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; gap: 15px;">
+                <div style="flex-grow: 1;">
+                    <label style="color: #ff9100;">Folytatni szeretnél egy korábbi tervezést?</label>
+                    <input type="file" id="importFileSelector" accept=".json" style="padding: 5px; font-size: 12px; background: transparent; border: none;">
+                </div>
+                <button class="btn-load" style="width: auto; white-space: nowrap;" onclick="importScheduleJSON()">Műsorfájl Beolvasása 📂</button>
+            </div>
+
+            <div style="padding: 15px; background: #11141a; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px;">
+                <div style="font-size: 12px; color: #8a99ad; font-weight: 600; text-transform: uppercase; margin-bottom: 5px;">Adásfolyam lefedettsége:</div>
+                <div style="font-size: 15px; color: #fff;">
+                    A műsorrend jelenleg eddig tart: <strong id="streamEndTimeCounter" style="color: #00e676;">Nincs beállítva</strong>
+                </div>
+                <div style="font-size: 12px; color: #627288; margin-top: 5px;" id="streamTotalDurationMinutes">
+                    (Összesen: 0 perc)
+                </div>
+            </div>
+
+            <hr class="section-divider">
+
+            <div class="form-group" style="margin-bottom:20px">
+                <label style="color: #536dfe;">Műsor / Film kiválasztása az adatbázisból (Lenyitható és Írva szűrhető)</label>
+                <div class="custom-select-wrapper" id="filmSelectWrapper">
+                    <input type="text" id="scheduleFilmSelector" autocomplete="off" placeholder="Kattints duplán a teljes listához, vagy kezdj gépelni...">
+                    <div class="custom-select-dropdown" id="filmSelectDropdown"></div>
+                </div>
+            </div>
+
+            <button id="addBlockBtn" onclick="addSelectedFilmToTimeline()">Műsorblokk beszúrása a listába ↓</button>
+            <div id="statusConsoleLog" class="status-msg" style="color: #8a99ad;">Rendszer kész.</div>
+        
+            <div class="catcast-timeline" id="timelineContainer"></div>
+        
+            <button class="btn-download" onclick="exportScheduleOnlyJSON()">Csak a Műsorrend Mentése (schedule_only.json) 📅</button>
         </div>
 
         <!-- ÚJ: Futószöveg (ticker) kezelő -->
@@ -202,7 +272,7 @@
 
             <div class="form-group" style="margin-bottom: 12px;">
                 <label>Futószöveg</label>
-                <input type="text" id="tickerTextInput" placeholder="pl. Ma este 21:00-kor: Harry Potter a CineMaster csatornán!">
+                <textarea id="tickerTextInput" rows="10" placeholder="pl. Ma este 21:00-kor: Harry Potter a CineMaster csatornán!"></textarea>
             </div>
             <div class="input-row">
                 <div>
@@ -221,58 +291,6 @@
 
             <button class="btn-download" onclick="exportTickerJSON()">Futószöveg Mentése (csatorna_ticker.json) 📰</button>
         </div>
-    </div>
-
-    <div class="panel">
-        <h2>📅 Műsorfolyam Tervező (Műsorújság Generátor)</h2>
-        
-        <div class="input-row" style="margin-bottom: 20px;">
-            <div>
-                <label>Melyik csatorna műsorát írod?:</label>
-                <select id="channelId">
-                    <option value="cinemaster">CineMaster (alapértelmezett)</option>
-                </select>
-            </div>
-            <div>
-                <label>Adásfolyam fix kezdete:</label>
-                <input type="datetime-local" id="streamStartDateTime" onchange="refreshTimeline()">
-            </div>
-        </div>
-
-        <div style="padding: 15px; background: #1a1f2c; border-radius: 8px; border: 1px solid #ff9100; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; gap: 15px;">
-            <div style="flex-grow: 1;">
-                <label style="color: #ff9100;">Folytatni szeretnél egy korábbi tervezést?</label>
-                <input type="file" id="importFileSelector" accept=".json" style="padding: 5px; font-size: 12px; background: transparent; border: none;">
-            </div>
-            <button class="btn-load" style="width: auto; white-space: nowrap;" onclick="importScheduleJSON()">Műsorfájl Beolvasása 📂</button>
-        </div>
-
-        <div style="padding: 15px; background: #11141a; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 20px;">
-            <div style="font-size: 12px; color: #8a99ad; font-weight: 600; text-transform: uppercase; margin-bottom: 5px;">Adásfolyam lefedettsége:</div>
-            <div style="font-size: 15px; color: #fff;">
-                A műsorrend jelenleg eddig tart: <strong id="streamEndTimeCounter" style="color: #00e676;">Nincs beállítva</strong>
-            </div>
-            <div style="font-size: 12px; color: #627288; margin-top: 5px;" id="streamTotalDurationMinutes">
-                (Összesen: 0 perc)
-            </div>
-        </div>
-
-        <hr class="section-divider">
-
-        <div class="form-group" style="margin-bottom:20px">
-            <label style="color: #536dfe;">Műsor / Film kiválasztása az adatbázisból (Lenyitható és Írva szűrhető)</label>
-            <div class="custom-select-wrapper" id="filmSelectWrapper">
-                <input type="text" id="scheduleFilmSelector" autocomplete="off" placeholder="Kattints duplán a teljes listához, vagy kezdj gépelni...">
-                <div class="custom-select-dropdown" id="filmSelectDropdown"></div>
-            </div>
-        </div>
-
-        <button id="addBlockBtn" onclick="addSelectedFilmToTimeline()">Műsorblokk beszúrása a listába ↓</button>
-        <div id="statusConsoleLog" class="status-msg" style="color: #8a99ad;">Rendszer kész.</div>
-        
-        <div class="catcast-timeline" id="timelineContainer"></div>
-        
-        <button class="btn-download" onclick="exportScheduleOnlyJSON()">Csak a Műsorrend Mentése (schedule_only.json) 📅</button>
     </div>
 </div>
 
@@ -344,8 +362,9 @@ function changeLogoSrc() {
 function changeLogoSize() { 
     const size = document.getElementById('logoSizeSlider').value; 
     document.getElementById('logoSizeVal').innerText = size + "px"; 
-    document.getElementById('channelLogoImg').style.width = size + "px"; 
-    logoConfig.size = parseInt(size); 
+    /* a tényleges előnézeti méretet az applyLogoPreviewSize() számolja, a lejátszó képlete szerint */ 
+    logoConfig.size = parseInt(size);
+    applyLogoPreviewSize(); 
 }
 
 const logoImg = document.getElementById('channelLogoImg');
@@ -369,6 +388,71 @@ document.addEventListener('mousemove', (e) => {
     logoConfig.leftPercent = (newLeft / containerBox.clientWidth) * 100;
 });
 document.addEventListener('mouseup', () => { isDragging = false; });
+
+// ÚJ: a logó előnézeti mérete pontosan a lejátszó képlete szerint: ablakszélesség * (méret / 440)
+let logoPlacedByUser = false;
+function applyLogoPreviewSize() {
+    logoImg.style.width = (containerBox.clientWidth * (logoConfig.size / 440)) + 'px';
+}
+document.addEventListener('mousemove', () => { if (isDragging) logoPlacedByUser = true; });
+window.addEventListener('resize', () => {
+    applyLogoPreviewSize();
+    if (logoPlacedByUser) { // a húzott pozíciót a mentett százalékokból újraszámoljuk
+        logoImg.style.top = logoConfig.topPercent + '%';
+        logoImg.style.left = logoConfig.leftPercent + '%';
+    }
+});
+applyLogoPreviewSize();
+
+// ===================== ÚJ: HÁTTÉRKÉP-VÁLASZTÓ A LOGÓ POZICIONÁLÓHOZ =====================
+const bgLayerImg = document.getElementById('bgLayerImg');
+const bgSelect = document.getElementById('bgSelect');
+const bgFileSelector = document.getElementById('bgFileSelector');
+
+function applyBackgroundSelection() {
+    const src = bgSelect.value;
+    if (src) {
+        bgLayerImg.src = src;
+        bgLayerImg.style.display = 'block';
+    } else {
+        bgLayerImg.removeAttribute('src');
+        bgLayerImg.style.display = 'none';
+    }
+}
+
+function addBackgroundOption(label, src) {
+    const option = document.createElement('option');
+    option.value = src;
+    option.textContent = label;
+    bgSelect.appendChild(option);
+    bgSelect.value = src;
+    applyBackgroundSelection();
+}
+
+bgFileSelector.addEventListener('change', () => {
+    Array.from(bgFileSelector.files).forEach(file => {
+        addBackgroundOption(file.name, URL.createObjectURL(file));
+    });
+    bgFileSelector.value = ''; // ugyanaz a fájl később újra kiválasztható legyen
+});
+
+function addBackgroundFromUrl() {
+    const input = document.getElementById('bgUrlInput');
+    const url = input.value.trim();
+    if (!url) {
+        alert("Kérlek, add meg a háttérkép URL-jét!");
+        return;
+    }
+    addBackgroundOption(url, url);
+    input.value = '';
+}
+
+bgLayerImg.addEventListener('error', () => {
+    if (bgLayerImg.getAttribute('src')) {
+        bgLayerImg.style.display = 'none';
+        alert("A háttérkép nem tölthető be. Ellenőrizd a fájlt / az URL-t!");
+    }
+});
 
 function cloneTrackInTimeline(index) {
     const sourceTrack = catcastPlaylist[index];
